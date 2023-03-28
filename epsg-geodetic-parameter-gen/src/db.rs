@@ -15,24 +15,24 @@ pub fn gen_ellipsoids_source(c: &Connection) -> Result<String> {
             'epsg_ellipsoid' as ellipsoid 
             JOIN 'epsg_unitofmeasure' as uom USING (uom_code);
     ")?;
-    let mut ellipsoids_map = phf_codegen::Map::new();
+    let mut constant_defs: String = String::from("static ELLIPSOIDS: phf::Map<u32, Ellipsoid> =");
+    let mut phf_map = phf_codegen::Map::new();
     s.query([])?.mapped(|r|
         Ok({
             let code: u32 = r.get_unwrap("code");
-            let name: String = string_to_const_name(&r.get_unwrap::<_, String>("name")) + &format!("_EPSG_{}", code);
             let semi_major: u64 = r.get_unwrap::<_, f64>("a").to_bits();
             let semi_minor: Option<u64> = r.get_unwrap::<_, Option<f64>>("b").map(|v| v.to_bits());
             let inf_flat: Option<u64> = r.get_unwrap::<_, Option<f64>>("inv_f").map(|v| v.to_bits());
             match (semi_minor, inf_flat) {
                 (Some(b), _) => {
-                    ellipsoids_map.entry(code, &format!(
+                    phf_map.entry(code, &format!(
                         "Ellipsoid::from_a_b(f64::from_bits(0x{:x}), f64::from_bits(0x{:x}))",
                         semi_major,
                         b
                     ));
                 },
                 (_, Some(f_inv)) => {
-                    ellipsoids_map.entry(code, &format!(
+                    phf_map.entry(code, &format!(
                         "Ellipsoid::from_a_f_inv(f64::from_bits(0x{:x}), f64::from_bits(0x{:x}))",
                         semi_major,
                         f_inv
@@ -42,9 +42,12 @@ pub fn gen_ellipsoids_source(c: &Connection) -> Result<String> {
             }
         }))
     .collect::<Result<()>>()?;
-
-    Ok( format!("static ELLIPSOIDS: phf::Map<u32, Ellipsoid> = {};", ellipsoids_map.build()) + 
-        "\npub fn get_ellipsoid(code: u32) -> Option<&'static Ellipsoid> {ELLIPSOIDS.get(&code)}\n"
+    constant_defs.push_str(&phf_map.build().to_string());
+    constant_defs.push(';');
+    Ok( constant_defs + 
+        "\npub fn get_ellipsoid(code: u32) -> Option<&'static Ellipsoid> {\n
+            ELLIPSOIDS.get(&code)
+        \n}\n"
     )
 }
 
@@ -60,10 +63,10 @@ pub fn gen_prime_meridians_source(c: &Connection) -> Result<String> {
 	        'epsg_primemeridian' as prime_meridian 
 	        JOIN 'epsg_unitofmeasure' as uom USING (uom_code);
     ")?;
-    let mut constant_defs: String = String::new();
+    let mut constant_defs: String = String::from("static PRIME_MERIDIANS: phf::Map<u32, f64> =");
+    let mut phf_map = phf_codegen::Map::new();
     s.query([])?.mapped(|r| Ok({
         let code: u32 = r.get_unwrap("code");
-        let name: String = string_to_const_name(&r.get_unwrap::<_, String>("name")) + &format!("_EPSG_{}", code);
         let greenwich_relative = 
             r.get_unwrap::<_, Option<f64>>("g_conv")
             .unwrap_or_else(|| 
@@ -72,8 +75,10 @@ pub fn gen_prime_meridians_source(c: &Connection) -> Result<String> {
                 } else {
                     unimplemented!("Meridian relative position in unsupported format.")
             });
-        constant_defs += &format!("pub const {}: f64 = f64::from_bits(0x{:x});\n", name, greenwich_relative.to_bits());
+        phf_map.entry(code, &format!("f64::from_bits(0x{:x})", greenwich_relative.to_bits()));
     })).collect::<Result<()>>()?;
+    constant_defs.push_str(&phf_map.build().to_string());
+    constant_defs.push(';');
     Ok(constant_defs)
 }
 
@@ -132,13 +137,18 @@ pub fn gen_parameter_constructors(c: &Connection, supporteds: &[ImplementedConve
         WHERE
 	        val.coord_op_code = (?)
     ")?;
-    let mut constant_defs: String = String::new();
-    let mut lookup_match: String = String::new();
+    let mut constant_defs: String = String::from("static PARAMETERS: phf::Map<u32, Params> =");
+    let mut params_map = phf_codegen::Map::new();
+    let mut ellipsoid_code_map = phf_codegen::Map::new();
+    let mut names_map = phf_codegen::Map::new();
+    let mut conv_types_map = phf_codegen::Map::new();
     s.query([])?.mapped(|r| Ok({
         let code: u32 = r.get_unwrap("code");
         let name: String = string_to_const_name(&r.get_unwrap::<_, String>("name")) + &format!("_EPSG_{}", code);
+        names_map.entry(code, &format!("\"{name}\""));
         let ellipsoid_code: u32 = r.get_unwrap("ellipsoid");
         let _primemerid_code: u32 = r.get_unwrap("primemerid"); //TODO: use correct meridian on exotic projections
+        ellipsoid_code_map.entry(code, &ellipsoid_code.to_string());
         let op_code: u32 = r.get_unwrap("op");
         let method_code: u32 = r.get_unwrap("method");
         let params: Vec<(u32, f64)> = param_value_s.query([op_code])?.mapped(|r| Ok({
@@ -157,28 +167,30 @@ pub fn gen_parameter_constructors(c: &Connection, supporteds: &[ImplementedConve
                 params.iter().find(|(i, _)| *i == p).map(|(_, v)| *v)
             }).collect::<Option<Vec<f64>>>().map(|v| (conv, v))
         }).map(|(conv, v)| {
-            constant_defs += &format!("const {}: {} = {}::new(", name, conv.param_type, conv.param_type);
+            let mut entry = format!("Params::{}({}::new(", conv.param_type,conv.param_type);
             v.iter().for_each(|&v| {
-                constant_defs += &format!("f64::from_bits(0x{:x}),", v.to_bits());
+                entry.push_str(&format!("f64::from_bits(0x{:x}),", v.to_bits()));
             });
-            constant_defs += ");\n";
-
-            lookup_match += &format!(
-                "\t\t{} => ellipsoid_constructor::get_ellipsoid({}).map(|e| Box::new({}::new(e, &{})) as Box<dyn CoordTransform>),\n",
-                code,
-                ellipsoid_code,
-                conv.conversion_type,
-                name
-            );
+            entry.push_str("))");
+            params_map.entry(code, &entry);
+            conv_types_map.entry(code, &format!("\"{}\"", conv.conversion_type));
         });
     })).collect::<Result<()>>()?;
-
+    constant_defs.push_str(&params_map.build().to_string());
+    constant_defs.push(';');
+    constant_defs.push('\n');
+    constant_defs.push_str("static ELLIPSOID_CODES: phf::Map<u32, u32> =");
+    constant_defs.push_str(&ellipsoid_code_map.build().to_string());
+    constant_defs.push(';');
+    constant_defs.push('\n');
+    constant_defs.push_str("static NAMES: phf::Map<u32, &'static str> =");
+    constant_defs.push_str(&names_map.build().to_string());
+    constant_defs.push(';');
+    constant_defs.push('\n');
+    constant_defs.push_str("static CONV_TYPES: phf::Map<u32, &'static str> =");
+    constant_defs.push_str(&conv_types_map.build().to_string());
+    constant_defs.push(';');
+    constant_defs.push('\n');
     //TODO: 'orrible murder
-    lookup_match += "\t\t4326 => Some(Box::new(ZeroTransformation) as Box<dyn CoordTransform>),\n";
-
-    Ok(constant_defs +
-        "\npub fn get_coord_transform(code: u32) -> Option<Box<dyn CoordTransform>> {\n\tmatch code {\n" + 
-        &lookup_match +
-        "\t\t_ => None\n\t}\n}\n"
-    )
+    Ok(constant_defs)
 }

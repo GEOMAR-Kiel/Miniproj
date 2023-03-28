@@ -1,34 +1,65 @@
 //This file is licensed under EUPL v1.2 as part of the Digital Earth Viewer
 
+
+//! This crate implements geographic transformations between different coordinate systems defined
+//! by the European Petroleum Survey Group.
+//! 
+//! Think of it as a very lightweight [PROJ](https://github.com/OSGeo/PROJ)
+//! 
+//! Currently, only the transverse mercator, stereographic and lamber azimuthal equal area coordinate systems are defined.
+//! 
+//! It was written at the [GEOMAR Helmholtz Centre for Ocean Research](https://www.geomar.de/) as part of the [Digital Earth Project](https://www.digitalearth-hgf.de/).
+//! 
+//! As many of the other components created in this project, it is licensed under [EUPL v1.2](https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12)
+//! 
+//! Usage example:
+//! ```rust
+//! //Create a boxed converter between WGS84 Lat/Lon and WGS84 UTM zone 32N
+//! use epsg_geodetic_parameters::{get_coord_transform, CoordTransform};
+//! let converter = get_coord_transform(32632).expect("Coordinate conversion not implemented");
+//! 
+//! //Coordinates of the office where this converter was written in UTM:
+//! let (x,y) = (1133571.07f64,7232406.06f64);
+//! 
+//! //To get the latitude and longitude, use the CoordTransform::to_deg method.
+//! let (lon, lat) = converter.to_deg(x,y);
+//! 
+//! assert_eq!((lon, lat), (10.1830402, 54.3274021));
+//! ```
+
 #![feature(const_option)]
 #![feature(const_fn_floating_point_arithmetic)]
 #![feature(const_float_classify)]
 #![feature(const_float_bits_conv)]
-
+/*
 pub const fn to_radians_ext(deg: f64) -> f64 {
     deg / 180.0 * std::f64::consts::PI
 }
 pub const fn to_degrees_ext(rad: f64) -> f64 {
     rad * 180.0 / std::f64::consts::PI
-}
+}*/
 
-pub mod transverse_mercator;
-pub mod stereographic;
-pub mod lambert_azimuthal_equal_area;
-pub mod zero_transformation;
+mod transverse_mercator;
+mod stereographic;
+mod lambert_azimuthal_equal_area;
+mod zero_transformation;
 
-pub mod ellipsoid;
+mod ellipsoid;
 
-pub mod ellipsoid_constructor;
-pub mod projection_constructor;
+mod ellipsoid_constructor;
+mod projection_constructor;
 
-pub use ellipsoid_constructor as ellipsoids;
-pub use projection_constructor as projections;
+use ellipsoid_constructor as ellipsoids;
+use projection_constructor as projections;
 
-pub mod traits;
+mod params;
+
+mod traits;
 pub use traits::CoordTransform;
 
-pub struct BoxedTransform{
+pub use projection_constructor::get_coord_transform;
+
+struct BoxedTransform{
     transform: Box<dyn CoordTransform>,
     epsg_code: u32
 }
