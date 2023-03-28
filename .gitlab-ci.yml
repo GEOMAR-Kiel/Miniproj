@@ -1,8 +1,4 @@
-image: alpine:latest
-
-stages:
-    - build
-    - pages   
+image: alpine:latest 
 
 build:
     script:
@@ -17,6 +13,8 @@ build:
         expire_in: 5 days
 
 pages:
+    dependencies:
+        - build
     script: 
         - ls public
     artifacts:
