@@ -2,7 +2,7 @@ image: alpine:latest
 
 build:
     script:
-        - apk add curl
+        - apk add curl gcc cmake
         - curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain nightly
         - source $HOME/.cargo/env
         - cargo test --doc
