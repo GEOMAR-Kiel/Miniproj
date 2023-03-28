@@ -16,7 +16,7 @@ use epsg_geodetic_parameters::{get_coord_transform, CoordTransform};
 let converter = get_coord_transform(32632).expect("Coordinate conversion not implemented");
 
 //Coordinates of the office where this converter was written in UTM:
-let (x,y) = (1133571.07f64,7232406.06f64);
+let (x,y) = (576935.86f64, 6020593.46f64);
 
 //To get the latitude and longitude, use the CoordTransform::to_deg method.
 let (lon, lat) = converter.to_deg(x,y);
