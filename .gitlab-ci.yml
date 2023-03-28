@@ -7,7 +7,7 @@ stages:
 build:
     stage: build
     script:
-        - apk add curl gcc cmake
+        - apk add curl gcc libc-dev
         - curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain nightly
         - source $HOME/.cargo/env
         - cargo test --doc
