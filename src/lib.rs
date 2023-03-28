@@ -50,7 +50,7 @@ mod ellipsoid;
 mod ellipsoid_constructor;
 mod projection_constructor;
 
-use ellipsoid_constructor as ellipsoids;
+
 use projection_constructor as projections;
 
 mod params;

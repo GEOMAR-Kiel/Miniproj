@@ -215,8 +215,8 @@ mod tests {
         );
 
         let converter = TransverseMercatorConversion::new(&wgs_84_ellipsoid, &utm_32_n);
-        for lon in (6 .. 12) {
-            for lat in (-80 .. 80) {
+        for lon in 6 .. 12 {
+            for lat in -80 .. 80 {
                 let pos = (lon as f64, lat as f64);
                 let pos_utm = converter.from_deg(pos.0, pos.1);
                 let pos_2 = converter.to_deg(pos_utm.0, pos_utm.1);

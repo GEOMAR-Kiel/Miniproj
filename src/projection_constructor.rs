@@ -21,6 +21,6 @@ pub fn get_coord_transform(code: u32) -> Option<Box<dyn CoordTransform>> {
         .and_then(|e|PARAMETERS.get(&code).map(|p| (e, p)))
         .and_then(|(e,p)| NAMES.get(&code).map(|n| (e,p,n)))
         .and_then(|(e,p,n)| CONV_TYPES.get(&code).map(|c| (e,p,n,c)))
-        .map(|(e,p,n,c)| p.apply_named_conversion(e, c))
+        .map(|(e,p,_n,c)| p.apply_named_conversion(e, c))
     }
 }
