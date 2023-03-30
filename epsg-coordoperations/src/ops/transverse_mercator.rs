@@ -1,6 +1,6 @@
 //This file is licensed under EUPL v1.2 as part of the Digital Earth Viewer
 
-use crate::{ellipsoid::Ellipsoid, PseudoSerialize, CoordTransform};
+use crate::{ellipsoid::{Ellipsoid, self}, CoordTransform, PseudoSerialize, DbContstruct};
 
 #[derive(Copy, Clone, Debug)]
 pub struct TransverseMercatorParams {
@@ -57,26 +57,24 @@ impl TransverseMercatorParams {
 #[allow(non_snake_case)]
 #[derive(Copy, Clone, Debug)]
 pub struct TransverseMercatorConversion {
-    ellipsoid_e: f64,
+    pub ellipsoid_e: f64,
 
-    lat_orig: f64,
-    lon_orig: f64,
-    false_e: f64,
-    false_n: f64,
-    k_orig: f64,
+    pub lon_orig: f64,
+    pub false_e: f64,
+    pub false_n: f64,
+    pub k_orig: f64,
 
+    pub B: f64,
+    pub h_1: f64,
+    pub h_2: f64,
+    pub h_3: f64,
+    pub h_4: f64,
+    pub M_orig: f64,
 
-    B: f64,
-    h_1: f64,
-    h_2: f64,
-    h_3: f64,
-    h_4: f64,
-    M_orig: f64,
-
-    h_1_: f64,
-    h_2_: f64,
-    h_3_: f64,
-    h_4_: f64
+    pub h_1_: f64,
+    pub h_2_: f64,
+    pub h_3_: f64,
+    pub h_4_: f64
 }
 
 impl TransverseMercatorConversion {
@@ -116,7 +114,6 @@ impl TransverseMercatorConversion {
 
         Self{
             ellipsoid_e: ell.e(),
-            lat_orig: params.lat_orig(),
             lon_orig: params.lon_orig(),
             false_e: params.false_e(),
             false_n: params.false_n(),
@@ -204,13 +201,72 @@ impl CoordTransform for TransverseMercatorConversion {
 
 impl PseudoSerialize for TransverseMercatorConversion {
     fn to_constructed(&self) -> String {
-        format!(r"TransverseMercatorConversion{{
-    
-}}
-        ",)
+        format!(
+r"TransverseMercatorConversion{{
+    ellipsoid_e: f64::from_bits({}),
+    lon_orig: f64::from_bits({}),
+    false_e: f64::from_bits({}),
+    false_n: f64::from_bits({}),
+    k_orig: f64::from_bits({}),
+
+    B: f64::from_bits({}),
+    h_1: f64::from_bits({}),
+    h_2: f64::from_bits({}),
+    h_3: f64::from_bits({}),
+    h_4: f64::from_bits({}),
+    M_orig: f64::from_bits({}),
+
+    h_1_: f64::from_bits({}),
+    h_2_: f64::from_bits({}),
+    h_3_: f64::from_bits({}),
+    h_4_: f64::from_bits({}),
+}}",
+            self.ellipsoid_e.to_bits(),
+            self.lon_orig.to_bits(),
+            self.false_e.to_bits(),
+            self.false_n.to_bits(),
+            self.k_orig.to_bits(),
+
+            self.B.to_bits(),
+            self.h_1.to_bits(),
+            self.h_2.to_bits(),
+            self.h_3.to_bits(),
+            self.h_4.to_bits(),
+            self.M_orig.to_bits(),
+            
+            self.h_1_.to_bits(),
+            self.h_2_.to_bits(),
+            self.h_3_.to_bits(),
+            self.h_4_.to_bits()
+        )
     }
 }
 
+impl DbContstruct for TransverseMercatorConversion {
+    fn from_database_params(params: &[(u32, f64)], ellipsoid: &Ellipsoid) -> Self {
+        /*
+        ImplementedConversion::new(
+            9807,
+            // lon   lat     k     e     n
+            &[8802, 8801, 8805, 8806, 8807],
+            "TransverseMercatorParams",
+            "TransverseMercatorConversion"
+        ),
+        */
+        let params = TransverseMercatorParams::new(
+            params.iter().find_map(|(c, v)| if *c == 8802{Some(*v)}else{None}).unwrap(),
+            params.iter().find_map(|(c, v)| if *c == 8801{Some(*v)}else{None}).unwrap(),
+            params.iter().find_map(|(c, v)| if *c == 8805{Some(*v)}else{None}).unwrap(),
+            params.iter().find_map(|(c, v)| if *c == 8806{Some(*v)}else{None}).unwrap(),
+            params.iter().find_map(|(c, v)| if *c == 8807{Some(*v)}else{None}).unwrap(),
+        );
+        Self::new(ellipsoid, &params)
+    }
+}
+
+pub fn direct_conversion(params: &[(u32, f64)], ell: Ellipsoid) -> String {
+    TransverseMercatorConversion::from_database_params(params, &ell).to_constructed()
+}
 #[cfg(test)]
 mod tests {
 

@@ -1,5 +1,7 @@
 //This file is licensed under EUPL v1.2 as part of the Digital Earth Viewer
 
+use crate::ellipsoid::{self, Ellipsoid};
+
 pub trait CoordTransform: Send + Sync{
     ///Converts from a coordinate in the target coordinate system to Lon/Lat in EPSG 4326 in radians
     fn to_rad(&self, x: f64, y: f64) -> (f64, f64);
@@ -18,4 +20,8 @@ pub trait CoordTransform: Send + Sync{
 
 pub trait PseudoSerialize {
     fn to_constructed(&self) -> String;
+}
+
+pub trait DbContstruct {
+    fn from_database_params(params: &[(u32, f64)], ellipsoid: &Ellipsoid) -> Self;
 }

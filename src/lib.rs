@@ -44,8 +44,6 @@ mod ellipsoid_constructor;
 mod projection_constructor;
 
 
-use projection_constructor as projections;
-
 mod params;
 
 pub use epsg_coordoperations::CoordTransform;
@@ -57,12 +55,6 @@ struct BoxedTransform{
     epsg_code: u32
 }
 
-impl BoxedTransform{
-    pub fn from_epsg_code(epsg_code: u32) -> Self{
-        BoxedTransform { transform: crate::projections::get_coord_transform(epsg_code).unwrap(), epsg_code }
-    }
-}
-
 impl CoordTransform for BoxedTransform{
     fn to_rad(&self, x: f64, y: f64) -> (f64, f64) {
         self.transform.to_rad(x, y)
@@ -70,12 +62,6 @@ impl CoordTransform for BoxedTransform{
 
     fn from_rad(&self, lon: f64, lat: f64) -> (f64, f64) {
        self.transform.from_rad(lon, lat)
-    }
-}
-
-impl Clone for BoxedTransform{
-    fn clone(&self) -> Self {
-        Self::from_epsg_code(self.epsg_code)
     }
 }
 

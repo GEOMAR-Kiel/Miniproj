@@ -1,7 +1,11 @@
 //This file is licensed under EUPL v1.2 as part of the Digital Earth Viewer
 
+use std::collections::HashMap;
+
+use epsg_coordoperations::ellipsoid::Ellipsoid;
+use phf_codegen::Map;
 use rusqlite::{Connection, Result};
-use crate::{helpers::*, types::ImplementedConversion};
+use crate::{helpers::*, ImplementedConversion};
 
 pub fn gen_ellipsoids_source(c: &Connection) -> Result<String> {
     let mut s = c.prepare("
@@ -51,6 +55,39 @@ pub fn gen_ellipsoids_source(c: &Connection) -> Result<String> {
     )
 }
 
+pub fn get_ellipsoids(c: &Connection) -> Result<HashMap<u32, Ellipsoid>> {
+    let mut s = c.prepare("
+    SELECT
+        ellipsoid_code as code,
+        ellipsoid_name as name,
+        semi_major_axis * uom.factor_b / uom.factor_c as a,
+        semi_minor_axis * uom.factor_b / uom.factor_c as b,
+        inv_flattening as inv_f
+    FROM 
+        'epsg_ellipsoid' as ellipsoid 
+        JOIN 'epsg_unitofmeasure' as uom USING (uom_code);
+    ")?;
+    let mut ellipsoids = HashMap::new();
+    s.query([])?.mapped(|r|
+        Ok({
+            let code: u32 = r.get_unwrap("code");
+            let semi_major = r.get_unwrap::<_, f64>("a");
+            let semi_minor = r.get_unwrap::<_, Option<f64>>("b");
+            let inf_flat = r.get_unwrap::<_, Option<f64>>("inv_f");
+            ellipsoids.insert(code, match (semi_minor, inf_flat) {
+                (Some(b), _) => {
+                    Ellipsoid::from_a_b(semi_major, b)
+                },
+                (_, Some(f_inv)) => {
+                    Ellipsoid::from_a_f_inv(semi_major, f_inv)
+                },
+                _ => unreachable!("Malformed DB: Ellipsoids need either b or f_inv.")
+            });
+        }))
+    .collect::<Result<()>>()?;
+    Ok(ellipsoids)
+}
+
 pub fn gen_prime_meridians_source(c: &Connection) -> Result<String> {
     let mut s = c.prepare("
         SELECT
@@ -71,7 +108,7 @@ pub fn gen_prime_meridians_source(c: &Connection) -> Result<String> {
             r.get_unwrap::<_, Option<f64>>("g_conv")
             .unwrap_or_else(|| 
                 if r.get_unwrap::<_, u32>("uom_code") == 9110 {
-                    epsg_9110_to_deg(r.get_unwrap("g"))
+                    epsg_9110_to_rad(r.get_unwrap("g"))
                 } else {
                     unimplemented!("Meridian relative position in unsupported format.")
             });
@@ -82,7 +119,35 @@ pub fn gen_prime_meridians_source(c: &Connection) -> Result<String> {
     Ok(constant_defs)
 }
 
-pub fn gen_parameter_constructors(c: &Connection, supporteds: &[ImplementedConversion]) -> Result<String> {
+pub fn get_prime_meridians(c: &Connection) -> Result<HashMap<u32, f64>> {
+    let mut s = c.prepare("
+        SELECT
+            prime_meridian_code as code,
+            prime_meridian_name as name,
+            greenwich_longitude * uom.factor_b / uom.factor_c as g_conv,
+            greenwich_longitude as g,
+            uom.uom_code as uom_code
+        FROM 
+            'epsg_primemeridian' as prime_meridian 
+            JOIN 'epsg_unitofmeasure' as uom USING (uom_code);
+    ")?;
+    let mut meridians = HashMap::new();
+    s.query([])?.mapped(|r| Ok({
+        let code: u32 = r.get_unwrap("code");
+        let greenwich_relative = 
+            r.get_unwrap::<_, Option<f64>>("g_conv")
+            .unwrap_or_else(|| 
+                if r.get_unwrap::<_, u32>("uom_code") == 9110 {
+                    epsg_9110_to_rad(r.get_unwrap("g"))
+                } else {
+                    unimplemented!("Meridian relative position in unsupported format.")
+            });
+        meridians.insert(code, greenwich_relative);
+    })).collect::<Result<()>>()?;
+    Ok(meridians)
+}
+
+pub fn gen_parameter_constructors(c: &Connection, supporteds: &[ImplementedConversion], ellipsoids: &HashMap<u32, Ellipsoid>) -> Result<String> {
     let mut s = c.prepare("
         SELECT 
 	        crs.coord_ref_sys_code AS code,
@@ -137,18 +202,15 @@ pub fn gen_parameter_constructors(c: &Connection, supporteds: &[ImplementedConve
         WHERE
 	        val.coord_op_code = (?)
     ")?;
-    let mut constant_defs: String = String::from("static PARAMETERS: phf::Map<u32, Params> =");
-    let mut params_map = phf_codegen::Map::new();
-    let mut ellipsoid_code_map = phf_codegen::Map::new();
+    let mut constant_defs: String = String::from("static PARAMETERS: phf::Map<u32, &(dyn CoordTransform + Send + Sync)> =");
+    let mut constructors_map = phf_codegen::Map::new();
     let mut names_map = phf_codegen::Map::new();
-    let mut conv_types_map = phf_codegen::Map::new();
     s.query([])?.mapped(|r| Ok({
         let code: u32 = r.get_unwrap("code");
         let name: String = string_to_const_name(&r.get_unwrap::<_, String>("name")) + &format!("_EPSG_{}", code);
         names_map.entry(code, &format!("\"{name}\""));
         let ellipsoid_code: u32 = r.get_unwrap("ellipsoid");
         let _primemerid_code: u32 = r.get_unwrap("primemerid"); //TODO: use correct meridian on exotic projections
-        ellipsoid_code_map.entry(code, &ellipsoid_code.to_string());
         let op_code: u32 = r.get_unwrap("op");
         let method_code: u32 = r.get_unwrap("method");
         let params: Vec<(u32, f64)> = param_value_s.query([op_code])?.mapped(|r| Ok({
@@ -156,30 +218,21 @@ pub fn gen_parameter_constructors(c: &Connection, supporteds: &[ImplementedConve
             let pval: f64 = r.get_unwrap::<_, Option<f64>>("v_conv")
             .unwrap_or_else(|| 
                 if r.get_unwrap::<_, u32>("uom_code") == 9110 {
-                    epsg_9110_to_deg(r.get_unwrap("v"))
+                    epsg_9110_to_rad(r.get_unwrap("v"))
                 } else {
                     unimplemented!("Parameter in unsupported format.")
             });
             (pcode, pval)
         })).collect::<Result<Vec<_>>>()?;
-        supporteds.iter().find(|conv| conv.code == method_code).and_then(|conv| {
-            conv.param_codes.iter().map(|&p| {
-                params.iter().find(|(i, _)| *i == p).map(|(_, v)| *v)
-            }).collect::<Option<Vec<f64>>>().map(|v| (conv, v))
-        }).map(|(conv, v)| {
-            let mut entry = format!("Params::{}({}::new(", conv.param_type,conv.param_type);
-            v.iter().for_each(|&v| {
-                entry.push_str(&format!("f64::from_bits(0x{:x}),", v.to_bits()));
-            });
-            entry.push_str("))");
-            params_map.entry(code, &entry);
-            conv_types_map.entry(code, &format!("\"{}\"", conv.conversion_type));
+        let ellipsoid = ellipsoids.get(&ellipsoid_code).expect("Ellipsoid not specified.");
+        supporteds.iter().find(|(code, _)| *code == method_code).map(|(_, conv)| {
+            constructors_map.entry(code, &format!("&{} as &(dyn CoordTransform + Send + Sync)", conv(&params, *ellipsoid)));
         });
     })).collect::<Result<()>>()?;
-    constant_defs.push_str(&params_map.build().to_string());
+    constant_defs.push_str(&constructors_map.build().to_string());
     constant_defs.push(';');
     constant_defs.push('\n');
-    constant_defs.push_str("static ELLIPSOID_CODES: phf::Map<u32, u32> =");
+    /*constant_defs.push_str("static ELLIPSOID_CODES: phf::Map<u32, u32> =");
     constant_defs.push_str(&ellipsoid_code_map.build().to_string());
     constant_defs.push(';');
     constant_defs.push('\n');
@@ -191,6 +244,6 @@ pub fn gen_parameter_constructors(c: &Connection, supporteds: &[ImplementedConve
     constant_defs.push_str(&conv_types_map.build().to_string());
     constant_defs.push(';');
     constant_defs.push('\n');
-    //TODO: 'orrible murder
+    //TODO: 'orrible murder*/
     Ok(constant_defs)
 }

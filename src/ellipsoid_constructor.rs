@@ -2,4 +2,4 @@
 
 use epsg_coordoperations::ellipsoid::Ellipsoid;
 
-include!(concat!(env!("OUT_DIR"), "/ellipsoid_constructors.rs"));
+//include!(concat!(env!("OUT_DIR"), "/ellipsoid_constructors.rs"));

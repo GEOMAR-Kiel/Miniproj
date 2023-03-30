@@ -1,6 +1,6 @@
 //This file is licensed under EUPL v1.2 as part of the Digital Earth Viewer
 
-pub fn epsg_9110_to_deg(val: f64) -> f64 {
+pub fn epsg_9110_to_rad(val: f64) -> f64 {
     let sign = val.signum();
     let a = val.abs();
     let whole_deg = a.trunc();

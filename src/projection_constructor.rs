@@ -1,6 +1,8 @@
 //This file is licensed under EUPL v1.2 as part of the Digital Earth Viewer
 
 use epsg_coordoperations::CoordTransform;
+use epsg_coordoperations::transverse_mercator::TransverseMercatorConversion;
+use epsg_coordoperations::lambert_azimuthal_equal_area::LambertAzimuthalEqualAreaConversion;
 
 include!(concat!(env!("OUT_DIR"), "/projection_constructors.rs"));
 

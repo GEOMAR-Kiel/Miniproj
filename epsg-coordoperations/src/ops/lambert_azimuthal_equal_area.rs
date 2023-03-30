@@ -1,6 +1,6 @@
 //This file is licensed under EUPL v1.2 as part of the Digital Earth Viewer
 
-use crate::ellipsoid::Ellipsoid;
+use crate::{ellipsoid::{Ellipsoid}, PseudoSerialize, DbContstruct};
 
 #[derive(Copy, Clone, Debug)]
 pub struct LambertAzimuthalEqualAreaParams {
@@ -49,21 +49,23 @@ impl LambertAzimuthalEqualAreaParams {
 
 #[allow(non_snake_case)]
 #[derive(Copy, Clone, Debug)]
-pub struct LambertAzimuthalEqualAreaConversion<'a, 'b> {
-    params: &'b LambertAzimuthalEqualAreaParams,
-    ell: &'a Ellipsoid,
+pub struct LambertAzimuthalEqualAreaConversion {
+    pub lon_orig: f64,
+    pub false_e: f64,
+    pub false_n: f64,
+    pub ellipsoid_e: f64,
 
     //q_O: f64,
-    q_P: f64,
-    beta_O: f64,
-    R_q: f64,
-    D: f64
+    pub q_P: f64,
+    pub beta_O: f64,
+    pub R_q: f64,
+    pub D: f64
 
 }
-unsafe impl<'a, 'b> Send for LambertAzimuthalEqualAreaConversion<'a, 'b> {}
-unsafe impl<'a, 'b> Sync for LambertAzimuthalEqualAreaConversion<'a, 'b> {}
+unsafe impl<'a, 'b> Send for LambertAzimuthalEqualAreaConversion {}
+unsafe impl<'a, 'b> Sync for LambertAzimuthalEqualAreaConversion {}
 
-impl<'a, 'b> LambertAzimuthalEqualAreaConversion<'a, 'b> {
+impl<'a, 'b> LambertAzimuthalEqualAreaConversion {
 
     #[allow(non_snake_case)]
     pub fn new(ell: &'a Ellipsoid, params: &'b LambertAzimuthalEqualAreaParams) -> Self {
@@ -94,44 +96,47 @@ impl<'a, 'b> LambertAzimuthalEqualAreaConversion<'a, 'b> {
         let D = ell.a() * (params.lat_orig().cos() / (1.0 - ell.e().powi(2) * params.lat_orig().sin().powi(2)).sqrt()) / (R_q * beta_O.cos());
 
         Self{
-            params,
-            ell,
+            lon_orig: params.lon_orig(),
+            false_e: params.false_e(),
+            false_n: params.false_n(),
+            ellipsoid_e: ell.e(),
 
             q_P,
             //q_O,
             beta_O,
             R_q,
-            D
+            D,
+
         }
     }
 }
 
-impl crate::traits::CoordTransform for LambertAzimuthalEqualAreaConversion<'_, '_> {
+impl crate::traits::CoordTransform for LambertAzimuthalEqualAreaConversion {
     /// as per IOGP Publication 373-7-2 – Geomatics Guidance Note number 7, part 2 – March 2020
     /// longitude & latitude in radians
     #[allow(non_snake_case)]
     fn from_rad(&self, longitude: f64, latitude: f64) -> (f64, f64) {
 
-        let q = (1.0 - self.ell.e().powi(2)) * 
+        let q = (1.0 - self.ellipsoid_e.powi(2)) * 
         (
-            (latitude.sin() / (1.0 - self.ell.e().powi(2) * latitude.sin().powi(2))) - 
+            (latitude.sin() / (1.0 - self.ellipsoid_e.powi(2) * latitude.sin().powi(2))) - 
             (
-                (0.5 / self.ell.e()) * 
+                (0.5 / self.ellipsoid_e) * 
                 f64::ln(
-                    (1.0 - self.ell.e() * latitude.sin()) / 
-                    (1.0 + self.ell.e() * latitude.sin())
+                    (1.0 - self.ellipsoid_e * latitude.sin()) / 
+                    (1.0 + self.ellipsoid_e * latitude.sin())
                 )
             )
         );
 
         let beta = (q / self.q_P).asin();
 
-        let B = self.R_q * (2.0 / (1.0 + self.beta_O.sin() * beta.sin() + (self.beta_O.cos() * beta.cos() * (longitude - self.params.lon_orig).cos()))).sqrt();
+        let B = self.R_q * (2.0 / (1.0 + self.beta_O.sin() * beta.sin() + (self.beta_O.cos() * beta.cos() * (longitude - self.lon_orig).cos()))).sqrt();
 
         (
-            self.params.false_e() + ((B * self.D) * (beta.cos() * (longitude - self.params.lon_orig).sin()))
+            self.false_e + ((B * self.D) * (beta.cos() * (longitude - self.lon_orig).sin()))
         ,
-            self.params.false_n() + (B / self.D) * ((self.beta_O.cos() * beta.sin()) - (self.beta_O.sin() * beta.cos() * (longitude - self.params.lon_orig).cos()))
+            self.false_n + (B / self.D) * ((self.beta_O.cos() * beta.sin()) - (self.beta_O.sin() * beta.cos() * (longitude - self.lon_orig).cos()))
         )
     }
     
@@ -142,27 +147,78 @@ impl crate::traits::CoordTransform for LambertAzimuthalEqualAreaConversion<'_, '
     #[allow(non_snake_case)]
     fn to_rad(&self, easting: f64, northing: f64) -> (f64, f64) {
         
-        let rho = (((easting - self.params.false_e())/ self.D).powi(2) + (self.D * (northing - self.params.false_n())).powi(2)).sqrt();
+        let rho = (((easting - self.false_e)/ self.D).powi(2) + (self.D * (northing - self.false_n)).powi(2)).sqrt();
 
         let C = 2.0 * (rho / 2.0 / self.R_q).asin();
 
-        let beta_ = ((C.cos() * self.beta_O.sin()) + ((self.D * (northing - self.params.false_n()) * C.sin() * self.beta_O.cos()) / rho)).asin();
+        let beta_ = ((C.cos() * self.beta_O.sin()) + ((self.D * (northing - self.false_n) * C.sin() * self.beta_O.cos()) / rho)).asin();
 
         (
-            self.params.lon_orig() + f64::atan2(
-                (easting - self.params.false_e()) * C.sin(),
-                self.D * rho * self.beta_O.cos() * C.cos() - self.D.powi(2) * (northing - self.params.false_n) * self.beta_O.sin() * C.sin()
+            self.lon_orig + f64::atan2(
+                (easting - self.false_e) * C.sin(),
+                self.D * rho * self.beta_O.cos() * C.cos() - self.D.powi(2) * (northing - self.false_n) * self.beta_O.sin() * C.sin()
             )
         ,
             beta_ + 
             (
-                (self.ell.e().powi(2) / 3.0 + (31.0 / 180.0) * self.ell.e().powi(4) + (517.0 / 5040.0) * self.ell.e().powi(6)) * (beta_ * 2.0).sin() + 
-                ((23.0 / 360.0) * self.ell.e().powi(4) + (251.0 / 3780.0) * self.ell.e().powi(6)) * (beta_ * 4.0).sin() + 
-                (761.0 / 45360.0) * self.ell.e().powi(6) * (beta_ + 6.0).sin()
+                (self.ellipsoid_e.powi(2) / 3.0 + (31.0 / 180.0) * self.ellipsoid_e.powi(4) + (517.0 / 5040.0) * self.ellipsoid_e.powi(6)) * (beta_ * 2.0).sin() + 
+                ((23.0 / 360.0) * self.ellipsoid_e.powi(4) + (251.0 / 3780.0) * self.ellipsoid_e.powi(6)) * (beta_ * 4.0).sin() + 
+                (761.0 / 45360.0) * self.ellipsoid_e.powi(6) * (beta_ + 6.0).sin()
             )
         )
     }
 
+}
+
+impl PseudoSerialize for LambertAzimuthalEqualAreaConversion {
+    fn to_constructed(&self) -> String {
+        format!(
+r"LambertAzimuthalEqualAreaConversion{{
+    lon_orig: f64::from_bits({}),
+    false_e: f64::from_bits({}),
+    false_n: f64::from_bits({}),
+    ellipsoid_e: f64::from_bits({}),
+
+    q_P: f64::from_bits({}),
+    beta_O: f64::from_bits({}),
+    R_q: f64::from_bits({}),
+    D: f64::from_bits({}),
+}}",
+            self.lon_orig.to_bits(),
+            self.false_e.to_bits(),
+            self.false_n.to_bits(),
+            self.ellipsoid_e.to_bits(),
+
+            self.q_P.to_bits(),
+            self.beta_O.to_bits(),
+            self.R_q.to_bits(),
+            self.D.to_bits()
+        )
+    }
+}
+
+impl DbContstruct for LambertAzimuthalEqualAreaConversion {
+    fn from_database_params(params: &[(u32, f64)], ellipsoid: &Ellipsoid) -> Self {
+        /*
+        ImplementedConversion::new(
+            9820,
+            &[8802, 8801, 8806, 8807],
+            "LambertAzimuthalEqualAreaParams",
+            "LambertAzimuthalEqualAreaConversion"
+        )
+        */
+        let params = LambertAzimuthalEqualAreaParams::new(
+            params.iter().find_map(|(c, v)| if *c == 8802{Some(*v)}else{None}).unwrap(),
+            params.iter().find_map(|(c, v)| if *c == 8801{Some(*v)}else{None}).unwrap(),
+            params.iter().find_map(|(c, v)| if *c == 8806{Some(*v)}else{None}).unwrap(),
+            params.iter().find_map(|(c, v)| if *c == 8807{Some(*v)}else{None}).unwrap(),
+        );
+        Self::new(ellipsoid, &params)
+    }
+}
+
+pub fn direct_conversion(params: &[(u32, f64)], ell: Ellipsoid) -> String {
+    LambertAzimuthalEqualAreaConversion::from_database_params(params, &ell).to_constructed()
 }
 
 #[cfg(test)]

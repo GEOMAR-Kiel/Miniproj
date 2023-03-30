@@ -2,31 +2,24 @@
 
 mod db;
 mod helpers;
-use lazy_static::lazy_static;
 pub use crate::db::*;
-mod types;
-use types::ImplementedConversion;
 pub use rusqlite::Connection as DbConnection;
+use epsg_coordoperations::ellipsoid::Ellipsoid;
 
 
-
+/*
 lazy_static! {
-    pub static ref IMPL_CONV: Vec<ImplementedConversion> = vec![
-        ImplementedConversion::new(
-            9807,
-            // lon   lat     k     e     n
-            &[8802, 8801, 8805, 8806, 8807],
-            "TransverseMercatorParams",
-            "TransverseMercatorConversion"
-        ),
-        ImplementedConversion::new(
-            9820,
-            &[8802, 8801, 8806, 8807],
-            "LambertAzimuthalEqualAreaParams",
-            "LambertAzimuthalEqualAreaConversion"
-        )
+    pub static ref IMPL_CONV: Vec<Fn(&[(u32, f64)], Ellipsoid)-> String> = vec![
+        
     ];
-}
+}*/
+
+type ImplementedConversion = (u32, &'static (dyn (Fn(&[(u32, f64)], Ellipsoid) -> String) + Send + Sync));
+
+pub static IMPL_CONV: &[(u32, &(dyn (Fn(&[(u32, f64)], Ellipsoid) -> String) + Send + Sync))] = &[
+    (9807, &epsg_coordoperations::transverse_mercator::direct_conversion),
+    (9820, &epsg_coordoperations::lambert_azimuthal_equal_area::direct_conversion)
+];
 
 
 #[cfg(test)]
