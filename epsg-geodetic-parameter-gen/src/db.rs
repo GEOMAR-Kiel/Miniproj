@@ -3,7 +3,6 @@
 use std::collections::HashMap;
 
 use epsg_coordoperations::ellipsoid::Ellipsoid;
-use phf_codegen::Map;
 use rusqlite::{Connection, Result};
 use crate::{helpers::*, ImplementedConversion};
 
@@ -202,7 +201,7 @@ pub fn gen_parameter_constructors(c: &Connection, supporteds: &[ImplementedConve
         WHERE
 	        val.coord_op_code = (?)
     ")?;
-    let mut constant_defs: String = String::from("static PARAMETERS: phf::Map<u32, &(dyn CoordTransform + Send + Sync)> =");
+    let mut constant_defs: String = String::from("static TRANSFORMS: phf::Map<u32, &(dyn CoordTransform + Send + Sync)> =");
     let mut constructors_map = phf_codegen::Map::new();
     let mut names_map = phf_codegen::Map::new();
     s.query([])?.mapped(|r| Ok({

@@ -1,6 +1,6 @@
 //This file is licensed under EUPL v1.2 as part of the Digital Earth Viewer
 
-use crate::ellipsoid::{self, Ellipsoid};
+use crate::ellipsoid::{Ellipsoid};
 
 pub trait CoordTransform: Send + Sync{
     ///Converts from a coordinate in the target coordinate system to Lon/Lat in EPSG 4326 in radians

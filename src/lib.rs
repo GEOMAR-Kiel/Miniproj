@@ -43,9 +43,6 @@ pub const fn to_degrees_ext(rad: f64) -> f64 {
 mod ellipsoid_constructor;
 mod projection_constructor;
 
-
-mod params;
-
 pub use epsg_coordoperations::CoordTransform;
 
 pub use projection_constructor::get_coord_transform;

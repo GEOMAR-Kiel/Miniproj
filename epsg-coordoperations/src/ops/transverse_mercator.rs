@@ -1,6 +1,6 @@
 //This file is licensed under EUPL v1.2 as part of the Digital Earth Viewer
 
-use crate::{ellipsoid::{Ellipsoid, self}, CoordTransform, PseudoSerialize, DbContstruct};
+use crate::{ellipsoid::{Ellipsoid}, CoordTransform, PseudoSerialize, DbContstruct};
 
 #[derive(Copy, Clone, Debug)]
 pub struct TransverseMercatorParams {
@@ -203,23 +203,23 @@ impl PseudoSerialize for TransverseMercatorConversion {
     fn to_constructed(&self) -> String {
         format!(
 r"TransverseMercatorConversion{{
-    ellipsoid_e: f64::from_bits({}),
-    lon_orig: f64::from_bits({}),
-    false_e: f64::from_bits({}),
-    false_n: f64::from_bits({}),
-    k_orig: f64::from_bits({}),
+    ellipsoid_e: f64::from_bits(0x{:x}),
+    lon_orig: f64::from_bits(0x{:x}),
+    false_e: f64::from_bits(0x{:x}),
+    false_n: f64::from_bits(0x{:x}),
+    k_orig: f64::from_bits(0x{:x}),
 
-    B: f64::from_bits({}),
-    h_1: f64::from_bits({}),
-    h_2: f64::from_bits({}),
-    h_3: f64::from_bits({}),
-    h_4: f64::from_bits({}),
-    M_orig: f64::from_bits({}),
+    B: f64::from_bits(0x{:x}),
+    h_1: f64::from_bits(0x{:x}),
+    h_2: f64::from_bits(0x{:x}),
+    h_3: f64::from_bits(0x{:x}),
+    h_4: f64::from_bits(0x{:x}),
+    M_orig: f64::from_bits(0x{:x}),
 
-    h_1_: f64::from_bits({}),
-    h_2_: f64::from_bits({}),
-    h_3_: f64::from_bits({}),
-    h_4_: f64::from_bits({}),
+    h_1_: f64::from_bits(0x{:x}),
+    h_2_: f64::from_bits(0x{:x}),
+    h_3_: f64::from_bits(0x{:x}),
+    h_4_: f64::from_bits(0x{:x}),
 }}",
             self.ellipsoid_e.to_bits(),
             self.lon_orig.to_bits(),
