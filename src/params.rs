@@ -1,4 +1,4 @@
-use crate::{lambert_azimuthal_equal_area::LambertAzimuthalEqualAreaParams, transverse_mercator::{TransverseMercatorParams, TransverseMercatorConversion}, stereographic::{PolarStereographicAParams, PolarStereographicAConversion}, ellipsoid::Ellipsoid, CoordTransform};
+use epsg_coordoperations::{lambert_azimuthal_equal_area::LambertAzimuthalEqualAreaParams, transverse_mercator::{TransverseMercatorParams, TransverseMercatorConversion}, stereographic::{PolarStereographicAParams, PolarStereographicAConversion}, ellipsoid::Ellipsoid, CoordTransform};
 
 #[derive(Copy, Clone, Debug)]
 pub enum Params{

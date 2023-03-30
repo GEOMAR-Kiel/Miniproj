@@ -14,7 +14,7 @@ pub struct Ellipsoid {
 }
 impl Ellipsoid {
 
-    pub const fn from_a_b(a: f64, b: f64) -> Self {
+    pub fn from_a_b(a: f64, b: f64) -> Self {
         let f = (a - b) / a;
         Self{
             a,
@@ -24,7 +24,7 @@ impl Ellipsoid {
         }
     }
 
-    pub const fn from_a_f_inv(a: f64, f_inv: f64) -> Self {
+    pub fn from_a_f_inv(a: f64, f_inv: f64) -> Self {
         let f = 1.0 / f_inv;
         Self{
             a,

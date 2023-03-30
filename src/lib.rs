@@ -28,9 +28,7 @@
 //! assert!((lat - 54.327389) < 0.000001);
 //! ```
 
-#![feature(const_option)]
-#![feature(const_fn_floating_point_arithmetic)]
-#![feature(const_float_classify)]
+
 #![feature(const_float_bits_conv)]
 /*
 pub const fn to_radians_ext(deg: f64) -> f64 {
@@ -40,12 +38,7 @@ pub const fn to_degrees_ext(rad: f64) -> f64 {
     rad * 180.0 / std::f64::consts::PI
 }*/
 
-mod transverse_mercator;
-mod stereographic;
-mod lambert_azimuthal_equal_area;
-mod zero_transformation;
 
-mod ellipsoid;
 
 mod ellipsoid_constructor;
 mod projection_constructor;
@@ -55,8 +48,7 @@ use projection_constructor as projections;
 
 mod params;
 
-mod traits;
-pub use traits::CoordTransform;
+pub use epsg_coordoperations::CoordTransform;
 
 pub use projection_constructor::get_coord_transform;
 

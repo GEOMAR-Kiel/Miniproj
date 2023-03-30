@@ -12,3 +12,4 @@ rusqlite = { version ="^0.25", features = ["bundled"] }
 lazy_static = "*"
 phf = { version = "0.11", default_features = false}
 phf_codegen = "0.11.1"
+epsg-coordoperations = {path="../epsg-coordoperations"}

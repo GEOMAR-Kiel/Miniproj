@@ -1,6 +1,6 @@
 //This file is licensed under EUPL v1.2 as part of the Digital Earth Viewer
 
-use crate::CoordTransform;
+use crate::traits::CoordTransform;
 
 
 pub struct ZeroTransformation;

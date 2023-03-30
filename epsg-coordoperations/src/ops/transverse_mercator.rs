@@ -1,6 +1,6 @@
 //This file is licensed under EUPL v1.2 as part of the Digital Earth Viewer
 
-use crate::ellipsoid::Ellipsoid;
+use crate::{ellipsoid::Ellipsoid, PseudoSerialize, CoordTransform};
 
 #[derive(Copy, Clone, Debug)]
 pub struct TransverseMercatorParams {
@@ -27,7 +27,6 @@ impl TransverseMercatorParams {
             false_n
         }
     }
-
 
     /// longitude of natural origin, radians
     pub fn lon_orig(&self) -> f64 {
@@ -57,9 +56,15 @@ impl TransverseMercatorParams {
 
 #[allow(non_snake_case)]
 #[derive(Copy, Clone, Debug)]
-pub struct TransverseMercatorConversion<'a, 'b> {
-    params: &'b TransverseMercatorParams,
-    ell: &'a Ellipsoid,
+pub struct TransverseMercatorConversion {
+    ellipsoid_e: f64,
+
+    lat_orig: f64,
+    lon_orig: f64,
+    false_e: f64,
+    false_n: f64,
+    k_orig: f64,
+
 
     B: f64,
     h_1: f64,
@@ -73,14 +78,12 @@ pub struct TransverseMercatorConversion<'a, 'b> {
     h_3_: f64,
     h_4_: f64
 }
-unsafe impl<'a, 'b> Send for TransverseMercatorConversion<'a, 'b> {}
-unsafe impl<'a, 'b> Sync for TransverseMercatorConversion<'a, 'b> {}
 
-impl<'a, 'b> TransverseMercatorConversion<'a, 'b> {
+impl TransverseMercatorConversion {
     const MAX_ITERATIONS: usize = 4;
 
     #[allow(non_snake_case)]
-    pub fn new(ell: &'a Ellipsoid, params: &'b TransverseMercatorParams) -> Self {
+    pub fn new(ell: &Ellipsoid, params: &TransverseMercatorParams) -> Self {
         let n = ell.f() / (2.0 - ell.f());
         let B = (ell.a() / (1.0 + n)) * (1.0 + n.powi(2)/4.0 + n.powi(4)/64.0);
     
@@ -112,8 +115,13 @@ impl<'a, 'b> TransverseMercatorConversion<'a, 'b> {
         let h_4_ = (4397.0 / 161280.0) * n.powi(4);
 
         Self{
-            params,
-            ell,
+            ellipsoid_e: ell.e(),
+            lat_orig: params.lat_orig(),
+            lon_orig: params.lon_orig(),
+            false_e: params.false_e(),
+            false_n: params.false_n(),
+            k_orig: params.k_orig(),
+
 
             B,
             h_1,
@@ -125,19 +133,19 @@ impl<'a, 'b> TransverseMercatorConversion<'a, 'b> {
             h_1_,
             h_2_,
             h_3_,
-            h_4_
+            h_4_,
         }
     }
 }
 
-impl crate::traits::CoordTransform for TransverseMercatorConversion<'_, '_> {
+impl CoordTransform for TransverseMercatorConversion {
     /// as per IOGP Publication 373-7-2 – Geomatics Guidance Note number 7, part 2 – March 2020
     /// longitude & latitude in radians
     #[allow(non_snake_case)]
     fn from_rad(&self, longitude: f64, latitude: f64) -> (f64, f64) {
-        let Q = latitude.tan().asinh() - (self.ell.e() * f64::atanh(self.ell.e() * latitude.sin()));
+        let Q = latitude.tan().asinh() - (self.ellipsoid_e * f64::atanh(self.ellipsoid_e * latitude.sin()));
         let beta = Q.sinh().atan();
-        let eta_0 = f64::atanh(beta.cos() * f64::sin(longitude - self.params.lon_orig()));
+        let eta_0 = f64::atanh(beta.cos() * f64::sin(longitude - self.lon_orig));
         let xi_0 = f64::asin(beta.sin() * eta_0.cosh());
 
         let xi_1 = self.h_1 * f64::sin(2.0 * xi_0) * f64::cosh(2.0 * eta_0);
@@ -153,9 +161,9 @@ impl crate::traits::CoordTransform for TransverseMercatorConversion<'_, '_> {
         let eta = eta_0 + eta_1 + eta_2 + eta_3 + eta_4;
 
         (
-            self.params.false_e() + self.params.k_orig() * self.B * eta
+            self.false_e + self.k_orig * self.B * eta
         ,
-            self.params.false_n() + self.params.k_orig() * (self.B * xi - self.M_orig)
+            self.false_n + self.k_orig * (self.B * xi - self.M_orig)
         )
     }
     
@@ -163,8 +171,8 @@ impl crate::traits::CoordTransform for TransverseMercatorConversion<'_, '_> {
     /// longitude & latitude in radians
     #[allow(non_snake_case)]
     fn to_rad(&self, easting: f64, northing: f64) -> (f64, f64) {
-        let eta_ = (easting - self.params.false_e()) / (self.B * self.params.k_orig());
-        let xi_ = ((northing - self.params.false_n()) + self.params.k_orig() * self.M_orig) / (self.B * self.params.k_orig());
+        let eta_ = (easting - self.false_e) / (self.B * self.k_orig);
+        let xi_ = ((northing - self.false_n) + self.k_orig * self.M_orig) / (self.B * self.k_orig);
 
         let xi_1_ = self.h_1_ * f64::sin(2.0 * xi_) * f64::cosh(2.0 * eta_);
         let xi_2_ = self.h_2_ * f64::sin(4.0 * xi_) * f64::cosh(4.0 * eta_);
@@ -180,18 +188,27 @@ impl crate::traits::CoordTransform for TransverseMercatorConversion<'_, '_> {
 
         let beta_ = f64::asin(xi_0_.sin() / eta_0_.cosh());
         let Q_ = beta_.tan().asinh();
-        let mut Q__ = Q_ + (self.ell.e() * f64::atanh(self.ell.e() * Q_.tanh()));
+        let mut Q__ = Q_ + (self.ellipsoid_e * f64::atanh(self.ellipsoid_e * Q_.tanh()));
         for _ in 0..Self::MAX_ITERATIONS {
-            Q__ = Q_ + (self.ell.e() * f64::atanh(self.ell.e() * Q__.tanh()));
+            Q__ = Q_ + (self.ellipsoid_e * f64::atanh(self.ellipsoid_e * Q__.tanh()));
         };
 
         (
-            self.params.lon_orig() + f64::asin(eta_0_.tanh() / beta_.cos())
+            self.lon_orig + f64::asin(eta_0_.tanh() / beta_.cos())
         ,
             Q__.sinh().atan()
         )
     }
 
+}
+
+impl PseudoSerialize for TransverseMercatorConversion {
+    fn to_constructed(&self) -> String {
+        format!(r"TransverseMercatorConversion{{
+    
+}}
+        ",)
+    }
 }
 
 #[cfg(test)]

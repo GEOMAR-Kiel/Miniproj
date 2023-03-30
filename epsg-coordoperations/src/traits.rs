@@ -14,4 +14,8 @@ pub trait CoordTransform: Send + Sync{
     fn from_deg(&self, lon: f64, lat: f64) -> (f64, f64) {
         self.from_rad(lon.to_radians(), lat.to_radians())
     }
- }
+}
+
+pub trait PseudoSerialize {
+    fn to_constructed(&self) -> String;
+}

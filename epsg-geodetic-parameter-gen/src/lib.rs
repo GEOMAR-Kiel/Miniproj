@@ -14,7 +14,7 @@ lazy_static! {
     pub static ref IMPL_CONV: Vec<ImplementedConversion> = vec![
         ImplementedConversion::new(
             9807,
-            // lon lat k e n
+            // lon   lat     k     e     n
             &[8802, 8801, 8805, 8806, 8807],
             "TransverseMercatorParams",
             "TransverseMercatorConversion"
