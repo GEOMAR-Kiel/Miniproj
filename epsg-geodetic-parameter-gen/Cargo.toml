@@ -8,7 +8,7 @@ license-file = "../../../../../LICENSE.md"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-rusqlite = { version ="^0.25", features = ["bundled"] }
+rusqlite = { version ="*", features = ["bundled"] }
 lazy_static = "*"
 phf = { version = "0.11", default_features = false}
 phf_codegen = "0.11.1"
