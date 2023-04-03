@@ -2,15 +2,15 @@
 
 [Documentation](https://flemming-staebler.pages.geomar.de/epsg-geodetic-parameters/phf/)
 
-This crate implements geographic transformations between different coordinate systems defined by the European Petroleum Survey Group.
+This crate implements geographic transformations between different coordinate systems defined by the [European Petroleum Survey Group](https://epsg.org/home.html).
 
-Think of it as a very lightweight [PROJ](https://github.com/OSGeo/PROJ)
+Think of it as a very lightweight [PROJ](https://github.com/OSGeo/PROJ).
 
-Currently, only the transverse mercator, stereographic and lamber azimuthal equal area coordinate systems are defined.
+Currently, only the transverse mercator and lambert azimuthal equal area coordinate operations are completely implemented.
 
 It was written at the [GEOMAR Helmholtz Centre for Ocean Research](https://www.geomar.de/) as part of the [Digital Earth Project](https://www.digitalearth-hgf.de/).
 
-As many of the other components created in this project, it is licensed under [EUPL v1.2](https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12). This license only applies to the code in the project, not the projections themselves. The file [parameters.sqlite](epsg-geodetic-parameter-gen/data/parameters.sqlite) is also not covered by this license. See [terms.md](epsg-geodetic-parameter-gen/data/terms.md) for more details.
+As many of the other components created in this project, it is licensed under [EUPL v1.2](https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12). This license does not apply to the projections themselves. The database files [parameters.sqlite](epsg-geodetic-parameter-gen/data/parameters.sqlite) and [gen_req.sql](epsg-geodetic-parameter-gen/data/gen_req.sql) are extracts from the EPSG Geodetic Parameter Registry and distributed under [their own Terms of Use](epsg-geodetic-parameter-gen/data/terms.md).
 
 Usage example:
 ```rust

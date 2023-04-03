@@ -11,5 +11,5 @@ license-file = "../../../LICENSE.md"
 epsg-geodetic-parameter-gen = {path="./epsg-geodetic-parameter-gen"}
 
 [dependencies]
-phf = { version = "0.11", default_features = false}
+phf = { version = "~0.11.1", default_features = false}
 epsg-coordoperations = {path="./epsg-coordoperations"}
