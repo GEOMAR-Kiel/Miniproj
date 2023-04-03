@@ -38,9 +38,6 @@ pub const fn to_degrees_ext(rad: f64) -> f64 {
     rad * 180.0 / std::f64::consts::PI
 }*/
 
-
-
-mod ellipsoid_constructor;
 mod projection_constructor;
 
 pub use miniproj_ops::CoordTransform;
