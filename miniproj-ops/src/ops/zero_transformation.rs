@@ -2,7 +2,7 @@
 
 use crate::traits::CoordTransform;
 
-
+/// Parameterless conversion that is a no-op in degrees and otherwise converts between degrees and radians.
 pub struct ZeroTransformation;
 
 impl CoordTransform for ZeroTransformation{

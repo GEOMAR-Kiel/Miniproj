@@ -1,5 +1,10 @@
 //This file is licensed under EUPL v1.2 as part of the Digital Earth Viewer
 
+/// Converts an EPSG:9110-encoded angle to radians.
+/// 
+/// The encoding represents degrees, minutes and seconds as decimal digits, 
+/// with degrees encoded as the integer part and minutes and seconds as the
+/// first and second pair of fractional digits respectively.
 pub fn epsg_9110_to_rad(val: f64) -> f64 {
     let sign = val.signum();
     let a = val.abs();

@@ -2,12 +2,13 @@
 
 use crate::ellipsoid::{Ellipsoid};
 
+/// Two-dimensional coordinate operation
 pub trait CoordTransform: Send + Sync{
-    ///Converts from a coordinate in the target coordinate system to Lon/Lat in EPSG 4326 in radians
+    ///Converts from a coordinate in the target coordinate system to lon/lat in EPSG 4326 in radians
     fn to_rad(&self, x: f64, y: f64) -> (f64, f64);
     ///Converts from a coordinate in radians in EPSG 4326 to the target coordinate system
     fn from_rad(&self, lon: f64, lat: f64) -> (f64, f64);
-    ///Converts from a coordinate in the target coordinate system to Lon/Lat in EPSG 4326 in degrees
+    ///Converts from a coordinate in the target coordinate system to lon/lat in EPSG 4326 in degrees
     fn to_deg(&self, x: f64, y: f64) -> (f64, f64) {
         let tmp = self.to_rad(x, y);
         (tmp.0.to_degrees(), tmp.1.to_degrees())

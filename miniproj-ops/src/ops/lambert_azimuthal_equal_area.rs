@@ -26,27 +26,29 @@ impl LambertAzimuthalEqualAreaParams {
     }
 
 
-    /// longitude of natural origin, radians
+    /// Get longitude of natural origin in radians.
     pub fn lon_orig(&self) -> f64 {
         self.lon_orig
     }
 
-    /// latitude of natural origin, radians
+    /// Get latitude of natural origin in radians.
     pub fn lat_orig(&self) -> f64 {
         self.lat_orig
     }
 
-    /// false easting
+    /// Get false easting.
     pub fn false_e(&self) -> f64 {
         self.false_e
     }
 
-    /// false northing
+    /// Get false northing.
     pub fn false_n(&self) -> f64 {
         self.false_n
     }
 }
 
+
+/// Lambert Azimuthal Equal Area coordinate operation (EPSG:9820)
 #[allow(non_snake_case)]
 #[derive(Copy, Clone, Debug)]
 pub struct LambertAzimuthalEqualAreaConversion {

@@ -55,6 +55,7 @@ impl PolarStereographicAParams {
     }
 }
 
+/// Polar Stereographic coordinate operation.
 #[derive(Copy, Clone, Debug)]
 pub struct PolarStereographicAConversion<'a, 'b> {
     params: &'b PolarStereographicAParams,

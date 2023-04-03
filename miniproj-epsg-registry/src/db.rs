@@ -6,6 +6,7 @@ use miniproj_ops::ellipsoid::Ellipsoid;
 use rusqlite::{Connection, Result};
 use crate::{helpers::*, ImplementedConversion};
 
+/// Generates rust source code mapping EPSG codes to `Ellipsoid`s.
 pub fn gen_ellipsoids_source(c: &Connection) -> Result<String> {
     let mut s = c.prepare("
         SELECT
@@ -54,6 +55,7 @@ pub fn gen_ellipsoids_source(c: &Connection) -> Result<String> {
     )
 }
 
+/// Constructs a `HashMap` mapping EPSG codes to `Ellipsoid`s.
 pub fn get_ellipsoids(c: &Connection) -> Result<HashMap<u32, Ellipsoid>> {
     let mut s = c.prepare("
     SELECT
@@ -87,6 +89,7 @@ pub fn get_ellipsoids(c: &Connection) -> Result<HashMap<u32, Ellipsoid>> {
     Ok(ellipsoids)
 }
 
+/// Generates rust source code mapping EPSG codes to prime meridian angles in radians relative to the Greenwich meridian.
 pub fn gen_prime_meridians_source(c: &Connection) -> Result<String> {
     let mut s = c.prepare("
         SELECT
@@ -118,6 +121,8 @@ pub fn gen_prime_meridians_source(c: &Connection) -> Result<String> {
     Ok(constant_defs)
 }
 
+
+/// Constructs a `HashMap` mapping EPSG codes to prime meridian angles in radians relative to the Greenwich meridian.
 pub fn get_prime_meridians(c: &Connection) -> Result<HashMap<u32, f64>> {
     let mut s = c.prepare("
         SELECT
@@ -146,6 +151,7 @@ pub fn get_prime_meridians(c: &Connection) -> Result<HashMap<u32, f64>> {
     Ok(meridians)
 }
 
+/// Generates rust source code for projected and geographic coordinate systems for all implemented conversions.
 pub fn gen_parameter_constructors(c: &Connection, supporteds: &[ImplementedConversion], ellipsoids: &HashMap<u32, Ellipsoid>) -> Result<String> {
     let mut s = c.prepare("
         SELECT 
