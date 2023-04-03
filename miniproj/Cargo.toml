@@ -2,7 +2,11 @@
 name = "miniproj"
 version = "0.1.0"
 edition="2021"
-
+license-file = "../LICENSE.md"
+authors = ["Flemming Stäbler <fstaebler@geomar.de>", "Valentin Buck <vbuck@geomar.de>"]
+description="This crate implements geographic transformations between different coordinate systems defined by the [European Petroleum Survey Group](https://epsg.org/home.html)."
+readme = "../README.md"
+repository = "https://git.geomar.de/flemming-staebler/miniproj/"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [build-dependencies]
