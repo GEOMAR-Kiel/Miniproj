@@ -1,6 +1,6 @@
 # EPSG Geodetic Parameters
 
-[Documentation](https://flemming-staebler.pages.geomar.de/epsg-geodetic-parameters/epsg-geodetic-parameters/)
+[Documentation](https://flemming-staebler.pages.geomar.de/epsg-geodetic-parameters/epsg_geodetic_parameters/)
 
 This crate implements geographic transformations between different coordinate systems defined by the [European Petroleum Survey Group](https://epsg.org/home.html).
 
