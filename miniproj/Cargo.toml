@@ -10,7 +10,7 @@ repository = "https://git.geomar.de/flemming-staebler/miniproj/"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [build-dependencies]
-miniproj-epsg-registry = {version="0.1.0", path="../miniproj-epsg-registry"}
+miniproj-epsg-registry = {version="0.1.1", path="../miniproj-epsg-registry"}
 
 [dependencies]
 phf = { version = "~0.11.1", default_features = false}

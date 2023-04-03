@@ -6,8 +6,9 @@ use miniproj_epsg_registry::*;
 
 fn main() {
     let output_dir = PathBuf::from(env::var_os("OUT_DIR").unwrap());
-    let mut data_path = PathBuf::from(env::var_os("CARGO_MANIFEST_DIR").unwrap());
-    data_path.push("../miniproj-epsg-registry-0.1.0/data/parameters.sqlite");
+    let mut data_path = output_dir.clone();
+    data_path.push("parameters.sqlite");
+    write_db(&data_path).expect("Could not write db object");
     let db = DbConnection::open(data_path).unwrap();
     let mut conversion_out = output_dir;
     let ellipsoids = get_ellipsoids(&db).unwrap();
