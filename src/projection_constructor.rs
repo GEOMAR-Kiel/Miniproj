@@ -3,6 +3,7 @@
 use epsg_coordoperations::CoordTransform;
 use epsg_coordoperations::transverse_mercator::TransverseMercatorConversion;
 use epsg_coordoperations::lambert_azimuthal_equal_area::LambertAzimuthalEqualAreaConversion;
+use epsg_coordoperations::zero_transformation::ZeroTransformation;
 
 include!(concat!(env!("OUT_DIR"), "/projection_constructors.rs"));
 

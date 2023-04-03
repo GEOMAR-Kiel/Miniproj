@@ -204,6 +204,8 @@ pub fn gen_parameter_constructors(c: &Connection, supporteds: &[ImplementedConve
     let mut constant_defs: String = String::from("static TRANSFORMS: phf::Map<u32, &(dyn CoordTransform + Send + Sync)> =");
     let mut constructors_map = phf_codegen::Map::new();
     let mut names_map = phf_codegen::Map::new();
+    //Special case for 4326
+    constructors_map.entry(4326, "&ZeroTransformation as &(dyn CoordTransform + Send + Sync)");
     s.query([])?.mapped(|r| Ok({
         let code: u32 = r.get_unwrap("code");
         let name: String = string_to_const_name(&r.get_unwrap::<_, String>("name")) + &format!("_EPSG_{}", code);

@@ -6,14 +6,6 @@ pub use crate::db::*;
 pub use rusqlite::Connection as DbConnection;
 use epsg_coordoperations::ellipsoid::Ellipsoid;
 
-
-/*
-lazy_static! {
-    pub static ref IMPL_CONV: Vec<Fn(&[(u32, f64)], Ellipsoid)-> String> = vec![
-        
-    ];
-}*/
-
 type ImplementedConversion = (u32, &'static (dyn (Fn(&[(u32, f64)], Ellipsoid) -> String) + Send + Sync));
 
 pub static IMPL_CONV: &[(u32, &(dyn (Fn(&[(u32, f64)], Ellipsoid) -> String) + Send + Sync))] = &[
