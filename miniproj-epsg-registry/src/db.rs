@@ -2,7 +2,7 @@
 
 use std::collections::HashMap;
 
-use epsg_coordoperations::ellipsoid::Ellipsoid;
+use miniproj_ops::ellipsoid::Ellipsoid;
 use rusqlite::{Connection, Result};
 use crate::{helpers::*, ImplementedConversion};
 

@@ -2,12 +2,12 @@
 
 use std::env;
 use std::path::PathBuf;
-use epsg_geodetic_parameter_gen::*;
+use miniproj_epsg_registry::*;
 
 fn main() {
     let output_dir = PathBuf::from(env::var_os("OUT_DIR").unwrap());
     let mut data_path = PathBuf::from(env::var_os("CARGO_MANIFEST_DIR").unwrap());
-    data_path.push("epsg-geodetic-parameter-gen/data/parameters.sqlite");
+    data_path.push("../miniproj-epsg-registry/data/parameters.sqlite");
     let db = DbConnection::open(data_path).unwrap();
     let mut conversion_out = output_dir;
     let ellipsoids = get_ellipsoids(&db).unwrap();

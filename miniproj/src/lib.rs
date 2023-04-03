@@ -15,7 +15,7 @@
 //! Usage example:
 //! ```rust
 //! // Create a boxed converter between WGS84 Lat/Lon and WGS84 UTM zone 32N
-//! use epsg_geodetic_parameters::{get_coord_transform, CoordTransform};
+//! use miniproj::{get_coord_transform, CoordTransform};
 //! let converter = get_coord_transform(32632).expect("Coordinate conversion not implemented");
 //! 
 //! // Coordinates of the office where this converter was written in UTM:
@@ -43,7 +43,7 @@ pub const fn to_degrees_ext(rad: f64) -> f64 {
 mod ellipsoid_constructor;
 mod projection_constructor;
 
-pub use epsg_coordoperations::CoordTransform;
+pub use miniproj_ops::CoordTransform;
 
 pub use projection_constructor::get_coord_transform;
 
