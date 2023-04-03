@@ -233,18 +233,5 @@ pub fn gen_parameter_constructors(c: &Connection, supporteds: &[ImplementedConve
     constant_defs.push_str(&constructors_map.build().to_string());
     constant_defs.push(';');
     constant_defs.push('\n');
-    /*constant_defs.push_str("static ELLIPSOID_CODES: phf::Map<u32, u32> =");
-    constant_defs.push_str(&ellipsoid_code_map.build().to_string());
-    constant_defs.push(';');
-    constant_defs.push('\n');
-    constant_defs.push_str("static NAMES: phf::Map<u32, &'static str> =");
-    constant_defs.push_str(&names_map.build().to_string());
-    constant_defs.push(';');
-    constant_defs.push('\n');
-    constant_defs.push_str("static CONV_TYPES: phf::Map<u32, &'static str> =");
-    constant_defs.push_str(&conv_types_map.build().to_string());
-    constant_defs.push(';');
-    constant_defs.push('\n');
-    //TODO: 'orrible murder*/
     Ok(constant_defs)
 }
