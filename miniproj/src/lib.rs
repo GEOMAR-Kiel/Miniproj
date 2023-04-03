@@ -40,8 +40,9 @@ pub const fn to_degrees_ext(rad: f64) -> f64 {
 
 mod projection_constructor;
 
+#[doc(inline)]
 pub use miniproj_ops::CoordTransform;
-
+#[doc(inline)]
 pub use projection_constructor::get_coord_transform;
 
 struct BoxedTransform{
