@@ -2,7 +2,7 @@
 
 This crate implements geographic transformations between different coordinate systems defined by the [European Petroleum Survey Group](https://epsg.org/home.html).
 
-Think of it as a very lightweight [PROJ](https://github.com/OSGeo/PROJ).
+Think of it as a very lightweight [PROJ](https://github.com/OSGeo/PROJ). Conversions between projected and geographic coordinate systems that are assigned an EPSG code are implemented according to the [Guidance Notes](https://epsg.org/guidance-notes.html), with all "dynamically uniform" local variables being calculated at compile time. The conversions are then stored in a static PHF Map for quick access at runtime. Code generation and actual implementation of specific operations are implemented in the `miniproj-epsg-registry` and `miniproj-ops` crates respectively.
 
 Currently, only the transverse mercator and lambert azimuthal equal area coordinate operations are completely implemented.
 
