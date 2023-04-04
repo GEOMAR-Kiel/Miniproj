@@ -1,5 +1,7 @@
 //This file is licensed under EUPL v1.2 as part of the Digital Earth Viewer
 
+use std::f64::consts::FRAC_PI_2;
+
 use crate::ellipsoid::Ellipsoid;
 
 #[derive(Copy, Clone, Debug)]
@@ -97,8 +99,27 @@ impl crate::traits::CoordTransform for PolarStereographicAConversion<'_, '_> {
         
     }
 
-    fn to_rad(&self, _easting: f64, _northing: f64) -> (f64, f64) {
-        todo!()
+    fn to_rad(&self, easting: f64, northing: f64) -> (f64, f64) {
+        let rho_ = ((easting - self.params.false_e()).powi(2) + (northing - self.params.false_n()).powi(2)).sqrt();
+        let t_ = rho_ * ((1.0 + self.ell.e()).powf(1.0 + self.ell.e()) * (1.0 - self.ell.e()).powf(1.0 - self.ell.e())).sqrt() / (2.0 * self.ell.a() * self.params.k_orig());
+        let chi = if self.params.lat_orig() < 0.0 { // North Pole Case
+            FRAC_PI_2 - 2.0 * t_.atan()
+        } else { // South Pole Case
+            2.0 * t_.atan() - FRAC_PI_2
+        };
+        let phi = chi +
+            (self.ell.e().powi(2) / 2.0 + 5.0 * self.ell.e().powi(4) / 24.0 + self.ell.e().powi(6) / 12.0 + 13.0 * self.ell.e().powi(8) / 360.0) * (2.0 * chi).sin() +
+            (7.0 * self.ell.e().powi(4) / 48.0 + 29.0 * self.ell.e().powi(6) / 240.0 + self.ell.e().powi(8) / 11520.0) * (4.0 * chi).sin() +
+            (7.0 * self.ell.e().powi(6) / 120.0 + 81.0 * self.ell.e().powi(8) / 1120.0) * (6.0 * chi).sin() + 
+            (4279.0 * self.ell.e().powi(8) / 161280.0) * (8.0 * chi).sin();
+        let lambda = if easting == self.params.false_e() {
+            self.params.lat_orig()
+        } else if self.params.lat_orig() < 0.0 { // North Pole Case
+            self.params.lat_orig() + (easting - self.params.false_e()).atan2(northing - self.params.false_n())
+        } else { // South Pole Case
+            self.params.lat_orig() + (easting - self.params.false_e()).atan2(self.params.false_n() - northing)
+        };
+        (lambda, phi)
     }
 }
 
