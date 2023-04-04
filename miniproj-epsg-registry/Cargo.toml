@@ -1,6 +1,6 @@
 [package]
 name = "miniproj-epsg-registry"
-version = "0.1.1"
+version = "0.2.0"
 edition="2021"
 license-file = "../LICENSE.md"
 authors = ["Flemming Stäbler <fstaebler@geomar.de>", "Valentin Buck <vbuck@geomar.de>"]
@@ -13,4 +13,4 @@ repository = "https://git.geomar.de/flemming-staebler/miniproj/"
 rusqlite = { version ="0.29", features = ["bundled"] }
 phf = { version = "~0.11.1", default_features = false}
 phf_codegen = "~0.11.1"
-miniproj-ops= {version="0.1.0", path="../miniproj-ops"}
+miniproj-ops= {version="0.2.0", path="../miniproj-ops"}
