@@ -18,7 +18,7 @@ Geodetic Parameter Registry and distributed under [their own Terms of Use](epsg-
 use miniproj::{get_coord_transform, CoordTransform};
 let converter = get_coord_transform(32632).expect("Coordinate conversion not implemented");
 
-Coordinates of the office where this converter was written in UTM:
+// Coordinates of the office where this converter was written in UTM:
 let (x,y) = (576935.86f64, 6020593.46f64);
 
 // To get the latitude and longitude, use the CoordTransform::to_deg method.
