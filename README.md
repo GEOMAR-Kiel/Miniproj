@@ -27,3 +27,9 @@ let (lon, lat) = converter.to_deg(x,y);
 assert!((lon - 10.183034) < 0.000001);
 assert!((lat - 54.327389) < 0.000001);
 ```
+
+### Changelog
+
+#### 0.2.0
+
+* Added Polar Stereographic Method A (*n* defined Projections)
