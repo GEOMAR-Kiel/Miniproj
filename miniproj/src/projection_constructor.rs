@@ -4,6 +4,7 @@ use miniproj_ops::CoordTransform;
 use miniproj_ops::transverse_mercator::TransverseMercatorConversion;
 use miniproj_ops::lambert_azimuthal_equal_area::LambertAzimuthalEqualAreaConversion;
 use miniproj_ops::zero_transformation::ZeroTransformation;
+use miniproj_ops::stereographic::PolarStereographicAConversion;
 
 include!(concat!(env!("OUT_DIR"), "/projection_constructors.rs"));
 

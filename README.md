@@ -32,4 +32,4 @@ assert!((lat - 54.327389) < 0.000001);
 
 #### 0.2.0
 
-* Added Polar Stereographic Method A (*n* defined Projections)
+* Added Polar Stereographic Method A (10 defined projections)

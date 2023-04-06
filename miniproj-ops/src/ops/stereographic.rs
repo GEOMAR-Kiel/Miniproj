@@ -2,7 +2,7 @@
 
 use std::f64::consts::FRAC_PI_2;
 
-use crate::ellipsoid::Ellipsoid;
+use crate::{ellipsoid::Ellipsoid, DbContstruct, PseudoSerialize};
 
 #[derive(Copy, Clone, Debug)]
 pub struct PolarStereographicAParams {
@@ -59,68 +59,138 @@ impl PolarStereographicAParams {
 
 /// Polar Stereographic coordinate operation.
 #[derive(Copy, Clone, Debug)]
-pub struct PolarStereographicAConversion<'a, 'b> {
-    params: &'b PolarStereographicAParams,
-    ell: &'a Ellipsoid,
+pub struct PolarStereographicAConversion {
+    pub t_rho_factor: f64,
 
+    pub phi_2_chi_sin_summand_factor: f64,
+    pub phi_4_chi_sin_summand_factor: f64,
+    pub phi_6_chi_sin_summand_factor: f64,
+    pub phi_8_chi_sin_summand_factor: f64,
 
+    //params: &'b PolarStereographicAParams,
+    pub lat_orig: f64,
+    pub lon_orig: f64,
+    pub false_e: f64,
+    pub false_n: f64,
+    //ell: &'a Ellipsoid,
+    pub ell_e: f64
 }
-unsafe impl<'a, 'b> Send for PolarStereographicAConversion<'a, 'b> {}
-unsafe impl<'a, 'b> Sync for PolarStereographicAConversion<'a, 'b> {}
 
-impl<'a, 'b> PolarStereographicAConversion<'a, 'b> {
-    pub fn new(ell: &'a Ellipsoid, params: &'b PolarStereographicAParams) -> Self {
+impl PolarStereographicAConversion{
+    pub fn new(ell: &Ellipsoid, params: &PolarStereographicAParams) -> Self {
+        let t_rho_factor = ((1.0 + ell.e()).powf(1.0 + ell.e()) * (1.0 - ell.e()).powf(1.0 - ell.e())).sqrt() / (2.0 * ell.a() * params.k_orig());
+        let phi_2_chi_sin_summand_factor = ell.e().powi(2) / 2.0 + 5.0 * ell.e().powi(4) / 24.0 + ell.e().powi(6) / 12.0 + 13.0 * ell.e().powi(8) / 360.0;
+        let phi_4_chi_sin_summand_factor = 7.0 * ell.e().powi(4) / 48.0 + 29.0 * ell.e().powi(6) / 240.0 + ell.e().powi(8) / 11520.0;
+        let phi_6_chi_sin_summand_factor = 7.0 * ell.e().powi(6) / 120.0 + 81.0 * ell.e().powi(8) / 1120.0;
+        let phi_8_chi_sin_summand_factor = 4279.0 * ell.e().powi(8) / 161280.0;
         Self {
-            ell,
-            params
+            t_rho_factor,
+            phi_2_chi_sin_summand_factor,
+            phi_4_chi_sin_summand_factor,
+            phi_6_chi_sin_summand_factor,
+            phi_8_chi_sin_summand_factor,
+
+            lat_orig: params.lat_orig(),
+            lon_orig: params.lon_orig(),
+            false_e: params.false_e(),
+            false_n: params.false_n(),
+            
+            ell_e: ell.e(),
         }
     }
 }
 
-impl crate::traits::CoordTransform for PolarStereographicAConversion<'_, '_> {
+impl crate::traits::CoordTransform for PolarStereographicAConversion {
     fn from_rad(&self, longitude: f64, latitude: f64) -> (f64, f64) {
-        if self.params.lat_orig() < 0.0 { // North Pole Case
-            let t = f64::tan(std::f64::consts::FRAC_PI_4 + latitude / 2.0) / (((1.0 + self.ell.e() * latitude.sin())  / (1.0 - self.ell.e() * latitude.sin())).powf(self.ell.e() / 2.0));
-            let rho = 2.0 * self.ell.a() * self.params.k_orig() * t / (((1.0 + self.ell.e()).powf(1.0 + self.ell.e()) * (1.0 - self.ell.e()).powf(1.0 - self.ell.e())).sqrt());
+        if self.lat_orig < 0.0 { // North Pole Case
+            let t = f64::tan(std::f64::consts::FRAC_PI_4 + latitude / 2.0) / (((1.0 + self.ell_e * latitude.sin())  / (1.0 - self.ell_e * latitude.sin())).powf(self.ell_e / 2.0));
+            let rho = t / self.t_rho_factor;
             (
-                self.params.false_e() + rho * f64::sin(longitude - self.params.lon_orig())
+                self.false_e + rho * f64::sin(longitude - self.lon_orig)
             ,
-                self.params.false_n() - rho * f64::cos(longitude - self.params.lon_orig())
+                self.false_n - rho * f64::cos(longitude - self.lon_orig)
             )
         } else {    // South Pole Case
-            let t = f64::tan(std::f64::consts::FRAC_PI_4 - latitude / 2.0) / (((1.0 + self.ell.e() * latitude.sin())  / (1.0 - self.ell.e() * latitude.sin())).powf(self.ell.e() / 2.0));
-            let rho = 2.0 * self.ell.a() * self.params.k_orig() * t / (((1.0 + self.ell.e()).powf(1.0 + self.ell.e()) * (1.0 - self.ell.e()).powf(1.0 - self.ell.e())).sqrt());
+            let t = f64::tan(std::f64::consts::FRAC_PI_4 - latitude / 2.0) / (((1.0 + self.ell_e * latitude.sin())  / (1.0 - self.ell_e * latitude.sin())).powf(self.ell_e / 2.0));
+            let rho = t / self.t_rho_factor;
             (
-                self.params.false_e() + rho * f64::sin(longitude - self.params.lon_orig())
+                self.false_e + rho * f64::sin(longitude - self.lon_orig)
             ,
-                self.params.false_n() + rho * f64::cos(longitude - self.params.lon_orig())
+                self.false_n + rho * f64::cos(longitude - self.lon_orig)
             )
         }
         
     }
 
     fn to_rad(&self, easting: f64, northing: f64) -> (f64, f64) {
-        let rho_ = ((easting - self.params.false_e()).powi(2) + (northing - self.params.false_n()).powi(2)).sqrt();
-        let t_ = rho_ * ((1.0 + self.ell.e()).powf(1.0 + self.ell.e()) * (1.0 - self.ell.e()).powf(1.0 - self.ell.e())).sqrt() / (2.0 * self.ell.a() * self.params.k_orig());
-        let chi = if self.params.lat_orig() < 0.0 { // North Pole Case
+        let rho_ = ((easting - self.false_e).powi(2) + (northing - self.false_n).powi(2)).sqrt();
+        let t_ = rho_ * self.t_rho_factor;
+        let chi = if self.lat_orig < 0.0 { // North Pole Case
             FRAC_PI_2 - 2.0 * t_.atan()
         } else { // South Pole Case
             2.0 * t_.atan() - FRAC_PI_2
         };
         let phi = chi +
-            (self.ell.e().powi(2) / 2.0 + 5.0 * self.ell.e().powi(4) / 24.0 + self.ell.e().powi(6) / 12.0 + 13.0 * self.ell.e().powi(8) / 360.0) * (2.0 * chi).sin() +
-            (7.0 * self.ell.e().powi(4) / 48.0 + 29.0 * self.ell.e().powi(6) / 240.0 + self.ell.e().powi(8) / 11520.0) * (4.0 * chi).sin() +
-            (7.0 * self.ell.e().powi(6) / 120.0 + 81.0 * self.ell.e().powi(8) / 1120.0) * (6.0 * chi).sin() + 
-            (4279.0 * self.ell.e().powi(8) / 161280.0) * (8.0 * chi).sin();
-        let lambda = if easting == self.params.false_e() {
-            self.params.lat_orig()
-        } else if self.params.lat_orig() < 0.0 { // North Pole Case
-            self.params.lat_orig() + (easting - self.params.false_e()).atan2(northing - self.params.false_n())
+            self.phi_2_chi_sin_summand_factor * (2.0 * chi).sin() +
+            self.phi_4_chi_sin_summand_factor * (4.0 * chi).sin() +
+            self.phi_6_chi_sin_summand_factor * (6.0 * chi).sin() + 
+            self.phi_8_chi_sin_summand_factor * (8.0 * chi).sin();
+        let lambda = /*if easting == self.false_e { //this appears wrong to me so it's commented out. @ me if you think it's right tho.
+            self.lat_orig
+        } else*/ if self.lat_orig < 0.0 { // North Pole Case
+            self.lat_orig + (easting - self.false_e).atan2(northing - self.false_n)
         } else { // South Pole Case
-            self.params.lat_orig() + (easting - self.params.false_e()).atan2(self.params.false_n() - northing)
+            self.lat_orig + (easting - self.false_e).atan2(self.false_n - northing)
         };
         (lambda, phi)
     }
+}
+impl DbContstruct for PolarStereographicAConversion {
+    fn from_database_params(params: &[(u32, f64)], ellipsoid: &Ellipsoid) -> Self {
+        let params = PolarStereographicAParams::new(
+            params.iter().find_map(|(c, v)| if *c == 8802{Some(*v)}else{None}).unwrap(),
+            params.iter().find_map(|(c, v)| if *c == 8801{Some(*v)}else{None}).unwrap(),
+            params.iter().find_map(|(c, v)| if *c == 8805{Some(*v)}else{None}).unwrap(),
+            params.iter().find_map(|(c, v)| if *c == 8806{Some(*v)}else{None}).unwrap(),
+            params.iter().find_map(|(c, v)| if *c == 8807{Some(*v)}else{None}).unwrap(),
+        );
+        Self::new(ellipsoid, &params)
+    }
+}
+impl PseudoSerialize for PolarStereographicAConversion {
+    fn to_constructed(&self) -> String {
+        format!(
+r"PolarStereographicAConversion{{
+    t_rho_factor: f64::from_bits(0x{:x}),
+    phi_2_chi_sin_summand_factor: f64::from_bits(0x{:x}),
+    phi_4_chi_sin_summand_factor: f64::from_bits(0x{:x}),
+    phi_6_chi_sin_summand_factor: f64::from_bits(0x{:x}),
+    phi_8_chi_sin_summand_factor: f64::from_bits(0x{:x}),
+    
+    lat_orig: f64::from_bits(0x{:x}),
+    lon_orig: f64::from_bits(0x{:x}),
+    false_e: f64::from_bits(0x{:x}),
+    false_n: f64::from_bits(0x{:x}),
+
+    ell_e: f64::from_bits(0x{:x})
+}}",
+            self.t_rho_factor.to_bits(),
+            self.phi_2_chi_sin_summand_factor.to_bits(),
+            self.phi_4_chi_sin_summand_factor.to_bits(),
+            self.phi_6_chi_sin_summand_factor.to_bits(),
+            self.phi_8_chi_sin_summand_factor.to_bits(),
+
+            self.lat_orig.to_bits(),
+            self.lon_orig.to_bits(),
+            self.false_e.to_bits(),
+            self.false_n.to_bits(),
+
+            self.ell_e.to_bits()
+        )
+    }
+}
+pub fn direct_conversion_a(params: &[(u32, f64)], ell: Ellipsoid) -> String {
+    PolarStereographicAConversion::from_database_params(params, &ell).to_constructed()
 }
 
 #[cfg(test)]

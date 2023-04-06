@@ -14,9 +14,10 @@ type ImplementedConversion = (u32, &'static (dyn (Fn(&[(u32, f64)], Ellipsoid) -
 /// 
 /// Pairs operation codes with a functions that map a slice of (parameter code, value)-tuples and an ellipsoid
 /// to a `String` containing source code for constructing the `CoordTransform` with the given parameters.
-pub static IMPL_CONV: &[(u32, &(dyn (Fn(&[(u32, f64)], Ellipsoid) -> String) + Send + Sync))] = &[
+pub static IMPL_CONV: &[ImplementedConversion] = &[
     (9807, &miniproj_ops::transverse_mercator::direct_conversion),
-    (9820, &miniproj_ops::lambert_azimuthal_equal_area::direct_conversion)
+    (9820, &miniproj_ops::lambert_azimuthal_equal_area::direct_conversion),
+    (9810, &miniproj_ops::stereographic::direct_conversion_a)
 ];
 
 pub fn write_db<P: AsRef<Path>>(path: P) -> std::io::Result<()>{
