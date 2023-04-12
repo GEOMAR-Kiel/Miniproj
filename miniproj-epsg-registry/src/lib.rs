@@ -20,6 +20,7 @@ pub static IMPL_CONV: &[ImplementedConversion] = &[
     (9810, &miniproj_ops::stereographic::direct_conversion_a)
 ];
 
+/// This function copies the parameter database to the given location, to reliably make it available to build scripts.
 pub fn write_db<P: AsRef<Path>>(path: P) -> std::io::Result<()>{
     std::fs::write(path, include_bytes!("../data/parameters.sqlite"))
 }
