@@ -5,6 +5,7 @@ use miniproj_ops::transverse_mercator::TransverseMercatorConversion;
 use miniproj_ops::lambert_azimuthal_equal_area::LambertAzimuthalEqualAreaConversion;
 use miniproj_ops::zero_transformation::ZeroTransformation;
 use miniproj_ops::stereographic::PolarStereographicAConversion;
+use miniproj_ops::lambert_conic_conformal::LambertConic2SPConversion;
 
 include!(concat!(env!("OUT_DIR"), "/projection_constructors.rs"));
 

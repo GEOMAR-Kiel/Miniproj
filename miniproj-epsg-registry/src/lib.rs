@@ -17,7 +17,8 @@ type ImplementedConversion = (u32, &'static (dyn (Fn(&[(u32, f64)], Ellipsoid) -
 pub static IMPL_CONV: &[ImplementedConversion] = &[
     (9807, &miniproj_ops::transverse_mercator::direct_conversion),
     (9820, &miniproj_ops::lambert_azimuthal_equal_area::direct_conversion),
-    (9810, &miniproj_ops::stereographic::direct_conversion_a)
+    (9810, &miniproj_ops::stereographic::direct_conversion_a),
+    (9802, &miniproj_ops::lambert_conic_conformal::direct_conversion_2sp)
 ];
 
 /// This function copies the parameter database to the given location, to reliably make it available to build scripts.
