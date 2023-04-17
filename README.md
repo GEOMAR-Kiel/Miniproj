@@ -1,16 +1,28 @@
 # Miniproj
 
-This crate implements geographic transformations between different coordinate systems defined by the [European Petroleum Survey Group](https://epsg.org/home.html).
+This crate implements geographic coordinate transformations between projected
+coordinate systems and their underlying geographic coordinate systems, for
+projected coordinate reference systems defined by the
+[European Petroleum Survey Group](https://epsg.org/home.html). It was
+originally developped at the
+[GEOMAR Helmholtz Centre for Ocean Research](https://www.geomar.de/) as part of
+the [Digital Earth Project](https://www.digitalearth-hgf.de/).
 
-Think of it as a very lightweight [PROJ](https://github.com/OSGeo/PROJ). Conversions between projected and geographic coordinate systems that are assigned an EPSG code are implemented according to the [Guidance Notes](https://epsg.org/guidance-notes.html), with all "dynamically uniform" local variables being calculated at compile time. The conversions are then stored in a static PHF Map for quick access at runtime. Code generation and actual implementation of specific operations are implemented in the `miniproj-epsg-registry` and `miniproj-ops` crates respectively.
+The conversions are implemented according to the
+[Guidance Notes](https://epsg.org/guidance-notes.html), with all "dynamically
+uniform" local variables calculated at compile time. The conversions are then
+stored in a static [`PHFMap`](https://crates.io/crates/phf) for quick access at
+runtime. Code generation is split out into the `miniproj-epsg-registry` crate,
+while the operations themselves are implemented in `miniproj-ops`.
 
-Currently, only the transverse mercator and lambert azimuthal equal area coordinate operations are completely implemented.
+### Scope
 
-It was written at the [GEOMAR Helmholtz Centre for Ocean Research](https://www.geomar.de/) as part of the [Digital Earth Project](https://www.digitalearth-hgf.de/).
-
-As many of the other components created in this project, it is licensed under [EUPL v1.2](https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12). This license
-does not apply to the projections themselves. The database files are extracts from the EPSG
-Geodetic Parameter Registry and distributed under [their own Terms of Use](epsg-geodetic-parameter-gen/data/terms.md).
+EPSG Code | Operation Name                  | # of Projected CRS covered
+-----     |-----                            |-----
+9807      | Transverse Mercator             | 3615
+9802      | Lambert Conic Conformal (2SP)   | 950
+9820      | Lambert Azimuthal Equal Area    | 14
+9810      | Polar Stereographic (Variant A) | 10
 
 ### Usage example
 ```rust
@@ -19,16 +31,18 @@ use miniproj::{get_coord_transform, CoordTransform};
 let converter = get_coord_transform(32632).expect("Coordinate conversion not implemented");
 
 // Coordinates of the office where this converter was written in UTM:
-let (x,y) = (576935.86f64, 6020593.46f64);
+let (easting, northing) = (576935.86f64, 6020593.46f64);
 
 // To get the latitude and longitude, use the CoordTransform::to_deg method.
-let (lon, lat) = converter.to_deg(x,y);
+// Note that the order of the returned tuple is not alphabetical, but instead
+// follows the axis order (X for Longitude, Y for Latitude)
+let (lon, lat) = converter.to_deg(easting, northing);
 
 assert!((lon - 10.183034) < 0.000001);
 assert!((lat - 54.327389) < 0.000001);
 ```
 
-### Changelog
+## Changelog
 
 #### 0.1.1
 
@@ -42,3 +56,13 @@ assert!((lat - 54.327389) < 0.000001);
 
 * Added Lambert Conic Conformal (2SP) (950 defined CRS)
 * Fixed some major bugs in Polar Stereographic A
+
+#### 0.4.0
+
+* Added Popular Visualisation Pseudo Mercator (1 defined CRS).
+    This method is among the most popular, as it is the map
+    projection used by Google, OpenStreetMap etc.
+
+## License
+
+As many of the other components of the Digital Earth Viewer, **Miniproj** is licensed under **[EUPL v1.2](https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12)**, which is a **copyleft license similar and compatible to GPLv2** and available in 23 languages. This license does not apply to the projections themselves. The database files are extracts from the EPSG Geodetic Parameter Registry and redistributed under [their own Terms of Use](epsg-geodetic-parameter-gen/data/terms.md).
