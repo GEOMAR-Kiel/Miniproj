@@ -212,6 +212,7 @@ pub fn gen_parameter_constructors(c: &Connection, supporteds: &[ImplementedConve
     let mut names_map = phf_codegen::Map::new();
     //Special case for 4326
     constructors_map.entry(4326, "&ZeroTransformation as &(dyn CoordTransform + Send + Sync)");
+    let mut counter = 1;
     s.query([])?.mapped(|r| Ok({
         let code: u32 = r.get_unwrap("code");
         let name: String = string_to_const_name(&r.get_unwrap::<_, String>("name")) + &format!("_EPSG_{}", code);
@@ -234,8 +235,10 @@ pub fn gen_parameter_constructors(c: &Connection, supporteds: &[ImplementedConve
         let ellipsoid = ellipsoids.get(&ellipsoid_code).expect("Ellipsoid not specified.");
         supporteds.iter().find(|(code, _)| *code == method_code).map(|(_, conv)| {
             constructors_map.entry(code, &format!("&{} as &(dyn CoordTransform + Send + Sync)", conv(&params, *ellipsoid)));
+            counter += 1;
         });
     })).collect::<Result<()>>()?;
+    println!("Collected {} projected coordinate systems.", counter);
     constant_defs.push_str(&constructors_map.build().to_string());
     constant_defs.push(';');
     constant_defs.push('\n');
