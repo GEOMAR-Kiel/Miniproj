@@ -30,6 +30,15 @@ assert!((lat - 54.327389) < 0.000001);
 
 ### Changelog
 
+#### 0.1.1
+
+* Initial release
+
 #### 0.2.0
 
-* Added Polar Stereographic Method A (10 defined projections)
+* Added Polar Stereographic Method A (10 defined CRS)
+
+#### 0.3.0
+
+* Added Lambert Conic Conformal (2SP) (950 defined CRS)
+* Fixed some major bugs in Polar Stereographic A

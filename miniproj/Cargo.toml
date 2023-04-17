@@ -1,6 +1,6 @@
 [package]
 name = "miniproj"
-version = "0.2.0"
+version = "0.3.0"
 edition="2021"
 license-file = "../LICENSE.md"
 authors = ["Flemming Stäbler <fstaebler@geomar.de>", "Valentin Buck <vbuck@geomar.de>"]
@@ -11,8 +11,8 @@ categories = ["science::geo"]
 keywords = ["geography", "projection", "maps", "epsg", "geodesy"]
 
 [build-dependencies]
-miniproj-epsg-registry = {version="0.2.0", path="../miniproj-epsg-registry"}
+miniproj-epsg-registry = {version="0.3.0", path="../miniproj-epsg-registry"}
 
 [dependencies]
 phf = { version = "~0.11.1", default_features = false}
-miniproj-ops= {version="0.2.0", path="../miniproj-ops"}
+miniproj-ops= {version="0.3.0", path="../miniproj-ops"}

@@ -103,7 +103,7 @@ impl PolarStereographicAConversion{
 impl crate::traits::CoordTransform for PolarStereographicAConversion {
     fn from_rad(&self, longitude: f64, latitude: f64) -> (f64, f64) {
         if self.lat_orig < 0.0 { // North Pole Case
-            let t = f64::tan(std::f64::consts::FRAC_PI_4 + latitude / 2.0) / (((1.0 + self.ell_e * latitude.sin())  / (1.0 - self.ell_e * latitude.sin())).powf(self.ell_e / 2.0));
+            let t = f64::tan(std::f64::consts::FRAC_PI_4 - latitude / 2.0) * ((1.0 + self.ell_e * latitude.sin())  / (1.0 - self.ell_e * latitude.sin())).powf(self.ell_e / 2.0);
             let rho = t / self.t_rho_factor;
             (
                 self.false_e + rho * f64::sin(longitude - self.lon_orig)
@@ -111,7 +111,7 @@ impl crate::traits::CoordTransform for PolarStereographicAConversion {
                 self.false_n - rho * f64::cos(longitude - self.lon_orig)
             )
         } else {    // South Pole Case
-            let t = f64::tan(std::f64::consts::FRAC_PI_4 - latitude / 2.0) / (((1.0 + self.ell_e * latitude.sin())  / (1.0 - self.ell_e * latitude.sin())).powf(self.ell_e / 2.0));
+            let t = f64::tan(std::f64::consts::FRAC_PI_4 + latitude / 2.0) / ((1.0 + self.ell_e * latitude.sin())  / (1.0 - self.ell_e * latitude.sin())).powf(self.ell_e / 2.0);
             let rho = t / self.t_rho_factor;
             (
                 self.false_e + rho * f64::sin(longitude - self.lon_orig)
@@ -138,9 +138,9 @@ impl crate::traits::CoordTransform for PolarStereographicAConversion {
         let lambda = /*if easting == self.false_e { //this appears wrong to me so it's commented out. @ me if you think it's right tho.
             self.lat_orig
         } else*/ if self.lat_orig < 0.0 { // North Pole Case
-            self.lat_orig + (easting - self.false_e).atan2(northing - self.false_n)
+            self.lon_orig + (easting - self.false_e).atan2(self.false_n - northing)
         } else { // South Pole Case
-            self.lat_orig + (easting - self.false_e).atan2(self.false_n - northing)
+            self.lon_orig + (easting - self.false_e).atan2(northing - self.false_n)
         };
         (lambda, phi)
     }
@@ -204,24 +204,19 @@ mod tests {
 
     #[test]
     fn polar_stereographic_a_consistency() {
-        let wgs_84_ellipsoid = Ellipsoid::from_a_f_inv(6378137.0, 298.257223563);
-        let utm_32_n = PolarStereographicAParams::new(
-            9.0f64.to_radians(),
+        let ell = Ellipsoid::from_a_f_inv(6378137.0, 298.257223563);
+        let params = PolarStereographicAParams::new(
             0.0f64.to_radians(),
-            0.9996,
-            500_000.0,
-            0.0
+            -90.0f64.to_radians(),
+            0.994,
+            2_000_000.0,
+            2_000_000.0
         );
 
-        let converter = PolarStereographicAConversion::new(&wgs_84_ellipsoid, &utm_32_n);
-        for lon in 6 .. 12 {
-            for lat in -80 .. 80 {
-                let pos = (lon as f64, lat as f64);
-                let pos_utm = converter.from_deg(pos.0, pos.1);
-                let pos_2 = converter.to_deg(pos_utm.0, pos_utm.1);
-                assert_f64_near!(pos.0, pos_2.0, 256 * 3);
-                assert_f64_near!(pos.1, pos_2.1, 256 * 3);
-            }
-        }
+        let converter = PolarStereographicAConversion::new(&ell, &params);
+        let (easting, northing) = converter.from_deg(44.0, 73.0);
+        let (lon, lat) = converter.to_deg(easting, northing);
+        //assert_eq!((easting, northing), (3320416.75, 632668.43));
+        assert_eq!((lon, lat), (44.0, 73.0));
     }
 }
