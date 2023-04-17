@@ -6,6 +6,7 @@ use miniproj_ops::lambert_azimuthal_equal_area::LambertAzimuthalEqualAreaConvers
 use miniproj_ops::zero_transformation::ZeroTransformation;
 use miniproj_ops::stereographic::PolarStereographicAConversion;
 use miniproj_ops::lambert_conic_conformal::LambertConic2SPConversion;
+use miniproj_ops::popvis_pseudo_mercator::PopVisPseudoMercatorConversion;
 
 include!(concat!(env!("OUT_DIR"), "/projection_constructors.rs"));
 

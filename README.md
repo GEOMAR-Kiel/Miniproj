@@ -17,12 +17,13 @@ while the operations themselves are implemented in `miniproj-ops`.
 
 ### Scope
 
-EPSG Code | Operation Name                  | # of Projected CRS covered
------     |-----                            |-----
-9807      | Transverse Mercator             | 3615
-9802      | Lambert Conic Conformal (2SP)   | 950
-9820      | Lambert Azimuthal Equal Area    | 14
-9810      | Polar Stereographic (Variant A) | 10
+EPSG Code | Operation Name                        | # of Projected CRS covered
+-----     |-----                                  |-----
+9807      | Transverse Mercator                   | 3615
+9802      | Lambert Conic Conformal (2SP)         | 950
+9820      | Lambert Azimuthal Equal Area          | 14
+9810      | Polar Stereographic (Variant A)       | 10
+1024      | Popular Visualisation Pseudo-Mercator | 1
 
 ### Usage example
 ```rust
@@ -59,8 +60,8 @@ assert!((lat - 54.327389) < 0.000001);
 
 #### 0.4.0
 
-* Added Popular Visualisation Pseudo Mercator (1 defined CRS).
-    This method is among the most popular, as it is the map
+* Added Popular Visualisation Pseudo-Mercator (1 defined CRS).
+    This method might be the most popular, as it is the map
     projection used by Google, OpenStreetMap etc.
 
 ## License
