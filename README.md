@@ -3,10 +3,11 @@
 This crate implements geographic coordinate transformations between projected
 coordinate systems and their underlying geographic coordinate systems, for
 projected coordinate reference systems defined by the
-[European Petroleum Survey Group](https://epsg.org/home.html). It was
+[European Petroleum Survey Group Geodesy](https://epsg.org/home.html). It was
 originally developped at the
 [GEOMAR Helmholtz Centre for Ocean Research](https://www.geomar.de/) as part of
-the [Digital Earth Project](https://www.digitalearth-hgf.de/).
+the [Digital Earth Project](https://www.digitalearth-hgf.de/), and continues to
+provide reprojection functionality to the Digital Earth Viewer.
 
 The conversions are implemented according to the
 [Guidance Notes](https://epsg.org/guidance-notes.html), with all "dynamically
@@ -18,16 +19,17 @@ while the operations themselves are implemented in `miniproj-ops`.
 ### Scope
 
 EPSG Code | Operation Name                        | # of Projected CRS covered
------     |-----                                  |-----
+----------|---------------------------------------|---------------------------
 9807      | Transverse Mercator                   | 3615
 9802      | Lambert Conic Conformal (2SP)         | 950
+9801      | Lambert Conic Conformal (1SP)         | 233
 9820      | Lambert Azimuthal Equal Area          | 14
 9810      | Polar Stereographic (Variant A)       | 10
 1024      | Popular Visualisation Pseudo-Mercator | 1
 
 ### Usage example
 ```rust
-// Create a boxed converter between WGS84 Lat/Lon and WGS84 UTM zone 32N
+// Get the pre-calculated conversion between WGS84 Lat/Lon and WGS84 UTM zone 32N
 use miniproj::{get_coord_transform, CoordTransform};
 let converter = get_coord_transform(32632).expect("Coordinate conversion not implemented");
 
@@ -63,6 +65,10 @@ assert!((lat - 54.327389) < 0.000001);
 * Added Popular Visualisation Pseudo-Mercator (1 defined CRS).
     This method might be the most popular, as it is the map
     projection used by Google, OpenStreetMap etc.
+
+#### 0.5.0
+
+* Added Lambert Conic Conformal (1SP) (233 defined CRS)
 
 ## License
 
