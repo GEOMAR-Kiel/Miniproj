@@ -1,7 +1,7 @@
 //This file is licensed under EUPL v1.2 as part of the Digital Earth Viewer
 
 
-//! This crate implements geographic transformations between different coordinate systems defined by the [European Petroleum Survey Group](https://epsg.org/home.html).
+//! This crate implements geodetic operations defined by the [European Petroleum Survey Group](https://epsg.org/home.html).
 //!
 //! Think of it as a very lightweight [PROJ](https://github.com/OSGeo/PROJ).
 //!
@@ -16,13 +16,13 @@
 //! Usage example:
 //! ```rust
 //! // Create a boxed converter between WGS84 Lat/Lon and WGS84 UTM zone 32N
-//! use miniproj::{get_coord_transform, CoordTransform};
-//! let converter = get_coord_transform(32632).expect("Coordinate conversion not implemented");
+//! use miniproj::{get_projection, Projection};
+//! let converter = get_projection(32632).expect("Projection not implemented");
 //! 
 //! // Coordinates of the office where this converter was written in UTM:
 //! let (x,y) = (576935.86f64, 6020593.46f64);
 //! 
-//! // To get the latitude and longitude, use the CoordTransform::to_deg method.
+//! // To get the latitude and longitude, use the Projection::to_deg method.
 //! let (lon, lat) = converter.to_deg(x,y);
 //!
 //! assert!((lon - 10.183034) < 0.000001);
@@ -42,16 +42,16 @@ pub const fn to_degrees_ext(rad: f64) -> f64 {
 mod projection_constructor;
 
 #[doc(inline)]
-pub use miniproj_ops::CoordTransform;
+pub use miniproj_ops::Projection;
 #[doc(inline)]
-pub use projection_constructor::get_coord_transform;
+pub use projection_constructor::get_projection;
 
 struct BoxedTransform{
-    transform: Box<dyn CoordTransform>,
+    transform: Box<dyn Projection>,
     epsg_code: u32
 }
 
-impl CoordTransform for BoxedTransform{
+impl Projection for BoxedTransform{
     fn to_rad(&self, x: f64, y: f64) -> (f64, f64) {
         self.transform.to_rad(x, y)
     }
@@ -63,6 +63,6 @@ impl CoordTransform for BoxedTransform{
 
 impl std::fmt::Debug for BoxedTransform{
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("BoxedTransform").field("transform", &"[dyn CoordTransform instance]").field("epsg_code", &self.epsg_code).finish()
+        f.debug_struct("BoxedTransform").field("transform", &"[dyn Projection instance]").field("epsg_code", &self.epsg_code).finish()
     }
 }

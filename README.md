@@ -1,6 +1,6 @@
 # Miniproj
 
-This crate implements geographic coordinate transformations between projected
+This crate implements geographic coordinate projections between projected
 coordinate systems and their underlying geographic coordinate systems, for
 projected coordinate reference systems defined by the
 [European Petroleum Survey Group Geodesy](https://epsg.org/home.html). It was
@@ -16,9 +16,11 @@ stored in a static [`PHFMap`](https://crates.io/crates/phf) for quick access at
 runtime. Code generation is split out into the `miniproj-epsg-registry` crate,
 while the operations themselves are implemented in `miniproj-ops`.
 
+Miniproj is **not** related to or derived from Proj.
+
 ### Scope
 
-EPSG Code | Operation Name                        | # of Projected CRS covered
+EPSG Code | Operation Method Name                 | # of Projected CRS covered
 ----------|---------------------------------------|---------------------------
 9807      | Transverse Mercator                   | 3615
 9802      | Lambert Conic Conformal (2SP)         | 950
@@ -30,13 +32,13 @@ EPSG Code | Operation Name                        | # of Projected CRS covered
 ### Usage example
 ```rust
 // Get the pre-calculated conversion between WGS84 Lat/Lon and WGS84 UTM zone 32N
-use miniproj::{get_coord_transform, CoordTransform};
-let converter = get_coord_transform(32632).expect("Coordinate conversion not implemented");
+use miniproj::{get_projection, Projection};
+let converter = get_projection(32632).expect("Coordinate conversion not implemented");
 
 // Coordinates of the office where this converter was written in UTM:
 let (easting, northing) = (576935.86f64, 6020593.46f64);
 
-// To get the latitude and longitude, use the CoordTransform::to_deg method.
+// To get the latitude and longitude, use the Projection::to_deg method.
 // Note that the order of the returned tuple is not alphabetical, but instead
 // follows the axis order (X for Longitude, Y for Latitude)
 let (lon, lat) = converter.to_deg(easting, northing);
@@ -69,7 +71,9 @@ assert!((lat - 54.327389) < 0.000001);
 #### 0.5.0
 
 * Added Lambert Conic Conformal (1SP) (233 defined CRS)
+* Cleared up some terminology
 
 ## License
 
 As many of the other components of the Digital Earth Viewer, **Miniproj** is licensed under **[EUPL v1.2](https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12)**, which is a **copyleft license similar and compatible to GPLv2** and available in 23 languages. This license does not apply to the projections themselves. The database files are extracts from the EPSG Geodetic Parameter Registry and redistributed under [their own Terms of Use](epsg-geodetic-parameter-gen/data/terms.md).
+

@@ -3,7 +3,7 @@
 use crate::ellipsoid::{Ellipsoid};
 
 /// Two-dimensional coordinate operation
-pub trait CoordTransform: Send + Sync{
+pub trait Projection: Send + Sync{
     ///Converts from a coordinate in the target coordinate system to lon/lat in EPSG 4326 in radians
     fn to_rad(&self, x: f64, y: f64) -> (f64, f64);
     ///Converts from a coordinate in radians in EPSG 4326 to the target coordinate system

@@ -100,7 +100,7 @@ impl PolarStereographicAConversion{
     }
 }
 
-impl crate::traits::CoordTransform for PolarStereographicAConversion {
+impl crate::traits::Projection for PolarStereographicAConversion {
     fn from_rad(&self, longitude: f64, latitude: f64) -> (f64, f64) {
         if self.lat_orig < 0.0 { // North Pole Case
             let t = f64::tan(std::f64::consts::FRAC_PI_4 - latitude / 2.0) * ((1.0 + self.ell_e * latitude.sin())  / (1.0 - self.ell_e * latitude.sin())).powf(self.ell_e / 2.0);
