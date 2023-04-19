@@ -13,5 +13,5 @@ include!(concat!(env!("OUT_DIR"), "/projection_constructors.rs"));
 /// Returns the Projection corresponding to the EPSG code passed as the argument.
 /// If the code refers to a projection that is not implemented, the method returns None
 pub fn get_projection(code: u32) -> Option<&'static (dyn Projection + Send + Sync)> {
-    TRANSFORMS.get(&code).cloned()
+    PROJECTIONS.get(&code).cloned()
 }

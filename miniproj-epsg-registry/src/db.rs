@@ -207,7 +207,7 @@ pub fn gen_parameter_constructors(c: &Connection, supporteds: &[ImplementedConve
         WHERE
 	        val.coord_op_code = (?)
     ")?;
-    let mut constant_defs: String = String::from("static TRANSFORMS: phf::Map<u32, &(dyn Projection + Send + Sync)> =");
+    let mut constant_defs: String = String::from("static PROJECTIONS: phf::Map<u32, &(dyn Projection + Send + Sync)> =");
     let mut constructors_map = phf_codegen::Map::new();
     let mut names_map = phf_codegen::Map::new();
     //Special case for 4326

@@ -45,24 +45,3 @@ mod projection_constructor;
 pub use miniproj_ops::Projection;
 #[doc(inline)]
 pub use projection_constructor::get_projection;
-
-struct BoxedTransform{
-    transform: Box<dyn Projection>,
-    epsg_code: u32
-}
-
-impl Projection for BoxedTransform{
-    fn to_rad(&self, x: f64, y: f64) -> (f64, f64) {
-        self.transform.to_rad(x, y)
-    }
-
-    fn from_rad(&self, lon: f64, lat: f64) -> (f64, f64) {
-       self.transform.from_rad(lon, lat)
-    }
-}
-
-impl std::fmt::Debug for BoxedTransform{
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("BoxedTransform").field("transform", &"[dyn Projection instance]").field("epsg_code", &self.epsg_code).finish()
-    }
-}

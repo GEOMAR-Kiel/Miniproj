@@ -9,9 +9,9 @@ originally developped at the
 the [Digital Earth Project](https://www.digitalearth-hgf.de/), and continues to
 provide reprojection functionality to the Digital Earth Viewer.
 
-The conversions are implemented according to the
+The projections are implemented according to the
 [Guidance Notes](https://epsg.org/guidance-notes.html), with all "dynamically
-uniform" local variables calculated at compile time. The conversions are then
+uniform" local variables calculated at compile time. The projections are then
 stored in a static [`PHFMap`](https://crates.io/crates/phf) for quick access at
 runtime. Code generation is split out into the `miniproj-epsg-registry` crate,
 while the operations themselves are implemented in `miniproj-ops`.
