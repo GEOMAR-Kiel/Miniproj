@@ -8,19 +8,19 @@ pub use crate::db::*;
 pub use rusqlite::Connection as DbConnection;
 use miniproj_ops::ellipsoid::Ellipsoid;
 
-type ImplementedConversion = (u32, &'static (dyn (Fn(&[(u32, f64)], Ellipsoid) -> String) + Send + Sync));
+type ImplementedProjection = (u32, &'static (dyn (Fn(&[(u32, f64)], Ellipsoid) -> String) + Send + Sync));
 
-/// Implemented conversions.
+/// Implemented projections.
 /// 
 /// Pairs operation codes with a functions that map a slice of (parameter code, value)-tuples and an ellipsoid
 /// to a `String` containing source code for constructing the `Projection` with the given parameters.
-pub static IMPL_CONV: &[ImplementedConversion] = &[
-    (9807, &miniproj_ops::transverse_mercator::direct_conversion),
-    (9820, &miniproj_ops::lambert_azimuthal_equal_area::direct_conversion),
-    (9810, &miniproj_ops::stereographic::direct_conversion_a),
-    (9802, &miniproj_ops::lambert_conic_conformal::direct_conversion_2sp),
-    (1024, &miniproj_ops::popvis_pseudo_mercator::direct_conversion),
-    (9801, &miniproj_ops::lambert_conic_conformal::direct_conversion_1sp_a),
+pub static IMPL_CONV: &[ImplementedProjection] = &[
+    (9807, &miniproj_ops::transverse_mercator::direct_projection),
+    (9820, &miniproj_ops::lambert_azimuthal_equal_area::direct_projection),
+    (9810, &miniproj_ops::stereographic::direct_projection_a),
+    (9802, &miniproj_ops::lambert_conic_conformal::direct_projection_2sp),
+    (1024, &miniproj_ops::popvis_pseudo_mercator::direct_projection),
+    (9801, &miniproj_ops::lambert_conic_conformal::direct_projection_1sp_a),
 ];
 
 /// This function copies the parameter database to the given location, to reliably make it available to build scripts.

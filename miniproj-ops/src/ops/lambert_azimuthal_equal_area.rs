@@ -51,7 +51,7 @@ impl LambertAzimuthalEqualAreaParams {
 /// Lambert Azimuthal Equal Area coordinate operation (EPSG:9820)
 #[allow(non_snake_case)]
 #[derive(Copy, Clone, Debug)]
-pub struct LambertAzimuthalEqualAreaConversion {
+pub struct LambertAzimuthalEqualAreaProjection {
     pub lon_orig: f64,
     pub false_e: f64,
     pub false_n: f64,
@@ -66,7 +66,7 @@ pub struct LambertAzimuthalEqualAreaConversion {
 
 }
 
-impl LambertAzimuthalEqualAreaConversion {
+impl LambertAzimuthalEqualAreaProjection {
 
     #[allow(non_snake_case)]
     pub fn new(ell: &Ellipsoid, params: &LambertAzimuthalEqualAreaParams) -> Self {
@@ -113,7 +113,7 @@ impl LambertAzimuthalEqualAreaConversion {
     }
 }
 
-impl crate::traits::Projection for LambertAzimuthalEqualAreaConversion {
+impl crate::traits::Projection for LambertAzimuthalEqualAreaProjection {
     /// as per IOGP Publication 373-7-2 – Geomatics Guidance Note number 7, part 2 – March 2020
     /// longitude & latitude in radians
     #[allow(non_snake_case)]
@@ -172,10 +172,10 @@ impl crate::traits::Projection for LambertAzimuthalEqualAreaConversion {
 
 }
 
-impl PseudoSerialize for LambertAzimuthalEqualAreaConversion {
+impl PseudoSerialize for LambertAzimuthalEqualAreaProjection {
     fn to_constructed(&self) -> String {
         format!(
-r"LambertAzimuthalEqualAreaConversion{{
+r"LambertAzimuthalEqualAreaProjection{{
     lon_orig: f64::from_bits({}),
     false_e: f64::from_bits({}),
     false_n: f64::from_bits({}),
@@ -201,14 +201,14 @@ r"LambertAzimuthalEqualAreaConversion{{
     }
 }
 
-impl DbContstruct for LambertAzimuthalEqualAreaConversion {
+impl DbContstruct for LambertAzimuthalEqualAreaProjection {
     fn from_database_params(params: &[(u32, f64)], ellipsoid: &Ellipsoid) -> Self {
         /*
-        ImplementedConversion::new(
+        ImplementedProjection::new(
             9820,
             &[8802, 8801, 8806, 8807],
             "LambertAzimuthalEqualAreaParams",
-            "LambertAzimuthalEqualAreaConversion"
+            "LambertAzimuthalEqualAreaProjection"
         )
         */
         let params = LambertAzimuthalEqualAreaParams::new(
@@ -221,8 +221,8 @@ impl DbContstruct for LambertAzimuthalEqualAreaConversion {
     }
 }
 
-pub fn direct_conversion(params: &[(u32, f64)], ell: Ellipsoid) -> String {
-    LambertAzimuthalEqualAreaConversion::from_database_params(params, &ell).to_constructed()
+pub fn direct_projection(params: &[(u32, f64)], ell: Ellipsoid) -> String {
+    LambertAzimuthalEqualAreaProjection::from_database_params(params, &ell).to_constructed()
 }
 
 #[cfg(test)]
@@ -243,7 +243,7 @@ mod tests {
             3_210_000.0
         );
 
-        let converter = LambertAzimuthalEqualAreaConversion::new(&ell, &params);
+        let converter = LambertAzimuthalEqualAreaProjection::new(&ell, &params);
         let easting_goal = 3962799.45;
         let northing_goal = 2999718.85;
         let (lon, lat) = converter.to_deg(easting_goal, northing_goal);

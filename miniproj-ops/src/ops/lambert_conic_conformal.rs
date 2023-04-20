@@ -65,7 +65,7 @@ impl LambertConic2SPParams {
 /// EPSG:9802: Lambert Conic Conformal (2SP) .
 #[allow(non_snake_case)]
 #[derive(Copy, Clone, Debug)]
-pub struct LambertConic2SPConversion {
+pub struct LambertConic2SPProjection {
     pub ellipsoid_e: f64,
     pub ellipsoid_a: f64,
 
@@ -80,7 +80,7 @@ pub struct LambertConic2SPConversion {
     pub F: f64,
 }
 
-impl LambertConic2SPConversion {
+impl LambertConic2SPProjection {
     const MAX_ITERATIONS: usize = 4;
 
     #[allow(non_snake_case)]
@@ -124,7 +124,7 @@ impl LambertConic2SPConversion {
 
 }
 
-impl Projection for LambertConic2SPConversion {
+impl Projection for LambertConic2SPProjection {
     /// as per IOGP Publication 373-7-2 – Geomatics Guidance Note number 7, part 2 – May 2022
     /// longitude & latitude in radians
     #[allow(non_snake_case)]
@@ -161,10 +161,10 @@ impl Projection for LambertConic2SPConversion {
 
 }
 
-impl PseudoSerialize for LambertConic2SPConversion {
+impl PseudoSerialize for LambertConic2SPProjection {
     fn to_constructed(&self) -> String {
         format!(
-r"LambertConic2SPConversion{{
+r"LambertConic2SPProjection{{
     ellipsoid_e: f64::from_bits(0x{:x}),
     ellipsoid_a: f64::from_bits(0x{:x}),
     lon_orig: f64::from_bits(0x{:x}),
@@ -188,7 +188,7 @@ r"LambertConic2SPConversion{{
     }
 }
 
-impl DbContstruct for LambertConic2SPConversion {
+impl DbContstruct for LambertConic2SPProjection {
     fn from_database_params(params: &[(u32, f64)], ellipsoid: &Ellipsoid) -> Self {
         let params = LambertConic2SPParams::new(
             params.iter().find_map(|(c, v)| if *c == 8822{Some(*v)}else{None}).unwrap(),
@@ -256,7 +256,7 @@ impl LambertConic1SPAParams {
 /// EPSG:9801: Lambert Conic Conformal (2SP).
 #[allow(non_snake_case)]
 #[derive(Copy, Clone, Debug)]
-pub struct LambertConic1SPAConversion {
+pub struct LambertConic1SPAProjection {
     pub false_e: f64,
     pub false_n: f64,
 
@@ -268,7 +268,7 @@ pub struct LambertConic1SPAConversion {
     pub ellipsoid_e: f64
 }
 
-impl LambertConic1SPAConversion {
+impl LambertConic1SPAProjection {
     const MAX_ITERATIONS: usize = 4;
 
     #[allow(non_snake_case)]
@@ -291,7 +291,7 @@ impl LambertConic1SPAConversion {
     }
 }
 
-impl Projection for LambertConic1SPAConversion {
+impl Projection for LambertConic1SPAProjection {
     fn to_rad(&self, x: f64, y: f64) -> (f64, f64) {
         let theta_ = (self.n.signum() * (x - self.false_e)).atan2(self.n.signum() * (self.r_O - (y - self.false_n)));
         let r_ = self.n.signum() * ((x - self.false_e).powi(2) + (self.r_O - (y - self.false_n)).powi(2)).sqrt();
@@ -317,10 +317,10 @@ impl Projection for LambertConic1SPAConversion {
     }
 }
 
-impl PseudoSerialize for LambertConic1SPAConversion {
+impl PseudoSerialize for LambertConic1SPAProjection {
     fn to_constructed(&self) -> String {
         format!(
-"LambertConic1SPAConversion {{
+"LambertConic1SPAProjection {{
     false_e: f64::from_bits(0x{:x}),
     false_n: f64::from_bits(0x{:x}),
     r_O: f64::from_bits(0x{:x}),
@@ -341,7 +341,7 @@ impl PseudoSerialize for LambertConic1SPAConversion {
     }
 }
 
-impl DbContstruct for LambertConic1SPAConversion {
+impl DbContstruct for LambertConic1SPAProjection {
     fn from_database_params(params: &[(u32, f64)], ellipsoid: &Ellipsoid) -> Self {
         let params = LambertConic1SPAParams::new(
             params.iter().find_map(|(c, v)| if *c == 8802{Some(*v)}else{None}).unwrap(),
@@ -354,12 +354,12 @@ impl DbContstruct for LambertConic1SPAConversion {
     }  
 }
 
-pub fn direct_conversion_2sp(params: &[(u32, f64)], ell: Ellipsoid) -> String {
-    LambertConic2SPConversion::from_database_params(params, &ell).to_constructed()
+pub fn direct_projection_2sp(params: &[(u32, f64)], ell: Ellipsoid) -> String {
+    LambertConic2SPProjection::from_database_params(params, &ell).to_constructed()
 }
 
-pub fn direct_conversion_1sp_a(params: &[(u32, f64)], ell: Ellipsoid) -> String {
-    LambertConic1SPAConversion::from_database_params(params, &ell).to_constructed()
+pub fn direct_projection_1sp_a(params: &[(u32, f64)], ell: Ellipsoid) -> String {
+    LambertConic1SPAProjection::from_database_params(params, &ell).to_constructed()
 }
 
 #[cfg(test)]
@@ -381,7 +381,7 @@ mod tests {
             4_500_000.0
         );
 
-        let converter = LambertConic2SPConversion::new(&ell, &params);
+        let converter = LambertConic2SPProjection::new(&ell, &params);
         let easting_goal = 2477968.963;
         let northing_goal = 4416742.535;
         let (lon, lat) = converter.to_deg(easting_goal, northing_goal);
@@ -406,7 +406,7 @@ mod tests {
             1_500_000.0
         );
 
-        let converter = LambertConic1SPAConversion::new(&ell, &params);
+        let converter = LambertConic1SPAProjection::new(&ell, &params);
         let easting_goal = 255966.58;
         let northing_goal = 142493.51;
         let (lon, lat) = converter.to_deg(easting_goal, northing_goal);

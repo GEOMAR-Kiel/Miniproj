@@ -30,10 +30,11 @@ EPSG Code | Operation Method Name                 | # of Projected CRS covered
 1024      | Popular Visualisation Pseudo-Mercator | 1
 
 ### Usage example
+
 ```rust
-// Get the pre-calculated conversion between WGS84 Lat/Lon and WGS84 UTM zone 32N
+// Get the pre-calculated projection between WGS84 Lat/Lon and WGS84 UTM zone 32N
 use miniproj::{get_projection, Projection};
-let converter = get_projection(32632).expect("Coordinate conversion not implemented");
+let converter = get_projection(32632).expect("Coordinate projection not implemented");
 
 // Coordinates of the office where this converter was written in UTM:
 let (easting, northing) = (576935.86f64, 6020593.46f64);
@@ -47,20 +48,18 @@ assert!((lon - 10.183034) < 0.000001);
 assert!((lat - 54.327389) < 0.000001);
 ```
 
+
+### Limitations
+
+Miniproj is still under development and missing some important functionality. If
+you are looking for a proven library
+
 ## Changelog
 
-#### 0.1.1
+#### 0.5.0
 
-* Initial release
-
-#### 0.2.0
-
-* Added Polar Stereographic Method A (10 defined CRS)
-
-#### 0.3.0
-
-* Added Lambert Conic Conformal (2SP) (950 defined CRS)
-* Fixed some major bugs in Polar Stereographic A
+* Added Lambert Conic Conformal (1SP) (233 defined CRS)
+* Cleared up some terminology
 
 #### 0.4.0
 
@@ -68,10 +67,18 @@ assert!((lat - 54.327389) < 0.000001);
     This method might be the most popular, as it is the map
     projection used by Google, OpenStreetMap etc.
 
-#### 0.5.0
+#### 0.3.0
 
-* Added Lambert Conic Conformal (1SP) (233 defined CRS)
-* Cleared up some terminology
+* Added Lambert Conic Conformal (2SP) (950 defined CRS)
+* Fixed some major bugs in Polar Stereographic A
+
+#### 0.2.0
+
+* Added Polar Stereographic Method A (10 defined CRS)
+
+#### 0.1.1
+
+* Initial release
 
 ## License
 

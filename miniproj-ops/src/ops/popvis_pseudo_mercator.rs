@@ -51,14 +51,14 @@ impl PopVisPseudoMercatorParams {
 /// Transverse Mercator coordinate operation (EPSG:9807).
 #[allow(non_snake_case)]
 #[derive(Copy, Clone, Debug)]
-pub struct PopVisPseudoMercatorConversion {
+pub struct PopVisPseudoMercatorProjection {
     pub false_e: f64,
     pub false_n: f64,
     pub ellipsoid_a: f64,
     pub lon_orig: f64
 }
 
-impl PopVisPseudoMercatorConversion {
+impl PopVisPseudoMercatorProjection {
 
     #[allow(non_snake_case)]
     pub fn new(ell: &Ellipsoid, params: &PopVisPseudoMercatorParams) -> Self {
@@ -71,7 +71,7 @@ impl PopVisPseudoMercatorConversion {
     }
 }
 
-impl Projection for PopVisPseudoMercatorConversion {
+impl Projection for PopVisPseudoMercatorProjection {
     /// as per IOGP Publication 373-7-2 – Geomatics Guidance Note number 7, part 2 – March 2020
     /// longitude & latitude in radians
     #[allow(non_snake_case)]
@@ -97,10 +97,10 @@ impl Projection for PopVisPseudoMercatorConversion {
 
 }
 
-impl PseudoSerialize for PopVisPseudoMercatorConversion {
+impl PseudoSerialize for PopVisPseudoMercatorProjection {
     fn to_constructed(&self) -> String {
         format!(
-r"PopVisPseudoMercatorConversion{{
+r"PopVisPseudoMercatorProjection{{
     ellipsoid_a: f64::from_bits(0x{:x}),
     lon_orig: f64::from_bits(0x{:x}),
     false_e: f64::from_bits(0x{:x}),
@@ -114,7 +114,7 @@ r"PopVisPseudoMercatorConversion{{
     }
 }
 
-impl DbContstruct for PopVisPseudoMercatorConversion {
+impl DbContstruct for PopVisPseudoMercatorProjection {
     fn from_database_params(params: &[(u32, f64)], ellipsoid: &Ellipsoid) -> Self {
         let params = PopVisPseudoMercatorParams::new(
             params.iter().find_map(|(c, v)| if *c == 8802{Some(*v)}else{None}).unwrap(),
@@ -126,8 +126,8 @@ impl DbContstruct for PopVisPseudoMercatorConversion {
     }
 }
 
-pub fn direct_conversion(params: &[(u32, f64)], ell: Ellipsoid) -> String {
-    PopVisPseudoMercatorConversion::from_database_params(params, &ell).to_constructed()
+pub fn direct_projection(params: &[(u32, f64)], ell: Ellipsoid) -> String {
+    PopVisPseudoMercatorProjection::from_database_params(params, &ell).to_constructed()
 }
 #[cfg(test)]
 mod tests {
@@ -136,7 +136,7 @@ mod tests {
     use crate::ellipsoid::Ellipsoid;
 
 
-    use super::PopVisPseudoMercatorConversion;
+    use super::PopVisPseudoMercatorProjection;
     use super::PopVisPseudoMercatorParams;
 
     #[test]
@@ -149,7 +149,7 @@ mod tests {
             0.0,
         );
 
-        let converter = PopVisPseudoMercatorConversion::new(&ell, &params);
+        let converter = PopVisPseudoMercatorProjection::new(&ell, &params);
         let easting_goal = -11169055.58;
         let northing_goal = 2800000.00;
         let (lon, lat) = converter.to_deg(easting_goal, northing_goal);

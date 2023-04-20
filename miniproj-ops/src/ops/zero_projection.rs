@@ -2,7 +2,7 @@
 
 use crate::traits::Projection;
 
-/// Parameterless conversion that is a no-op in degrees and otherwise converts between degrees and radians.
+/// Parameterless projection that is a no-op in degrees and otherwise converts between degrees and radians.
 pub struct ZeroProjection;
 
 impl Projection for ZeroProjection{

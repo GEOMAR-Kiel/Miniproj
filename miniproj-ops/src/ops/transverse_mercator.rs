@@ -57,7 +57,7 @@ impl TransverseMercatorParams {
 /// Transverse Mercator coordinate operation (EPSG:9807).
 #[allow(non_snake_case)]
 #[derive(Copy, Clone, Debug)]
-pub struct TransverseMercatorConversion {
+pub struct TransverseMercatorProjection {
     pub ellipsoid_e: f64,
 
     pub lon_orig: f64,
@@ -78,7 +78,7 @@ pub struct TransverseMercatorConversion {
     pub h_4_: f64
 }
 
-impl TransverseMercatorConversion {
+impl TransverseMercatorProjection {
     const MAX_ITERATIONS: usize = 4;
 
     #[allow(non_snake_case)]
@@ -136,7 +136,7 @@ impl TransverseMercatorConversion {
     }
 }
 
-impl Projection for TransverseMercatorConversion {
+impl Projection for TransverseMercatorProjection {
     /// as per IOGP Publication 373-7-2 – Geomatics Guidance Note number 7, part 2 – March 2020
     /// longitude & latitude in radians
     #[allow(non_snake_case)]
@@ -200,10 +200,10 @@ impl Projection for TransverseMercatorConversion {
 
 }
 
-impl PseudoSerialize for TransverseMercatorConversion {
+impl PseudoSerialize for TransverseMercatorProjection {
     fn to_constructed(&self) -> String {
         format!(
-r"TransverseMercatorConversion{{
+r"TransverseMercatorProjection{{
     ellipsoid_e: f64::from_bits(0x{:x}),
     lon_orig: f64::from_bits(0x{:x}),
     false_e: f64::from_bits(0x{:x}),
@@ -243,15 +243,15 @@ r"TransverseMercatorConversion{{
     }
 }
 
-impl DbContstruct for TransverseMercatorConversion {
+impl DbContstruct for TransverseMercatorProjection {
     fn from_database_params(params: &[(u32, f64)], ellipsoid: &Ellipsoid) -> Self {
         /*
-        ImplementedConversion::new(
+        ImplementedProjection::new(
             9807,
             // lon   lat     k     e     n
             &[8802, 8801, 8805, 8806, 8807],
             "TransverseMercatorParams",
-            "TransverseMercatorConversion"
+            "TransverseMercatorProjection"
         ),
         */
         let params = TransverseMercatorParams::new(
@@ -265,8 +265,8 @@ impl DbContstruct for TransverseMercatorConversion {
     }
 }
 
-pub fn direct_conversion(params: &[(u32, f64)], ell: Ellipsoid) -> String {
-    TransverseMercatorConversion::from_database_params(params, &ell).to_constructed()
+pub fn direct_projection(params: &[(u32, f64)], ell: Ellipsoid) -> String {
+    TransverseMercatorProjection::from_database_params(params, &ell).to_constructed()
 }
 #[cfg(test)]
 mod tests {
@@ -286,7 +286,7 @@ mod tests {
             0.0
         );
 
-        let converter = TransverseMercatorConversion::new(&wgs_84_ellipsoid, &utm_32_n);
+        let converter = TransverseMercatorProjection::new(&wgs_84_ellipsoid, &utm_32_n);
         let easting_goal = 577274.99;
         let northing_goal = 69740.50;
         let (lon, lat) = converter.to_deg(easting_goal, northing_goal);

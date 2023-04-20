@@ -59,7 +59,7 @@ impl PolarStereographicAParams {
 
 /// Polar Stereographic coordinate operation.
 #[derive(Copy, Clone, Debug)]
-pub struct PolarStereographicAConversion {
+pub struct PolarStereographicAProjection {
     pub t_rho_factor: f64,
 
     pub phi_2_chi_sin_summand_factor: f64,
@@ -76,7 +76,7 @@ pub struct PolarStereographicAConversion {
     pub ell_e: f64
 }
 
-impl PolarStereographicAConversion{
+impl PolarStereographicAProjection{
     pub fn new(ell: &Ellipsoid, params: &PolarStereographicAParams) -> Self {
         let t_rho_factor = ((1.0 + ell.e()).powf(1.0 + ell.e()) * (1.0 - ell.e()).powf(1.0 - ell.e())).sqrt() / (2.0 * ell.a() * params.k_orig());
         let phi_2_chi_sin_summand_factor = ell.e_squared() / 2.0 + 5.0 * ell.e_squared().powi(2) / 24.0 + ell.e_squared().powi(3) / 12.0 + 13.0 * ell.e_squared().powi(4) / 360.0;
@@ -100,7 +100,7 @@ impl PolarStereographicAConversion{
     }
 }
 
-impl crate::traits::Projection for PolarStereographicAConversion {
+impl crate::traits::Projection for PolarStereographicAProjection {
     fn from_rad(&self, longitude: f64, latitude: f64) -> (f64, f64) {
         if self.lat_orig < 0.0 { // North Pole Case
             let t = f64::tan(std::f64::consts::FRAC_PI_4 - latitude / 2.0) * ((1.0 + self.ell_e * latitude.sin())  / (1.0 - self.ell_e * latitude.sin())).powf(self.ell_e / 2.0);
@@ -145,7 +145,7 @@ impl crate::traits::Projection for PolarStereographicAConversion {
         (lambda, phi)
     }
 }
-impl DbContstruct for PolarStereographicAConversion {
+impl DbContstruct for PolarStereographicAProjection {
     fn from_database_params(params: &[(u32, f64)], ellipsoid: &Ellipsoid) -> Self {
         let params = PolarStereographicAParams::new(
             params.iter().find_map(|(c, v)| if *c == 8802{Some(*v)}else{None}).unwrap(),
@@ -157,10 +157,10 @@ impl DbContstruct for PolarStereographicAConversion {
         Self::new(ellipsoid, &params)
     }
 }
-impl PseudoSerialize for PolarStereographicAConversion {
+impl PseudoSerialize for PolarStereographicAProjection {
     fn to_constructed(&self) -> String {
         format!(
-r"PolarStereographicAConversion{{
+r"PolarStereographicAProjection{{
     t_rho_factor: f64::from_bits(0x{:x}),
     phi_2_chi_sin_summand_factor: f64::from_bits(0x{:x}),
     phi_4_chi_sin_summand_factor: f64::from_bits(0x{:x}),
@@ -189,8 +189,8 @@ r"PolarStereographicAConversion{{
         )
     }
 }
-pub fn direct_conversion_a(params: &[(u32, f64)], ell: Ellipsoid) -> String {
-    PolarStereographicAConversion::from_database_params(params, &ell).to_constructed()
+pub fn direct_projection_a(params: &[(u32, f64)], ell: Ellipsoid) -> String {
+    PolarStereographicAProjection::from_database_params(params, &ell).to_constructed()
 }
 
 #[cfg(test)]
@@ -211,7 +211,7 @@ mod tests {
             2_000_000.0
         );
 
-        let converter = PolarStereographicAConversion::new(&ell, &params);
+        let converter = PolarStereographicAProjection::new(&ell, &params);
         let easting_goal = 3329416.75;
         let northing_goal = 632668.43;
         let (lon, lat) = converter.to_deg(easting_goal, northing_goal);

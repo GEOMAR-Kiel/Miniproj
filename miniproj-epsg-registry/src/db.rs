@@ -4,7 +4,7 @@ use std::collections::HashMap;
 
 use miniproj_ops::ellipsoid::Ellipsoid;
 use rusqlite::{Connection, Result};
-use crate::{helpers::*, ImplementedConversion};
+use crate::{helpers::*, ImplementedProjection};
 
 /// Generates rust source code mapping EPSG codes to `Ellipsoid`s.
 pub fn gen_ellipsoids_source(c: &Connection) -> Result<String> {
@@ -151,8 +151,8 @@ pub fn get_prime_meridians(c: &Connection) -> Result<HashMap<u32, f64>> {
     Ok(meridians)
 }
 
-/// Generates rust source code for projected and geographic coordinate systems for all implemented conversions.
-pub fn gen_parameter_constructors(c: &Connection, supporteds: &[ImplementedConversion], ellipsoids: &HashMap<u32, Ellipsoid>) -> Result<String> {
+/// Generates rust source code for projected and geographic coordinate systems for all implemented projections.
+pub fn gen_parameter_constructors(c: &Connection, supporteds: &[ImplementedProjection], ellipsoids: &HashMap<u32, Ellipsoid>) -> Result<String> {
     let mut s = c.prepare("
         SELECT 
 	        crs.coord_ref_sys_code AS code,
