@@ -116,7 +116,13 @@ impl Ellipsoid {
 
     /// Convert from geocentric position in meters to `(longitude, latitude, height)`, geographic position in radians and *ellipsoid* height in meters.
     pub fn radians_from_geocentric(&self, x: f64, y: f64, z: f64) -> (f64, f64, f64) {
-        todo!()
+        let lon = y.atan2(x);
+        let epsilon = self.e_squared() / (1f64 - self.e_squared());
+        let p = (x.powi(2) + y.powi(2)).sqrt();
+        let q = (z * self.a).atan2(p * self.b);
+        let lat = (z + epsilon * self.b * q.sin().powi(3)).atan2(p - self.e_squared() * self.a * q.cos().powi(3));
+        let h = (p / lat.cos()) - self.ny(lat);
+        (lon, lat, h)
     }
 
     /// Convert from geographic position in radians and *ellipsoid* height in meters to `(x, y, z)`, geocentric position in meters.
@@ -129,4 +135,31 @@ impl Ellipsoid {
             (1f64 - self.e_squared() * ny + height) * lat.sin()
         )
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Ellipsoid;
+
+
+    #[test]
+    fn geocentric_roundtrip() {
+        let ell = Ellipsoid::from_a_f_inv(6378137.000, 298.2572236);
+        let expected_lat = 53f64 + 48f64 / 60f64 + 33.820 / 3600f64;
+        let expected_lon = 2f64 + 7f64 / 60f64 + 46.380 / 3600f64;
+        let expected_eh = 73.0;
+
+        let (lon, lat, eh) = ell.degrees_from_geocentric(
+            3771793.968, 
+            140253.342,
+            5124304.349
+        );
+        eprintln!("lon: {expected_lon} - {lon}");
+        eprintln!("lat: {expected_lat} - {lat}");
+        eprintln!("lon: {expected_eh} - {eh}");
+        assert!((expected_lon - lon).abs() < 0.01 / 3600.0);
+        assert!((expected_lat - lat).abs() < 0.01 / 3600.0);
+        assert!((expected_eh - eh).abs() < 0.1);
+    }
+
 }
