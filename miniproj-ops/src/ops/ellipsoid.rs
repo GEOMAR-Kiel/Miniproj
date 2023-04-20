@@ -141,7 +141,6 @@ impl Ellipsoid {
 mod tests {
     use super::Ellipsoid;
 
-
     #[test]
     fn geocentric_roundtrip() {
         let ell = Ellipsoid::from_a_f_inv(6378137.000, 298.2572236);
