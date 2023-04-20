@@ -62,65 +62,7 @@ impl LambertConic2SPParams {
     }
 }
 
-pub struct LambertConic1SPParams {
-        /// longitude of false origin
-        lon_orig: f64,
-        /// latitude of false origin
-        lat_orig: f64,
-        /// latitude of natural origin
-        lat_nat_orig: f64,
-        /// scale factor at natural origin
-        k_nat_orig: f64,
-        /// false easting
-        false_e: f64,
-        /// false northing
-        false_n: f64
-}
-
-impl LambertConic1SPParams {
-    pub fn new(lon_orig: f64, lat_orig: f64, lat_nat_orig: f64, k_nat_orig: f64, false_e: f64, false_n: f64) -> Self {
-        Self {
-            lat_orig,
-            lon_orig,
-            lat_nat_orig,
-            k_nat_orig,
-            false_e,
-            false_n
-        }
-    }
-
-    /// Get longitude of false origin, radians.
-    pub fn lon_orig(&self) -> f64 {
-        self.lon_orig
-    }
-
-    /// Get latitude of false origin, radians.
-    pub fn lat_orig(&self) -> f64 {
-        self.lat_orig
-    }
-
-    /// Get latitude of 1st standard parallel.
-    pub fn lat_nat_orig(&self) -> f64 {
-        self.lat_nat_orig
-    }
-
-    /// Get latitude of 2nd standard parallel.
-    pub fn k_nat_orig(&self) -> f64 {
-        self.k_nat_orig
-    }
-
-    /// Get easting at false origin.
-    pub fn false_e(&self) -> f64 {
-        self.false_e
-    }
-
-    /// Get northing at false origin.
-    pub fn false_n(&self) -> f64 {
-        self.false_n
-    }
-}
-
-/// Transverse Mercator coordinate operation (EPSG:9807).
+/// EPSG:9802: Lambert Conic Conformal (2SP) .
 #[allow(non_snake_case)]
 #[derive(Copy, Clone, Debug)]
 pub struct LambertConic2SPConversion {
@@ -260,9 +202,166 @@ impl DbContstruct for LambertConic2SPConversion {
     }
 }
 
+#[derive(Copy, Clone, Debug)]
+pub struct LambertConic1SPAParams {
+        /// longitude of false origin
+        lon_nat_orig: f64,
+        /// latitude of false origin
+        lat_nat_orig: f64,
+        /// scale factor at natural origin
+        k_nat_orig: f64,
+        /// false easting
+        false_e: f64,
+        /// false northing
+        false_n: f64
+}
+
+impl LambertConic1SPAParams {
+    pub fn new(lon_nat_orig: f64, lat_nat_orig: f64, k_nat_orig: f64, false_e: f64, false_n: f64) -> Self {
+        Self {
+            lon_nat_orig,
+            lat_nat_orig,
+            k_nat_orig,
+            false_e,
+            false_n
+        }
+    }
+
+    /// Get longitude of natural origin, radians.
+    pub fn lon_nat_orig(&self) -> f64 {
+        self.lon_nat_orig
+    }
+
+    /// Get latitude of natural origin, radians.
+    pub fn lat_nat_orig(&self) -> f64 {
+        self.lat_nat_orig
+    }
+
+    /// Get latitude of 2nd standard parallel.
+    pub fn k_nat_orig(&self) -> f64 {
+        self.k_nat_orig
+    }
+
+    /// Get easting at false origin.
+    pub fn false_e(&self) -> f64 {
+        self.false_e
+    }
+
+    /// Get northing at false origin.
+    pub fn false_n(&self) -> f64 {
+        self.false_n
+    }
+}
+
+/// EPSG:9801: Lambert Conic Conformal (2SP).
+#[allow(non_snake_case)]
+#[derive(Copy, Clone, Debug)]
+pub struct LambertConic1SPAConversion {
+    pub false_e: f64,
+    pub false_n: f64,
+
+    pub r_O: f64,
+    pub lon_O: f64,
+
+    pub n: f64,
+    pub t_r_fac: f64,
+    pub ellipsoid_e: f64
+}
+
+impl LambertConic1SPAConversion {
+    const MAX_ITERATIONS: usize = 4;
+
+    #[allow(non_snake_case)]
+    pub fn new(ell: &Ellipsoid, params: &LambertConic1SPAParams) -> Self {
+        let m_O = params.lat_nat_orig().cos()/(1f64 - ell.e_squared() * params.lat_nat_orig().sin().powi(2)).sqrt();
+        let t_O = (FRAC_PI_4 - params.lat_nat_orig() / 2f64).tan()/((1f64 - ell.e() * params.lat_nat_orig().sin())/(1f64 + ell.e() * params.lat_nat_orig().sin())).powf(ell.e() / 2f64);
+        let n = params.lat_nat_orig.sin();
+        let F = m_O / (n * t_O.powf(n));
+        let r_O = ell.a() * F * t_O.powf(n) * params.k_nat_orig();
+        Self {
+            false_e: params.false_e(),
+            false_n: params.false_n(),
+
+            r_O,
+            lon_O: params.lon_nat_orig(),
+            n,
+            t_r_fac: ell.a() * F * params.k_nat_orig(),
+            ellipsoid_e: ell.e()
+        }
+    }
+}
+
+impl Projection for LambertConic1SPAConversion {
+    fn to_rad(&self, x: f64, y: f64) -> (f64, f64) {
+        let theta_ = (self.n.signum() * (x - self.false_e)).atan2(self.n.signum() * (self.r_O - (y - self.false_n)));
+        let r_ = self.n.signum() * ((x - self.false_e).powi(2) + (self.r_O - (y - self.false_n)).powi(2)).sqrt();
+        let t_ = (r_ / self.t_r_fac).powf(1f64 / self.n);
+        let mut phi = FRAC_PI_2 - 2f64 * t_.atan();
+        for _ in 0..Self::MAX_ITERATIONS {
+            phi = FRAC_PI_2 - 2f64 * (t_ * ((1f64 - self.ellipsoid_e * phi.sin())/(1f64 + self.ellipsoid_e * phi.sin())).powf(self.ellipsoid_e / 2f64)).atan();
+        }
+        (
+            theta_ / self.n + self.lon_O,
+            phi
+        )
+    }
+
+    fn from_rad(&self, lon: f64, lat: f64) -> (f64, f64) {
+        let t = (FRAC_PI_4 - lat / 2f64).tan()/((1f64 - self.ellipsoid_e * lat.sin())/(1f64 + self.ellipsoid_e * lat.sin())).powf(self.ellipsoid_e / 2f64);
+        let r = self.t_r_fac * t.powf(self.n);
+        let theta = self.n * (lon - self.lon_O);
+        (
+            self.false_e + r * theta.sin(),
+            self.false_n + self.r_O - r * theta.cos()
+        )
+    }
+}
+
+impl PseudoSerialize for LambertConic1SPAConversion {
+    fn to_constructed(&self) -> String {
+        format!(
+"LambertConic1SPAConversion {{
+    false_e: f64::from_bits(0x{:x}),
+    false_n: f64::from_bits(0x{:x}),
+    r_O: f64::from_bits(0x{:x}),
+    lon_O: f64::from_bits(0x{:x}),
+    n: f64::from_bits(0x{:x}),
+    t_r_fac: f64::from_bits(0x{:x}),
+    ellipsoid_e: f64::from_bits(0x{:x})
+}}
+",
+            self.false_e.to_bits(),
+            self.false_n.to_bits(),
+            self.r_O.to_bits(),
+            self.lon_O.to_bits(),
+            self.n.to_bits(),
+            self.t_r_fac.to_bits(),
+            self.ellipsoid_e.to_bits()
+        )
+    }
+}
+
+impl DbContstruct for LambertConic1SPAConversion {
+    fn from_database_params(params: &[(u32, f64)], ellipsoid: &Ellipsoid) -> Self {
+        let params = LambertConic1SPAParams::new(
+            params.iter().find_map(|(c, v)| if *c == 8802{Some(*v)}else{None}).unwrap(),
+            params.iter().find_map(|(c, v)| if *c == 8801{Some(*v)}else{None}).unwrap(),
+            params.iter().find_map(|(c, v)| if *c == 8805{Some(*v)}else{None}).unwrap(),
+            params.iter().find_map(|(c, v)| if *c == 8806{Some(*v)}else{None}).unwrap(),
+            params.iter().find_map(|(c, v)| if *c == 8807{Some(*v)}else{None}).unwrap(),
+        );
+        Self::new(ellipsoid, &params)
+    }  
+}
+
 pub fn direct_conversion_2sp(params: &[(u32, f64)], ell: Ellipsoid) -> String {
     LambertConic2SPConversion::from_database_params(params, &ell).to_constructed()
 }
+
+pub fn direct_conversion_1sp_a(params: &[(u32, f64)], ell: Ellipsoid) -> String {
+    LambertConic1SPAConversion::from_database_params(params, &ell).to_constructed()
+}
+
 #[cfg(test)]
 mod tests {
 
@@ -271,7 +370,7 @@ mod tests {
     use crate::ellipsoid::Ellipsoid;
 
     #[test]
-    fn lambert_conic_consistency() {
+    fn lambert_conic_2sp_consistency() {
         let ell = Ellipsoid::from_a_f_inv(6378160.0, 298.25);
         let params = LambertConic2SPParams::new(
             145f64.to_radians(),
@@ -285,6 +384,31 @@ mod tests {
         let converter = LambertConic2SPConversion::new(&ell, &params);
         let easting_goal = 2477968.963;
         let northing_goal = 4416742.535;
+        let (lon, lat) = converter.to_deg(easting_goal, northing_goal);
+        let (easting, northing) = converter.from_deg(lon, lat);
+
+        eprintln!("easting: {easting_goal} - {easting}");
+        eprintln!("northing: {northing_goal} - {northing}");
+
+        assert!((easting - easting_goal).abs() < 0.001);
+
+        assert!((northing - northing_goal).abs() < 0.001);
+    }
+
+    #[test]
+    fn lambert_conic_1sp_a_consistency() {
+        let ell = Ellipsoid::from_a_f_inv(6378206.400, 294.97870);
+        let params = LambertConic1SPAParams::new(
+            18f64.to_radians(),
+            -77f64.to_radians(),
+            1.0,
+            2_500_000.0,
+            1_500_000.0
+        );
+
+        let converter = LambertConic1SPAConversion::new(&ell, &params);
+        let easting_goal = 255966.58;
+        let northing_goal = 142493.51;
         let (lon, lat) = converter.to_deg(easting_goal, northing_goal);
         let (easting, northing) = converter.from_deg(lon, lat);
 
