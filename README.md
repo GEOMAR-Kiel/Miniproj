@@ -32,7 +32,7 @@ EPSG Code | Operation Method Name                 | # of Projected CRS covered
 ### Usage example
 
 ```rust
-// Get the pre-calculated projection between WGS84 Lat/Lon and WGS84 UTM zone 32N
+// Get the WGS84 UTM zone 32N projection
 use miniproj::{get_projection, Projection};
 let projection = get_projection(32632).expect("Coordinate projection not implemented");
 
