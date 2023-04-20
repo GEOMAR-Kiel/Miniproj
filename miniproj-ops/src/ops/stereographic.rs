@@ -79,10 +79,10 @@ pub struct PolarStereographicAConversion {
 impl PolarStereographicAConversion{
     pub fn new(ell: &Ellipsoid, params: &PolarStereographicAParams) -> Self {
         let t_rho_factor = ((1.0 + ell.e()).powf(1.0 + ell.e()) * (1.0 - ell.e()).powf(1.0 - ell.e())).sqrt() / (2.0 * ell.a() * params.k_orig());
-        let phi_2_chi_sin_summand_factor = ell.e().powi(2) / 2.0 + 5.0 * ell.e().powi(4) / 24.0 + ell.e().powi(6) / 12.0 + 13.0 * ell.e().powi(8) / 360.0;
-        let phi_4_chi_sin_summand_factor = 7.0 * ell.e().powi(4) / 48.0 + 29.0 * ell.e().powi(6) / 240.0 + ell.e().powi(8) / 11520.0;
-        let phi_6_chi_sin_summand_factor = 7.0 * ell.e().powi(6) / 120.0 + 81.0 * ell.e().powi(8) / 1120.0;
-        let phi_8_chi_sin_summand_factor = 4279.0 * ell.e().powi(8) / 161280.0;
+        let phi_2_chi_sin_summand_factor = ell.e_squared() / 2.0 + 5.0 * ell.e_squared().powi(2) / 24.0 + ell.e_squared().powi(3) / 12.0 + 13.0 * ell.e_squared().powi(4) / 360.0;
+        let phi_4_chi_sin_summand_factor = 7.0 * ell.e_squared().powi(2) / 48.0 + 29.0 * ell.e_squared().powi(3) / 240.0 + ell.e_squared().powi(4) / 11520.0;
+        let phi_6_chi_sin_summand_factor = 7.0 * ell.e_squared().powi(3) / 120.0 + 81.0 * ell.e_squared().powi(4) / 1120.0;
+        let phi_8_chi_sin_summand_factor = 4279.0 * ell.e_squared().powi(4) / 161280.0;
         Self {
             t_rho_factor,
             phi_2_chi_sin_summand_factor,

@@ -56,6 +56,7 @@ pub struct LambertAzimuthalEqualAreaConversion {
     pub false_e: f64,
     pub false_n: f64,
     pub ellipsoid_e: f64,
+    pub ellipsoid_e_squared: f64,
 
     //q_O: f64,
     pub q_P: f64,
@@ -64,24 +65,22 @@ pub struct LambertAzimuthalEqualAreaConversion {
     pub D: f64
 
 }
-unsafe impl<'a, 'b> Send for LambertAzimuthalEqualAreaConversion {}
-unsafe impl<'a, 'b> Sync for LambertAzimuthalEqualAreaConversion {}
 
-impl<'a, 'b> LambertAzimuthalEqualAreaConversion {
+impl LambertAzimuthalEqualAreaConversion {
 
     #[allow(non_snake_case)]
-    pub fn new(ell: &'a Ellipsoid, params: &'b LambertAzimuthalEqualAreaParams) -> Self {
+    pub fn new(ell: &Ellipsoid, params: &LambertAzimuthalEqualAreaParams) -> Self {
         
-        let q_P = (1.0 - ell.e().powi(2)) * 
+        let q_P = (1.0 - ell.e_squared()) * 
         (
-            (1.0 / (1.0 - ell.e().powi(2))) - 
+            (1.0 / (1.0 - ell.e_squared())) - 
             ((0.5 / ell.e()) * f64::ln((1.0 - ell.e()) / (1.0 + ell.e())))
         );
 
         
-        let q_O = (1.0 - ell.e().powi(2)) * 
+        let q_O = (1.0 - ell.e_squared()) * 
         (
-            (params.lat_orig().sin() / (1.0 - ell.e().powi(2) * params.lat_orig().sin().powi(2))) - 
+            (params.lat_orig().sin() / (1.0 - ell.e_squared() * params.lat_orig().sin().powi(2))) - 
             (
                 (0.5 / ell.e()) * 
                 f64::ln(
@@ -95,13 +94,14 @@ impl<'a, 'b> LambertAzimuthalEqualAreaConversion {
 
         let R_q = ell.a() * (q_P / 2.0).sqrt();
 
-        let D = ell.a() * (params.lat_orig().cos() / (1.0 - ell.e().powi(2) * params.lat_orig().sin().powi(2)).sqrt()) / (R_q * beta_O.cos());
+        let D = ell.a() * (params.lat_orig().cos() / (1.0 - ell.e_squared() * params.lat_orig().sin().powi(2)).sqrt()) / (R_q * beta_O.cos());
 
         Self{
             lon_orig: params.lon_orig(),
             false_e: params.false_e(),
             false_n: params.false_n(),
             ellipsoid_e: ell.e(),
+            ellipsoid_e_squared: ell.e_squared(),
 
             q_P,
             //q_O,
@@ -119,9 +119,9 @@ impl crate::traits::CoordTransform for LambertAzimuthalEqualAreaConversion {
     #[allow(non_snake_case)]
     fn from_rad(&self, longitude: f64, latitude: f64) -> (f64, f64) {
 
-        let q = (1.0 - self.ellipsoid_e.powi(2)) * 
+        let q = (1.0 - self.ellipsoid_e_squared) * 
         (
-            (latitude.sin() / (1.0 - self.ellipsoid_e.powi(2) * latitude.sin().powi(2))) - 
+            (latitude.sin() / (1.0 - self.ellipsoid_e_squared * latitude.sin().powi(2))) - 
             (
                 (0.5 / self.ellipsoid_e) * 
                 f64::ln(
@@ -163,7 +163,7 @@ impl crate::traits::CoordTransform for LambertAzimuthalEqualAreaConversion {
         ,
             beta_ + 
             (
-                (self.ellipsoid_e.powi(2) / 3.0 + (31.0 / 180.0) * self.ellipsoid_e.powi(4) + (517.0 / 5040.0) * self.ellipsoid_e.powi(6)) * (beta_ * 2.0).sin() + 
+                (self.ellipsoid_e_squared / 3.0 + (31.0 / 180.0) * self.ellipsoid_e.powi(4) + (517.0 / 5040.0) * self.ellipsoid_e.powi(6)) * (beta_ * 2.0).sin() + 
                 ((23.0 / 360.0) * self.ellipsoid_e.powi(4) + (251.0 / 3780.0) * self.ellipsoid_e.powi(6)) * (beta_ * 4.0).sin() + 
                 (761.0 / 45360.0) * self.ellipsoid_e.powi(6) * (beta_ + 6.0).sin()
             )
@@ -180,6 +180,7 @@ r"LambertAzimuthalEqualAreaConversion{{
     false_e: f64::from_bits({}),
     false_n: f64::from_bits({}),
     ellipsoid_e: f64::from_bits({}),
+    ellipsoid_e_squared: f64::from_bits({}),
 
     q_P: f64::from_bits({}),
     beta_O: f64::from_bits({}),
@@ -190,6 +191,7 @@ r"LambertAzimuthalEqualAreaConversion{{
             self.false_e.to_bits(),
             self.false_n.to_bits(),
             self.ellipsoid_e.to_bits(),
+            self.ellipsoid_e_squared.to_bits(),
 
             self.q_P.to_bits(),
             self.beta_O.to_bits(),

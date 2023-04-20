@@ -147,15 +147,15 @@ impl LambertConic2SPConversion {
         let F;
         let r_F;
         if params.lat_p1() == params.lat_p2() {
-            let m_O = params.lat_p1().cos() / (1f64 - ell.e().powi(2) * params.lat_p1().sin().powi(2)).sqrt();
+            let m_O = params.lat_p1().cos() / (1f64 - ell.e_squared() * params.lat_p1().sin().powi(2)).sqrt();
     
             let t_O = (FRAC_PI_4 - params.lat_p1() / 2f64).tan() / ((1f64 - ell.e() * params.lat_p1().sin())/(1f64 + ell.e() * params.lat_p1().sin())).powf(ell.e() / 2f64);
             n = params.lat_p1().sin();
             F = m_O / (n * t_O.powf(n));
             r_F = ell.a() * F * t_O.powf(n);
         } else {
-            let m1 = params.lat_p1().cos() / (1f64 - ell.e().powi(2) * params.lat_p1().sin().powi(2)).sqrt();
-            let m2 = params.lat_p2().cos() / (1f64 - ell.e().powi(2) * params.lat_p2().sin().powi(2)).sqrt();
+            let m1 = params.lat_p1().cos() / (1f64 - ell.e_squared() * params.lat_p1().sin().powi(2)).sqrt();
+            let m2 = params.lat_p2().cos() / (1f64 - ell.e_squared() * params.lat_p2().sin().powi(2)).sqrt();
     
             let t1 = (FRAC_PI_4 - params.lat_p1() / 2f64).tan() / ((1f64 - ell.e() * params.lat_p1().sin())/(1f64 + ell.e() * params.lat_p1().sin())).powf(ell.e() / 2f64);
             let t2 = (FRAC_PI_4 - params.lat_p2() / 2f64).tan() / ((1f64 - ell.e() * params.lat_p2().sin())/(1f64 + ell.e() * params.lat_p2().sin())).powf(ell.e() / 2f64);
