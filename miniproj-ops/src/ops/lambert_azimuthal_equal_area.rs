@@ -243,11 +243,11 @@ mod tests {
             3_210_000.0
         );
 
-        let converter = LambertAzimuthalEqualAreaProjection::new(&ell, &params);
+        let projection = LambertAzimuthalEqualAreaProjection::new(&ell, &params);
         let easting_goal = 3962799.45;
         let northing_goal = 2999718.85;
-        let (lon, lat) = converter.to_deg(easting_goal, northing_goal);
-        let (easting, northing) = converter.from_deg(lon, lat);
+        let (lon, lat) = projection.to_deg(easting_goal, northing_goal);
+        let (easting, northing) = projection.from_deg(lon, lat);
         eprintln!("easting: {easting_goal} - {easting}");
         eprintln!("northing: {northing_goal} - {northing}");
 

@@ -34,15 +34,15 @@ EPSG Code | Operation Method Name                 | # of Projected CRS covered
 ```rust
 // Get the pre-calculated projection between WGS84 Lat/Lon and WGS84 UTM zone 32N
 use miniproj::{get_projection, Projection};
-let converter = get_projection(32632).expect("Coordinate projection not implemented");
+let projection = get_projection(32632).expect("Coordinate projection not implemented");
 
-// Coordinates of the office where this converter was written in UTM:
+// Coordinates of the office where this crate was written in UTM:
 let (easting, northing) = (576935.86f64, 6020593.46f64);
 
 // To get the latitude and longitude, use the Projection::to_deg method.
 // Note that the order of the returned tuple is not alphabetical, but instead
 // follows the axis order (X for Longitude, Y for Latitude)
-let (lon, lat) = converter.to_deg(easting, northing);
+let (lon, lat) = projection.to_deg(easting, northing);
 
 assert!((lon - 10.183034) < 0.000001);
 assert!((lat - 54.327389) < 0.000001);
@@ -52,7 +52,8 @@ assert!((lat - 54.327389) < 0.000001);
 ### Limitations
 
 Miniproj is still under development and missing some important functionality. If
-you are looking for a proven library
+you are looking for a refined, proven library, check out
+[PROJ](https://crates.io/crates/proj).
 
 ## Changelog
 

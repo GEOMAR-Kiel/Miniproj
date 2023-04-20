@@ -286,11 +286,11 @@ mod tests {
             0.0
         );
 
-        let converter = TransverseMercatorProjection::new(&wgs_84_ellipsoid, &utm_32_n);
+        let projection = TransverseMercatorProjection::new(&wgs_84_ellipsoid, &utm_32_n);
         let easting_goal = 577274.99;
         let northing_goal = 69740.50;
-        let (lon, lat) = converter.to_deg(easting_goal, northing_goal);
-        let (easting, northing) = converter.from_deg(lon, lat);
+        let (lon, lat) = projection.to_deg(easting_goal, northing_goal);
+        let (easting, northing) = projection.from_deg(lon, lat);
 
         eprintln!("easting: {easting_goal} - {easting}");
         eprintln!("northing: {northing_goal} - {northing}");

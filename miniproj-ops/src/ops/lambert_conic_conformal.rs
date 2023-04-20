@@ -381,11 +381,11 @@ mod tests {
             4_500_000.0
         );
 
-        let converter = LambertConic2SPProjection::new(&ell, &params);
+        let projection = LambertConic2SPProjection::new(&ell, &params);
         let easting_goal = 2477968.963;
         let northing_goal = 4416742.535;
-        let (lon, lat) = converter.to_deg(easting_goal, northing_goal);
-        let (easting, northing) = converter.from_deg(lon, lat);
+        let (lon, lat) = projection.to_deg(easting_goal, northing_goal);
+        let (easting, northing) = projection.from_deg(lon, lat);
 
         eprintln!("easting: {easting_goal} - {easting}");
         eprintln!("northing: {northing_goal} - {northing}");
@@ -406,11 +406,11 @@ mod tests {
             1_500_000.0
         );
 
-        let converter = LambertConic1SPAProjection::new(&ell, &params);
+        let projection = LambertConic1SPAProjection::new(&ell, &params);
         let easting_goal = 255966.58;
         let northing_goal = 142493.51;
-        let (lon, lat) = converter.to_deg(easting_goal, northing_goal);
-        let (easting, northing) = converter.from_deg(lon, lat);
+        let (lon, lat) = projection.to_deg(easting_goal, northing_goal);
+        let (easting, northing) = projection.from_deg(lon, lat);
 
         eprintln!("easting: {easting_goal} - {easting}");
         eprintln!("northing: {northing_goal} - {northing}");
