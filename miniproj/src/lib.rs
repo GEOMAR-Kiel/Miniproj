@@ -2,7 +2,7 @@
 #![feature(const_float_bits_conv)]
 
 
-#![doc = include_str!("../../README.md")]
+#![doc = include_str!("../README.md")]
 
 
 mod projection_constructor;
