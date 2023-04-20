@@ -11,6 +11,3 @@ repository = "https://git.geomar.de/flemming-staebler/miniproj/"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-
-[dev-dependencies]
-assert_float_eq = "1.1.3"

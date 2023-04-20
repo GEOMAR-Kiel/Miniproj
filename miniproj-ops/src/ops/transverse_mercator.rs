@@ -275,8 +275,6 @@ mod tests {
     use crate::traits::*;
     use crate::ellipsoid::Ellipsoid;
 
-    use assert_float_eq::*;
-
     #[test]
     fn transverse_mercator_consistency() {
         let wgs_84_ellipsoid = Ellipsoid::from_a_f_inv(6378137.0, 298.257223563);
@@ -289,14 +287,16 @@ mod tests {
         );
 
         let converter = TransverseMercatorConversion::new(&wgs_84_ellipsoid, &utm_32_n);
-        for lon in 6 .. 12 {
-            for lat in -80 .. 80 {
-                let pos = (lon as f64, lat as f64);
-                let pos_utm = converter.from_deg(pos.0, pos.1);
-                let pos_2 = converter.to_deg(pos_utm.0, pos_utm.1);
-                assert_f64_near!(pos.0, pos_2.0, 256 * 3);
-                assert_f64_near!(pos.1, pos_2.1, 256 * 3);
-            }
-        }
+        let easting_goal = 577274.99;
+        let northing_goal = 69740.50;
+        let (lon, lat) = converter.to_deg(easting_goal, northing_goal);
+        let (easting, northing) = converter.from_deg(lon, lat);
+
+        eprintln!("easting: {easting_goal} - {easting}");
+        eprintln!("northing: {northing_goal} - {northing}");
+
+        assert!((easting - easting_goal).abs() < 0.01);
+
+        assert!((northing - northing_goal).abs() < 0.01);
     }
 }

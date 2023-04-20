@@ -270,8 +270,6 @@ mod tests {
     use crate::traits::*;
     use crate::ellipsoid::Ellipsoid;
 
-    use assert_float_eq::*;
-
     #[test]
     fn lambert_conic_consistency() {
         let ell = Ellipsoid::from_a_f_inv(6378160.0, 298.25);
@@ -285,9 +283,16 @@ mod tests {
         );
 
         let converter = LambertConic2SPConversion::new(&ell, &params);
-        let (easting, northing) = converter.from_deg(144.75, 37.75);
+        let easting_goal = 2477968.963;
+        let northing_goal = 4416742.535;
+        let (lon, lat) = converter.to_deg(easting_goal, northing_goal);
+        let (easting, northing) = converter.from_deg(lon, lat);
 
-        let (lon, lat) = converter.to_deg(easting, northing);
-        // TODO: do some reasonable assertions here
+        eprintln!("easting: {easting_goal} - {easting}");
+        eprintln!("northing: {northing_goal} - {northing}");
+
+        assert!((easting - easting_goal).abs() < 0.001);
+
+        assert!((northing - northing_goal).abs() < 0.001);
     }
 }

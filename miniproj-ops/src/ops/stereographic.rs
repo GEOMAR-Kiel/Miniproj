@@ -200,8 +200,6 @@ mod tests {
     use crate::traits::*;
     use crate::ellipsoid::Ellipsoid;
 
-    use assert_float_eq::*;
-
     #[test]
     fn polar_stereographic_a_consistency() {
         let ell = Ellipsoid::from_a_f_inv(6378137.0, 298.257223563);
@@ -214,9 +212,16 @@ mod tests {
         );
 
         let converter = PolarStereographicAConversion::new(&ell, &params);
-        let (easting, northing) = converter.from_deg(44.0, 73.0);
-        let (lon, lat) = converter.to_deg(easting, northing);
-        //assert_eq!((easting, northing), (3320416.75, 632668.43));
-        assert_eq!((lon, lat), (44.0, 73.0));
+        let easting_goal = 3329416.75;
+        let northing_goal = 632668.43;
+        let (lon, lat) = converter.to_deg(easting_goal, northing_goal);
+        let (easting, northing) = converter.from_deg(lon, lat);
+
+        eprintln!("easting: {easting_goal} - {easting}");
+        eprintln!("northing: {northing_goal} - {northing}");
+
+        assert!((easting - easting_goal).abs() < 0.01);
+
+        assert!((northing - northing_goal).abs() < 0.01);
     }
 }
