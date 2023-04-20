@@ -113,7 +113,7 @@ impl LambertAzimuthalEqualAreaConversion {
     }
 }
 
-impl crate::traits::CoordTransform for LambertAzimuthalEqualAreaConversion {
+impl crate::traits::Projection for LambertAzimuthalEqualAreaConversion {
     /// as per IOGP Publication 373-7-2 – Geomatics Guidance Note number 7, part 2 – March 2020
     /// longitude & latitude in radians
     #[allow(non_snake_case)]

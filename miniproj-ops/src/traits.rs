@@ -2,9 +2,9 @@
 
 use crate::ellipsoid::{Ellipsoid};
 
-/// Projection method
-pub trait CoordTransform: Send + Sync{
-    ///Converts from projected coordinates to geographic coordinates `(longitude, latitude)` in radians. 
+/// Two-dimensional coordinate operation
+pub trait Projection: Send + Sync{
+    ///Converts from a coordinate in the target coordinate system to lon/lat in EPSG 4326 in radians
     fn to_rad(&self, x: f64, y: f64) -> (f64, f64);
     
     ///Converts from a geographic coordinate in radians to a projected coordinate `(x, y)`, usually in meters.

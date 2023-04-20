@@ -1,11 +1,11 @@
 //This file is licensed under EUPL v1.2 as part of the Digital Earth Viewer
 
-use crate::traits::CoordTransform;
+use crate::traits::Projection;
 
 /// Parameterless conversion that is a no-op in degrees and otherwise converts between degrees and radians.
-pub struct ZeroTransformation;
+pub struct ZeroProjection;
 
-impl CoordTransform for ZeroTransformation{
+impl Projection for ZeroProjection{
     fn to_rad(&self, x: f64, y: f64) -> (f64, f64) {
         (x.to_radians(),y.to_radians())
     }

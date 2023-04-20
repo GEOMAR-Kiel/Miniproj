@@ -10,6 +10,6 @@ default-members = ["miniproj"]
 license-file = "LICENSE.md"
 authors = ["Flemming Stäbler <fstaebler@geomar.de>", "Valentin Buck <vbuck@geomar.de>"]
 edition="2021"
-description="This crate implements geographic transformations between different coordinate systems defined by the [European Petroleum Survey Group](https://epsg.org/home.html)."
+description="This crate implements general and specific geodetic operations like geographic projections."
 readme = "README.md"
 repository = "https://git.geomar.de/flemming-staebler/miniproj/"

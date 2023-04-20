@@ -1,6 +1,6 @@
 //This file is licensed under EUPL v1.2 as part of the Digital Earth Viewer
 
-use crate::{ellipsoid::{Ellipsoid}, CoordTransform, PseudoSerialize, DbContstruct};
+use crate::{ellipsoid::{Ellipsoid}, Projection, PseudoSerialize, DbContstruct};
 
 #[derive(Copy, Clone, Debug)]
 pub struct TransverseMercatorParams {
@@ -136,7 +136,7 @@ impl TransverseMercatorConversion {
     }
 }
 
-impl CoordTransform for TransverseMercatorConversion {
+impl Projection for TransverseMercatorConversion {
     /// as per IOGP Publication 373-7-2 – Geomatics Guidance Note number 7, part 2 – March 2020
     /// longitude & latitude in radians
     #[allow(non_snake_case)]

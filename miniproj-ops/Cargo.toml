@@ -1,10 +1,10 @@
 [package]
 name = "miniproj-ops"
-version = "0.4.0"
+version = "0.5.0"
 edition="2021"
 license-file = "../LICENSE.md"
 authors = ["Flemming Stäbler <fstaebler@geomar.de>", "Valentin Buck <vbuck@geomar.de>"]
-description="This crate implements geographic transformations for use in the miniproj crate."
+description="This crate implements geodetic operations used in the miniproj crate."
 readme = "../README.md"
 repository = "https://git.geomar.de/flemming-staebler/miniproj/"
 

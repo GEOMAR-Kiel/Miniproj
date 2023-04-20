@@ -1,6 +1,6 @@
 //This file is licensed under EUPL v1.2 as part of the Digital Earth Viewer
 
-use crate::{ellipsoid::{Ellipsoid}, CoordTransform, PseudoSerialize, DbContstruct};
+use crate::{ellipsoid::{Ellipsoid}, Projection, PseudoSerialize, DbContstruct};
 use std::f64::consts::{FRAC_PI_4, FRAC_PI_2};
 
 #[derive(Copy, Clone, Debug)]
@@ -182,7 +182,7 @@ impl LambertConic2SPConversion {
 
 }
 
-impl CoordTransform for LambertConic2SPConversion {
+impl Projection for LambertConic2SPConversion {
     /// as per IOGP Publication 373-7-2 – Geomatics Guidance Note number 7, part 2 – May 2022
     /// longitude & latitude in radians
     #[allow(non_snake_case)]
