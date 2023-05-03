@@ -33,8 +33,8 @@ EPSG Code | Operation Method Name                 | # of Projected CRS covered
 
 ```rust
 // Get the WGS84 UTM zone 32N projection
-use miniproj::{get_projection, Projection};
-let projection = get_projection(32632).expect("Coordinate projection not implemented");
+use miniproj::{get_projection, Projection, get_ellipsoid_code, get_ellipsoid, Ellipsoid};
+let projection = get_projection(32632).expect("Projection not implemented.");
 
 // Coordinates of the office where this crate was written in UTM:
 let (easting, northing) = (576935.86f64, 6020593.46f64);
@@ -46,6 +46,14 @@ let (lon, lat) = projection.to_deg(easting, northing);
 
 assert!((lon - 10.183034) < 0.000001);
 assert!((lat - 54.327389) < 0.000001);
+
+// To convert this geographic position to a geocentric position (a position in
+// euclidian space), get the underlying ellipsoid:
+
+let ellipsoid = get_ellipsoid_code(32632)
+    .and_then(|c| get_ellipsoid(c))
+    .expect("No associated ellipsoid.");
+
 ```
 
 

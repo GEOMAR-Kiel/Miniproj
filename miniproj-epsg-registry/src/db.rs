@@ -197,8 +197,8 @@ pub fn gen_parameter_constructors(c: &Connection, supporteds: &[ImplementedProje
         WHERE
 	        val.coord_op_code = (?)
     ")?;
-    let mut constant_defs: String = String::from("static PROJECTIONS: phf::Map<u32, &(dyn Projection + Send + Sync)> =");
     let mut constructors_map = phf_codegen::Map::new();
+    let mut ellipsoids_map = phf_codegen::Map::new();
     let mut names_map = phf_codegen::Map::new();
     //Special case for 4326
     constructors_map.entry(4326, "&ZeroProjection as &(dyn Projection + Send + Sync)");
@@ -225,12 +225,16 @@ pub fn gen_parameter_constructors(c: &Connection, supporteds: &[ImplementedProje
         let ellipsoid = ellipsoids.get(&ellipsoid_code).expect("Ellipsoid not specified.");
         supporteds.iter().find(|(code, _)| *code == method_code).map(|(_, conv)| {
             constructors_map.entry(code, &format!("&{} as &(dyn Projection + Send + Sync)", conv(&params, *ellipsoid)));
+            ellipsoids_map.entry(code, &format!("{ellipsoid_code}"));
             counter += 1;
         });
     })).collect::<Result<()>>()?;
     println!("Collected {} projected coordinate systems.", counter);
-    constant_defs.push_str(&constructors_map.build().to_string());
-    constant_defs.push(';');
-    constant_defs.push('\n');
-    Ok(constant_defs)
+    Ok(format!(
+r"static PROJECTIONS: phf::Map<u32, &(dyn Projection + Send + Sync)> = {};
+static ELLIPSOIDS: phf::Map<u32, u32> = {};
+",
+        constructors_map.build(),
+        ellipsoids_map.build()
+    ))
 }
