@@ -1,21 +1,23 @@
 //This file is licensed under EUPL v1.2
 
+use crate::PseudoSerialize;
+
 
 /// Ellipsoid, a simple approximation of the earth's shape used in most `Projection`s
 #[derive(Copy, Clone, Debug)]
 pub struct Ellipsoid {
     /// semi-major axis
-    a: f64,
+    pub a: f64,
     // /// semi-minor axis
-    b: f64,
+    pub b: f64,
     /// inverse flattening
-    f_inv: f64,
+    pub f_inv: f64,
     /// flattening
-    f: f64,
+    pub f: f64,
     /// eccentricity
-    e: f64,
+    pub e: f64,
     /// eccentricity squared
-    e_squared: f64
+    pub e_squared: f64
 }
 impl Ellipsoid {
 
@@ -78,27 +80,27 @@ impl Ellipsoid {
         self.e_squared
     }
 
-    /// Get secondary eccentricity.
+    /// Calculate secondary eccentricity.
     pub fn e_2(&self) -> f64 {
         f64::sqrt(self.e_squared() / (1.0 - self.e_squared()))
     }
 
-    /// Get radius of curvature in the meridian, latitude in radians.
+    /// Calculate radius of curvature in the meridian, latitude in radians.
     pub fn rho(&self, lat: f64) -> f64 {
         self.a * (1.0 - self.e_squared()) / (1.0 - self.e_squared() * lat.sin().powi(2)).powf(1.5)
     }
 
-    /// Get radius of curvature in the prime vertical, latitude in radians.
+    /// Calculate radius of curvature in the prime vertical, latitude in radians.
     pub fn ny(&self, lat: f64) -> f64 {
         self.a / (1.0 - self.e_squared() * lat.sin().powi(2)).sqrt()
     }
 
-    /// Get radius of authalic sphere (sphere with the same surface area as the ellipsoid).
+    /// Calculate radius of authalic sphere (sphere with the same surface area as the ellipsoid).
     pub fn rad_auth(&self) -> f64 {
         self.a * ((1.0 - ((1.0 - self.e_squared()) / (2.0 * self.e())) * f64::ln((1.0 - self.e()) / (1.0 + self.e()))) * 0.5 ).sqrt()
     }
 
-    /// Get radius of conformal sphere.
+    /// Calculate radius of conformal sphere.
     pub fn rad_conformal(&self, lat: f64) -> f64 {
         f64::sqrt(self.rho(lat) * self.ny(lat))
     }
@@ -109,7 +111,7 @@ impl Ellipsoid {
         (lon.to_degrees(), lat.to_degrees(), h)
     }
 
-    /// Convert from geographic position in degrees and *ellipsoid* height in meters to `(x, y, z)`, geocentric position in meters.
+    /// Convert from geographic position in decimal degrees and *ellipsoid* height in meters to `(x, y, z)`, geocentric position in meters.
     pub fn degrees_to_geocentric(&self, lon: f64, lat: f64, height: f64) -> (f64, f64, f64) {
         self.radians_to_geocentric(lon.to_radians(), lat.to_radians(), height)
     }
@@ -134,6 +136,27 @@ impl Ellipsoid {
             r * lat.cos() * lon.sin(),
             (1f64 - self.e_squared() * ny + height) * lat.sin()
         )
+    }
+}
+
+impl PseudoSerialize for Ellipsoid {
+    fn to_constructed(&self) -> String {
+        format!{
+r"Ellipsoid{{
+    a: f64::from_bits(0x{:x}),
+    b: f64::from_bits(0x{:x}),
+    e: f64::from_bits(0x{:x}),
+    e_squared: f64::from_bits(0x{:x}),
+    f: f64::from_bits(0x{:x}),
+    f_inv: f64::from_bits(0x{:x}),
+}}",
+            self.a.to_bits(),
+            self.b.to_bits(),
+            self.e.to_bits(),
+            self.e_squared.to_bits(),
+            self.f.to_bits(),
+            self.f_inv.to_bits()
+        }
     }
 }
 

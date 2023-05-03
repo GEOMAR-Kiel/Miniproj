@@ -6,8 +6,10 @@
 
 
 mod projection_constructor;
+mod ellipsoid_constructor;
 
 #[doc(inline)]
 pub use miniproj_ops::Projection;
 #[doc(inline)]
 pub use projection_constructor::get_projection;
+pub use ellipsoid_constructor::get_ellipsoid;
