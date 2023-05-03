@@ -29,6 +29,10 @@ EPSG Code | Operation Method Name                 | # of Projected CRS covered
 9810      | Polar Stereographic (Variant A)       | 10
 1024      | Popular Visualisation Pseudo-Mercator | 1
 
+EPSG Code | Operation Method Name
+----------|----------------------------------
+9602      | Geographic/Geocentric Conversions
+
 ### Usage example
 
 ```rust
@@ -41,11 +45,11 @@ let (easting, northing) = (576935.86f64, 6020593.46f64);
 
 // To get the latitude and longitude, use the Projection::to_deg method.
 // Note that the order of the returned tuple is not alphabetical, but instead
-// follows the axis order (X for Longitude, Y for Latitude)
+// follows the axis order (X for Longitude, Y for Latitude).
 let (lon, lat) = projection.to_deg(easting, northing);
 
-assert!((lon - 10.183034) < 0.000001);
-assert!((lat - 54.327389) < 0.000001);
+assert!((lon - 10.183034).abs() < 0.000001);
+assert!((lat - 54.327389).abs() < 0.000001);
 
 // To convert this geographic position to a geocentric position (a position in
 // euclidian space), get the underlying ellipsoid:
@@ -53,6 +57,13 @@ assert!((lat - 54.327389) < 0.000001);
 let ellipsoid = get_ellipsoid_code(32632)
     .and_then(|c| get_ellipsoid(c))
     .expect("No associated ellipsoid.");
+
+// Do the actual conversion. Axis order applies as explained above.
+let (x, y, z) = ellipsoid.deg_to_geocentric(lon, lat, 0.0);
+
+assert!((x - 3668954.28).abs() < 0.01);
+assert!((y - 659027.55).abs() < 0.01);
+assert!((z - 5158079.02).abs() < 0.01);
 
 ```
 
