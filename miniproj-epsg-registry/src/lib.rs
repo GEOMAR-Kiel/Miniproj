@@ -21,6 +21,7 @@ pub static IMPL_CONV: &[ImplementedProjection] = &[
     (9802, &miniproj_ops::lambert_conic_conformal::direct_projection_2sp),
     (1024, &miniproj_ops::popvis_pseudo_mercator::direct_projection),
     (9801, &miniproj_ops::lambert_conic_conformal::direct_projection_1sp_a),
+    (9809, &miniproj_ops::stereographic::direct_projection_oblique),
 ];
 
 /// This function copies the parameter database to the given location, to reliably make it available to build scripts.

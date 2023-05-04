@@ -26,6 +26,7 @@ EPSG Code | Operation Method Name                 | # of Projected CRS covered
 9802      | Lambert Conic Conformal (2SP)         | 950
 9801      | Lambert Conic Conformal (1SP)         | 233
 9829      | Polar Stereographic (Variant B)       | 29
+9809      | Oblique Stereographic                 | 20
 9820      | Lambert Azimuthal Equal Area          | 14
 9810      | Polar Stereographic (Variant A)       | 10
 1024      | Popular Visualisation Pseudo-Mercator | 1
@@ -76,6 +77,10 @@ you are looking for a refined, proven library, check out
 [PROJ](https://crates.io/crates/proj).
 
 ## Changelog
+
+#### 0.7.0
+
+* Added Oblique Stereographic (20 defined CRS)
 
 #### 0.6.0
 
