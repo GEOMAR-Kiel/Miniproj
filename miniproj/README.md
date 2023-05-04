@@ -48,7 +48,7 @@ let (easting, northing) = (576935.86f64, 6020593.46f64);
 // To get the latitude and longitude, use the Projection::to_deg method.
 // Note that the order of the returned tuple is not alphabetical, but instead
 // follows the axis order (X for Longitude, Y for Latitude).
-let (lon, lat) = projection.to_deg(easting, northing);
+let (lon, lat) = projection.projected_to_deg(easting, northing);
 
 assert!((lon - 10.183034).abs() < 0.000001);
 assert!((lat - 54.327389).abs() < 0.000001);
@@ -77,6 +77,10 @@ you are looking for a refined, proven library, check out
 [PROJ](https://crates.io/crates/proj).
 
 ## Changelog
+
+#### 0.7.1
+
+* Updated Example
 
 #### 0.7.0
 
