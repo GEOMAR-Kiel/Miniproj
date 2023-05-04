@@ -1,12 +1,14 @@
 [package]
 name = "miniproj-ops"
-version = "0.5.0"
+version = "0.6.0"
 edition="2021"
 license-file = "../LICENSE.md"
 authors = ["Flemming Stäbler <fstaebler@geomar.de>", "Valentin Buck <vbuck@geomar.de>"]
 description="This crate implements geodetic operations used in the miniproj crate."
 readme = "../README.md"
 repository = "https://git.geomar.de/flemming-staebler/miniproj/"
+categories = ["science::geo"]
+keywords = ["geography", "projection", "maps", "epsg", "geodesy"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

@@ -1,4 +1,4 @@
-//This file is licensed under EUPL v1.2 as part of the Digital Earth Viewer
+//This file is licensed under EUPL v1.2
 #![feature(const_float_bits_conv)]
 
 
@@ -6,6 +6,7 @@
 
 
 mod projection_constructor;
+mod ellipsoid_constructor;
 
 #[doc(inline)]
 pub use miniproj_ops::Projection;

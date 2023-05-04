@@ -25,6 +25,7 @@ EPSG Code | Operation Method Name                 | # of Projected CRS covered
 9807      | Transverse Mercator                   | 3615
 9802      | Lambert Conic Conformal (2SP)         | 950
 9801      | Lambert Conic Conformal (1SP)         | 233
+9829      | Polar Stereographic (Variant B)       | 29
 9820      | Lambert Azimuthal Equal Area          | 14
 9810      | Polar Stereographic (Variant A)       | 10
 1024      | Popular Visualisation Pseudo-Mercator | 1
@@ -56,6 +57,12 @@ you are looking for a refined, proven library, check out
 [PROJ](https://crates.io/crates/proj).
 
 ## Changelog
+
+#### 0.6.0
+
+* Expose Ellipsoids
+* Added an interface to access `Ellipsoid`s by EPSG code
+* Added an interface to find the underlying ellipsoid for a projection by EPSG code
 
 #### 0.5.0
 

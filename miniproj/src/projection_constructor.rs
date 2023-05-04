@@ -1,4 +1,4 @@
-//This file is licensed under EUPL v1.2 as part of the Digital Earth Viewer
+//This file is licensed under EUPL v1.2
 
 use miniproj_ops::Projection;
 use miniproj_ops::transverse_mercator::TransverseMercatorProjection;
