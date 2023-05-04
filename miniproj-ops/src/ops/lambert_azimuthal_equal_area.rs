@@ -117,7 +117,7 @@ impl crate::traits::Projection for LambertAzimuthalEqualAreaProjection {
     /// as per IOGP Publication 373-7-2 – Geomatics Guidance Note number 7, part 2 – March 2020
     /// longitude & latitude in radians
     #[allow(non_snake_case)]
-    fn from_rad(&self, longitude: f64, latitude: f64) -> (f64, f64) {
+    fn rad_to_projected(&self, longitude: f64, latitude: f64) -> (f64, f64) {
 
         let q = (1.0 - self.ellipsoid_e_squared) * 
         (
@@ -147,7 +147,7 @@ impl crate::traits::Projection for LambertAzimuthalEqualAreaProjection {
     ///
     /// The approximation for latitude isn't very precise (6 decimal digits)
     #[allow(non_snake_case)]
-    fn to_rad(&self, easting: f64, northing: f64) -> (f64, f64) {
+    fn projected_to_rad(&self, easting: f64, northing: f64) -> (f64, f64) {
         
         let rho = (((easting - self.false_e)/ self.D).powi(2) + (self.D * (northing - self.false_n)).powi(2)).sqrt();
 
@@ -246,8 +246,8 @@ mod tests {
         let projection = LambertAzimuthalEqualAreaProjection::new(&ell, &params);
         let easting_goal = 3962799.45;
         let northing_goal = 2999718.85;
-        let (lon, lat) = projection.to_deg(easting_goal, northing_goal);
-        let (easting, northing) = projection.from_deg(lon, lat);
+        let (lon, lat) = projection.projected_to_deg(easting_goal, northing_goal);
+        let (easting, northing) = projection.deg_to_projected(lon, lat);
         eprintln!("easting: {easting_goal} - {easting}");
         eprintln!("northing: {northing_goal} - {northing}");
 

@@ -101,7 +101,7 @@ impl PolarStereographicAProjection{
 }
 
 impl crate::traits::Projection for PolarStereographicAProjection {
-    fn from_rad(&self, longitude: f64, latitude: f64) -> (f64, f64) {
+    fn rad_to_projected(&self, longitude: f64, latitude: f64) -> (f64, f64) {
         if self.lat_orig < 0.0 { // North Pole Case
             let t = f64::tan(std::f64::consts::FRAC_PI_4 - latitude / 2.0) * ((1.0 + self.ell_e * latitude.sin())  / (1.0 - self.ell_e * latitude.sin())).powf(self.ell_e / 2.0);
             let rho = t / self.t_rho_factor;
@@ -122,7 +122,7 @@ impl crate::traits::Projection for PolarStereographicAProjection {
         
     }
 
-    fn to_rad(&self, easting: f64, northing: f64) -> (f64, f64) {
+    fn projected_to_rad(&self, easting: f64, northing: f64) -> (f64, f64) {
         let rho_ = ((easting - self.false_e).powi(2) + (northing - self.false_n).powi(2)).sqrt();
         let t_ = rho_ * self.t_rho_factor;
         let chi = if self.lat_orig < 0.0 { // North Pole Case
@@ -209,7 +209,8 @@ pub struct ObliqueStereographicParams {
 
 impl ObliqueStereographicParams {
 
-    pub const fn new(lon_orig: f64, lat_orig: f64, k_orig: f64, false_e: f64, false_n: f64) -> Self {
+    pub fn new(lon_orig: f64, lat_orig: f64, k_orig: f64, false_e: f64, false_n: f64) -> Self {
+        assert!(lat_orig > 0f64);
         Self {
             lat_orig,
             lon_orig,
@@ -298,7 +299,7 @@ impl ObliqueStereographicProjection {
 impl crate::traits::Projection for ObliqueStereographicProjection {
     
     #[allow(non_snake_case)]
-    fn to_rad(&self, x: f64, y: f64) -> (f64, f64) {
+    fn projected_to_rad(&self, x: f64, y: f64) -> (f64, f64) {
         let i = (x - self.false_e).atan2(self.h + (y - self.false_n));
         let j = (x - self.false_e).atan2(self.g - (y - self.false_n)) - i;
         let chi = self.chi_O + 2f64 * (((y - self.false_n) - (x - self.false_e) * (j / 2f64).tan()) / self.R_k_O_2).atan();
@@ -316,7 +317,7 @@ impl crate::traits::Projection for ObliqueStereographicProjection {
     }
 
     #[allow(non_snake_case)]
-    fn from_rad(&self, lon: f64, lat: f64) -> (f64, f64) {
+    fn rad_to_projected(&self, lon: f64, lat: f64) -> (f64, f64) {
         let S_a = (1f64 + lat.sin()) / (1f64 - lat.sin());
         let S_b = (1f64 - self.ellipsoid_e * lat.sin()) / (1f64 + self.ellipsoid_e * lat.sin());
         let DeltaLambda = self.n * (lon - self.lon_orig);
@@ -398,8 +399,8 @@ mod tests {
         let projection = PolarStereographicAProjection::new(&ell, &params);
         let easting_goal = 3329416.75;
         let northing_goal = 632668.43;
-        let (lon, lat) = projection.to_deg(easting_goal, northing_goal);
-        let (easting, northing) = projection.from_deg(lon, lat);
+        let (lon, lat) = projection.projected_to_deg(easting_goal, northing_goal);
+        let (easting, northing) = projection.deg_to_projected(lon, lat);
 
         eprintln!("easting: {easting_goal} - {easting}");
         eprintln!("northing: {northing_goal} - {northing}");
@@ -423,9 +424,9 @@ mod tests {
         let projection = ObliqueStereographicProjection::new(&ell, &params);
         let easting_goal = 196105.283;
         let northing_goal = 557057.739;
-        let (lon, lat) = projection.to_deg(easting_goal, northing_goal);
+        let (lon, lat) = projection.projected_to_deg(easting_goal, northing_goal);
         eprintln!("lon: {lon}, lat: {lat}");
-        let (easting, northing) = projection.from_deg(lon, lat);
+        let (easting, northing) = projection.deg_to_projected(lon, lat);
 
         eprintln!("easting: {easting_goal} - {easting}");
         eprintln!("northing: {northing_goal} - {northing}");

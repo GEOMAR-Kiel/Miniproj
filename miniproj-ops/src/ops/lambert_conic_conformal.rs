@@ -128,7 +128,7 @@ impl Projection for LambertConic2SPProjection {
     /// as per IOGP Publication 373-7-2 – Geomatics Guidance Note number 7, part 2 – May 2022
     /// longitude & latitude in radians
     #[allow(non_snake_case)]
-    fn from_rad(&self, longitude: f64, latitude: f64) -> (f64, f64) {
+    fn rad_to_projected(&self, longitude: f64, latitude: f64) -> (f64, f64) {
         
         let t = (FRAC_PI_4 - latitude / 2f64).tan() / ((1f64 - self.ellipsoid_e * latitude.sin())/(1f64 + self.ellipsoid_e * latitude.sin())).powf(self.ellipsoid_e / 2f64);
 
@@ -145,7 +145,7 @@ impl Projection for LambertConic2SPProjection {
     /// as per IOGP Publication 373-7-2 – Geomatics Guidance Note number 7, part 2 – May 2022
     /// longitude & latitude in radians
     #[allow(non_snake_case)]
-    fn to_rad(&self, easting: f64, northing: f64) -> (f64, f64) {
+    fn projected_to_rad(&self, easting: f64, northing: f64) -> (f64, f64) {
         let theta_ = (self.n.signum() * (easting - self.false_e)).atan2(self.n.signum() * (self.r_F - (northing - self.false_n)));
         let r_ = self.n.signum() * ((easting - self.false_e).powi(2) + (self.r_F - (northing - self.false_n)).powi(2)).sqrt();
         let t_ = (r_ / (self.ellipsoid_a * self.F)).powf(1f64 / self.n);
@@ -292,7 +292,7 @@ impl LambertConic1SPAProjection {
 }
 
 impl Projection for LambertConic1SPAProjection {
-    fn to_rad(&self, x: f64, y: f64) -> (f64, f64) {
+    fn projected_to_rad(&self, x: f64, y: f64) -> (f64, f64) {
         let theta_ = (self.n.signum() * (x - self.false_e)).atan2(self.n.signum() * (self.r_O - (y - self.false_n)));
         let r_ = self.n.signum() * ((x - self.false_e).powi(2) + (self.r_O - (y - self.false_n)).powi(2)).sqrt();
         let t_ = (r_ / self.t_r_fac).powf(1f64 / self.n);
@@ -306,7 +306,7 @@ impl Projection for LambertConic1SPAProjection {
         )
     }
 
-    fn from_rad(&self, lon: f64, lat: f64) -> (f64, f64) {
+    fn rad_to_projected(&self, lon: f64, lat: f64) -> (f64, f64) {
         let t = (FRAC_PI_4 - lat / 2f64).tan()/((1f64 - self.ellipsoid_e * lat.sin())/(1f64 + self.ellipsoid_e * lat.sin())).powf(self.ellipsoid_e / 2f64);
         let r = self.t_r_fac * t.powf(self.n);
         let theta = self.n * (lon - self.lon_O);
@@ -384,8 +384,8 @@ mod tests {
         let projection = LambertConic2SPProjection::new(&ell, &params);
         let easting_goal = 2477968.963;
         let northing_goal = 4416742.535;
-        let (lon, lat) = projection.to_deg(easting_goal, northing_goal);
-        let (easting, northing) = projection.from_deg(lon, lat);
+        let (lon, lat) = projection.projected_to_deg(easting_goal, northing_goal);
+        let (easting, northing) = projection.deg_to_projected(lon, lat);
 
         eprintln!("easting: {easting_goal} - {easting}");
         eprintln!("northing: {northing_goal} - {northing}");
@@ -409,8 +409,8 @@ mod tests {
         let projection = LambertConic1SPAProjection::new(&ell, &params);
         let easting_goal = 255966.58;
         let northing_goal = 142493.51;
-        let (lon, lat) = projection.to_deg(easting_goal, northing_goal);
-        let (easting, northing) = projection.from_deg(lon, lat);
+        let (lon, lat) = projection.projected_to_deg(easting_goal, northing_goal);
+        let (easting, northing) = projection.deg_to_projected(lon, lat);
 
         eprintln!("easting: {easting_goal} - {easting}");
         eprintln!("northing: {northing_goal} - {northing}");

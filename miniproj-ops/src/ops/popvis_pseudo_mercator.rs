@@ -75,7 +75,7 @@ impl Projection for PopVisPseudoMercatorProjection {
     /// as per IOGP Publication 373-7-2 – Geomatics Guidance Note number 7, part 2 – March 2020
     /// longitude & latitude in radians
     #[allow(non_snake_case)]
-    fn from_rad(&self, longitude: f64, latitude: f64) -> (f64, f64) {
+    fn rad_to_projected(&self, longitude: f64, latitude: f64) -> (f64, f64) {
         (
             self.false_e + self.ellipsoid_a * (longitude - self.lon_orig)
         ,
@@ -86,7 +86,7 @@ impl Projection for PopVisPseudoMercatorProjection {
     /// as per IOGP Publication 373-7-2 – Geomatics Guidance Note number 7, part 2 – March 2020
     /// longitude & latitude in radians
     #[allow(non_snake_case)]
-    fn to_rad(&self, easting: f64, northing: f64) -> (f64, f64) {
+    fn projected_to_rad(&self, easting: f64, northing: f64) -> (f64, f64) {
         let D = (self.false_n - northing) / self.ellipsoid_a;
         (
             ((easting - self.false_e) / self.ellipsoid_a) + self.lon_orig
@@ -152,8 +152,8 @@ mod tests {
         let projection = PopVisPseudoMercatorProjection::new(&ell, &params);
         let easting_goal = -11169055.58;
         let northing_goal = 2800000.00;
-        let (lon, lat) = projection.to_deg(easting_goal, northing_goal);
-        let (easting, northing) = projection.from_deg(lon, lat);
+        let (lon, lat) = projection.projected_to_deg(easting_goal, northing_goal);
+        let (easting, northing) = projection.deg_to_projected(lon, lat);
 
         eprintln!("easting: {easting_goal} - {easting}");
         eprintln!("northing: {northing_goal} - {northing}");
