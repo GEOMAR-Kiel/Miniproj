@@ -3,11 +3,12 @@
 use std::collections::HashMap;
 
 use miniproj_ops::ellipsoid::Ellipsoid;
+use miniproj_ops::PseudoSerialize;
 use rusqlite::{Connection, Result};
 use crate::{helpers::*, ImplementedProjection};
 
 /// Generates rust source code mapping EPSG codes to `Ellipsoid`s.
-pub fn gen_ellipsoids_source(c: &Connection) -> Result<String> {
+pub fn gen_ellipsoid_constructors(c: &Connection) -> Result<String> {
     let mut s = c.prepare("
         SELECT
             ellipsoid_code as code,
@@ -24,35 +25,24 @@ pub fn gen_ellipsoids_source(c: &Connection) -> Result<String> {
     s.query([])?.mapped(|r|
         Ok({
             let code: u32 = r.get_unwrap("code");
-            let semi_major: u64 = r.get_unwrap::<_, f64>("a").to_bits();
-            let semi_minor: Option<u64> = r.get_unwrap::<_, Option<f64>>("b").map(|v| v.to_bits());
-            let inf_flat: Option<u64> = r.get_unwrap::<_, Option<f64>>("inv_f").map(|v| v.to_bits());
-            match (semi_minor, inf_flat) {
+            let semi_major = r.get_unwrap::<_, f64>("a");
+            let semi_minor = r.get_unwrap::<_, Option<f64>>("b");
+            let inf_flat = r.get_unwrap::<_, Option<f64>>("inv_f");
+            let ellipsoid = match (semi_minor, inf_flat) {
                 (Some(b), _) => {
-                    phf_map.entry(code, &format!(
-                        "Ellipsoid::from_a_b(f64::from_bits(0x{:x}), f64::from_bits(0x{:x}))",
-                        semi_major,
-                        b
-                    ));
+                    Ellipsoid::from_a_b(semi_major, b)
                 },
                 (_, Some(f_inv)) => {
-                    phf_map.entry(code, &format!(
-                        "Ellipsoid::from_a_f_inv(f64::from_bits(0x{:x}), f64::from_bits(0x{:x}))",
-                        semi_major,
-                        f_inv
-                    ));
+                    Ellipsoid::from_a_f_inv(semi_major, f_inv)
                 },
                 _ => unreachable!("Malformed DB: Ellipsoids need either b or f_inv.")
-            }
+            };
+            phf_map.entry(code, &ellipsoid.to_constructed());
         }))
     .collect::<Result<()>>()?;
     constant_defs.push_str(&phf_map.build().to_string());
     constant_defs.push(';');
-    Ok( constant_defs + 
-        "\npub fn get_ellipsoid(code: u32) -> Option<&'static Ellipsoid> {\n
-            ELLIPSOIDS.get(&code)
-        \n}\n"
-    )
+    Ok( constant_defs )
 }
 
 /// Constructs a `HashMap` mapping EPSG codes to `Ellipsoid`s.
@@ -207,8 +197,8 @@ pub fn gen_parameter_constructors(c: &Connection, supporteds: &[ImplementedProje
         WHERE
 	        val.coord_op_code = (?)
     ")?;
-    let mut constant_defs: String = String::from("static PROJECTIONS: phf::Map<u32, &(dyn Projection + Send + Sync)> =");
     let mut constructors_map = phf_codegen::Map::new();
+    let mut ellipsoids_map = phf_codegen::Map::new();
     let mut names_map = phf_codegen::Map::new();
     //Special case for 4326
     constructors_map.entry(4326, "&ZeroProjection as &(dyn Projection + Send + Sync)");
@@ -235,12 +225,16 @@ pub fn gen_parameter_constructors(c: &Connection, supporteds: &[ImplementedProje
         let ellipsoid = ellipsoids.get(&ellipsoid_code).expect("Ellipsoid not specified.");
         supporteds.iter().find(|(code, _)| *code == method_code).map(|(_, conv)| {
             constructors_map.entry(code, &format!("&{} as &(dyn Projection + Send + Sync)", conv(&params, *ellipsoid)));
+            ellipsoids_map.entry(code, &format!("{ellipsoid_code}"));
             counter += 1;
         });
     })).collect::<Result<()>>()?;
     println!("Collected {} projected coordinate systems.", counter);
-    constant_defs.push_str(&constructors_map.build().to_string());
-    constant_defs.push(';');
-    constant_defs.push('\n');
-    Ok(constant_defs)
+    Ok(format!(
+r"static PROJECTIONS: phf::Map<u32, &(dyn Projection + Send + Sync)> = {};
+static ELLIPSOIDS: phf::Map<u32, u32> = {};
+",
+        constructors_map.build(),
+        ellipsoids_map.build()
+    ))
 }

@@ -9,6 +9,8 @@ mod projection_constructor;
 mod ellipsoid_constructor;
 
 #[doc(inline)]
-pub use miniproj_ops::Projection;
+pub use miniproj_ops::{Projection, Ellipsoid};
 #[doc(inline)]
-pub use projection_constructor::get_projection;
+pub use projection_constructor::{get_projection, get_ellipsoid_code};
+#[doc(inline)]
+pub use ellipsoid_constructor::get_ellipsoid;

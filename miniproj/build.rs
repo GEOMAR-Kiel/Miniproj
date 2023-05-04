@@ -10,8 +10,11 @@ fn main() {
     data_path.push("parameters.sqlite");
     write_db(&data_path).expect("Could not write db object");
     let db = DbConnection::open(data_path).unwrap();
-    let mut projection_out = output_dir;
+    let mut projection_out = output_dir.clone();
     let ellipsoids = get_ellipsoids(&db).unwrap();
     projection_out.push("projection_constructors.rs");
     std::fs::write(projection_out, gen_parameter_constructors(&db, IMPL_CONV, &ellipsoids).unwrap()).unwrap();
+    let mut ellipsoid_out = output_dir;
+    ellipsoid_out.push("ellipsoid_constructors.rs");
+    std::fs::write(ellipsoid_out, gen_ellipsoid_constructors(&db).unwrap()).unwrap();
 }

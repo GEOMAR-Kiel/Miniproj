@@ -1,21 +1,23 @@
 //This file is licensed under EUPL v1.2
 
+use crate::PseudoSerialize;
+
 
 /// Ellipsoid, a simple approximation of the earth's shape used in most `Projection`s
 #[derive(Copy, Clone, Debug)]
 pub struct Ellipsoid {
     /// semi-major axis
-    a: f64,
+    pub a: f64,
     // /// semi-minor axis
-    b: f64,
+    pub b: f64,
     /// inverse flattening
-    f_inv: f64,
+    pub f_inv: f64,
     /// flattening
-    f: f64,
+    pub f: f64,
     /// eccentricity
-    e: f64,
+    pub e: f64,
     /// eccentricity squared
-    e_squared: f64
+    pub e_squared: f64
 }
 impl Ellipsoid {
 
@@ -78,44 +80,44 @@ impl Ellipsoid {
         self.e_squared
     }
 
-    /// Get secondary eccentricity.
+    /// Calculate secondary eccentricity.
     pub fn e_2(&self) -> f64 {
         f64::sqrt(self.e_squared() / (1.0 - self.e_squared()))
     }
 
-    /// Get radius of curvature in the meridian, latitude in radians.
+    /// Calculate radius of curvature in the meridian, latitude in radians.
     pub fn rho(&self, lat: f64) -> f64 {
         self.a * (1.0 - self.e_squared()) / (1.0 - self.e_squared() * lat.sin().powi(2)).powf(1.5)
     }
 
-    /// Get radius of curvature in the prime vertical, latitude in radians.
+    /// Calculate radius of curvature in the prime vertical, latitude in radians.
     pub fn ny(&self, lat: f64) -> f64 {
         self.a / (1.0 - self.e_squared() * lat.sin().powi(2)).sqrt()
     }
 
-    /// Get radius of authalic sphere (sphere with the same surface area as the ellipsoid).
+    /// Calculate radius of authalic sphere (sphere with the same surface area as the ellipsoid).
     pub fn rad_auth(&self) -> f64 {
         self.a * ((1.0 - ((1.0 - self.e_squared()) / (2.0 * self.e())) * f64::ln((1.0 - self.e()) / (1.0 + self.e()))) * 0.5 ).sqrt()
     }
 
-    /// Get radius of conformal sphere.
+    /// Calculate radius of conformal sphere.
     pub fn rad_conformal(&self, lat: f64) -> f64 {
         f64::sqrt(self.rho(lat) * self.ny(lat))
     }
 
     /// Convert from geocentric position in meters to `(longitude, latitude, height)`, geographic position in decimal degrees and *ellipsoid* height in meters.
-    pub fn degrees_from_geocentric(&self, x: f64, y: f64, z: f64) -> (f64, f64, f64) {
-        let (lon, lat, h) = self.radians_from_geocentric(x, y, z);
+    pub fn geocentric_to_deg(&self, x: f64, y: f64, z: f64) -> (f64, f64, f64) {
+        let (lon, lat, h) = self.geocentric_to_rad(x, y, z);
         (lon.to_degrees(), lat.to_degrees(), h)
     }
 
-    /// Convert from geographic position in degrees and *ellipsoid* height in meters to `(x, y, z)`, geocentric position in meters.
-    pub fn degrees_to_geocentric(&self, lon: f64, lat: f64, height: f64) -> (f64, f64, f64) {
-        self.radians_to_geocentric(lon.to_radians(), lat.to_radians(), height)
+    /// Convert from geographic position in decimal degrees and *ellipsoid* height in meters to `(x, y, z)`, geocentric position in meters.
+    pub fn deg_to_geocentric(&self, lon: f64, lat: f64, height: f64) -> (f64, f64, f64) {
+        self.rad_to_geocentric(lon.to_radians(), lat.to_radians(), height)
     }
 
     /// Convert from geocentric position in meters to `(longitude, latitude, height)`, geographic position in radians and *ellipsoid* height in meters.
-    pub fn radians_from_geocentric(&self, x: f64, y: f64, z: f64) -> (f64, f64, f64) {
+    pub fn geocentric_to_rad(&self, x: f64, y: f64, z: f64) -> (f64, f64, f64) {
         let lon = y.atan2(x);
         let epsilon = self.e_squared() / (1f64 - self.e_squared());
         let p = (x.powi(2) + y.powi(2)).sqrt();
@@ -126,14 +128,35 @@ impl Ellipsoid {
     }
 
     /// Convert from geographic position in radians and *ellipsoid* height in meters to `(x, y, z)`, geocentric position in meters.
-    pub fn radians_to_geocentric(&self, lon: f64, lat: f64, height: f64) -> (f64, f64, f64) {
+    pub fn rad_to_geocentric(&self, lon: f64, lat: f64, height: f64) -> (f64, f64, f64) {
         let ny = self.ny(lat);
-        let r = self.ny(lat) + height;
+        let r = ny + height;
         (
             r * lat.cos() * lon.cos(),
             r * lat.cos() * lon.sin(),
-            (1f64 - self.e_squared() * ny + height) * lat.sin()
+            ((1f64 - self.e_squared()) * ny + height) * lat.sin()
         )
+    }
+}
+
+impl PseudoSerialize for Ellipsoid {
+    fn to_constructed(&self) -> String {
+        format!{
+r"Ellipsoid{{
+    a: f64::from_bits(0x{:x}),
+    b: f64::from_bits(0x{:x}),
+    e: f64::from_bits(0x{:x}),
+    e_squared: f64::from_bits(0x{:x}),
+    f: f64::from_bits(0x{:x}),
+    f_inv: f64::from_bits(0x{:x}),
+}}",
+            self.a.to_bits(),
+            self.b.to_bits(),
+            self.e.to_bits(),
+            self.e_squared.to_bits(),
+            self.f.to_bits(),
+            self.f_inv.to_bits()
+        }
     }
 }
 
@@ -148,17 +171,32 @@ mod tests {
         let expected_lon = 2f64 + 7f64 / 60f64 + 46.380 / 3600f64;
         let expected_eh = 73.0;
 
-        let (lon, lat, eh) = ell.degrees_from_geocentric(
-            3771793.968, 
-            140253.342,
-            5124304.349
+        let expected_x = 3771793.968;
+        let expected_y = 140253.342;
+        let expected_z = 5124304.349;
+
+        let (lon, lat, eh) = ell.geocentric_to_deg(
+            expected_x,
+            expected_y,
+            expected_z
         );
+
+        let (x, y, z) = ell.deg_to_geocentric(lon, lat, eh);
         eprintln!("lon: {expected_lon} - {lon}");
         eprintln!("lat: {expected_lat} - {lat}");
-        eprintln!("lon: {expected_eh} - {eh}");
+        eprintln!("eh: {expected_eh} - {eh}");
+
+        
+        eprintln!("X: {expected_x} - {x}");
+        eprintln!("Y: {expected_y} - {y}");
+        eprintln!("Z: {expected_z} - {z}");
         assert!((expected_lon - lon).abs() < 0.01 / 3600.0);
         assert!((expected_lat - lat).abs() < 0.01 / 3600.0);
-        assert!((expected_eh - eh).abs() < 0.1);
+        assert!((expected_eh - eh).abs() < 0.01);
+        assert!((expected_x - x).abs() < 0.01);
+        assert!((expected_y - y).abs() < 0.01);
+        assert!((expected_z - z).abs() < 0.01);
+
     }
 
 }
