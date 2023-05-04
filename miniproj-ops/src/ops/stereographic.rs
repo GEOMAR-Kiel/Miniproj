@@ -15,21 +15,25 @@ pub struct PolarStereographicAParams {
     /// false easting
     false_e: f64,
     /// false northing
-    false_n: f64
+    false_n: f64,
 }
 
 impl PolarStereographicAParams {
-
-    pub const fn new(lon_orig: f64, lat_orig: f64, k_orig: f64, false_e: f64, false_n: f64) -> Self {
+    pub const fn new(
+        lon_orig: f64,
+        lat_orig: f64,
+        k_orig: f64,
+        false_e: f64,
+        false_n: f64,
+    ) -> Self {
         Self {
             lat_orig,
             lon_orig,
             k_orig,
             false_e,
-            false_n
+            false_n,
         }
     }
-
 
     /// longitude of natural origin, radians
     pub fn lon_orig(&self) -> f64 {
@@ -73,15 +77,23 @@ pub struct PolarStereographicAProjection {
     pub false_e: f64,
     pub false_n: f64,
     //ell: &'a Ellipsoid,
-    pub ell_e: f64
+    pub ell_e: f64,
 }
 
-impl PolarStereographicAProjection{
+impl PolarStereographicAProjection {
     pub fn new(ell: &Ellipsoid, params: &PolarStereographicAParams) -> Self {
-        let t_rho_factor = ((1.0 + ell.e()).powf(1.0 + ell.e()) * (1.0 - ell.e()).powf(1.0 - ell.e())).sqrt() / (2.0 * ell.a() * params.k_orig());
-        let phi_2_chi_sin_summand_factor = ell.e_squared() / 2.0 + 5.0 * ell.e_squared().powi(2) / 24.0 + ell.e_squared().powi(3) / 12.0 + 13.0 * ell.e_squared().powi(4) / 360.0;
-        let phi_4_chi_sin_summand_factor = 7.0 * ell.e_squared().powi(2) / 48.0 + 29.0 * ell.e_squared().powi(3) / 240.0 + ell.e_squared().powi(4) / 11520.0;
-        let phi_6_chi_sin_summand_factor = 7.0 * ell.e_squared().powi(3) / 120.0 + 81.0 * ell.e_squared().powi(4) / 1120.0;
+        let t_rho_factor =
+            ((1.0 + ell.e()).powf(1.0 + ell.e()) * (1.0 - ell.e()).powf(1.0 - ell.e())).sqrt()
+                / (2.0 * ell.a() * params.k_orig());
+        let phi_2_chi_sin_summand_factor = ell.e_squared() / 2.0
+            + 5.0 * ell.e_squared().powi(2) / 24.0
+            + ell.e_squared().powi(3) / 12.0
+            + 13.0 * ell.e_squared().powi(4) / 360.0;
+        let phi_4_chi_sin_summand_factor = 7.0 * ell.e_squared().powi(2) / 48.0
+            + 29.0 * ell.e_squared().powi(3) / 240.0
+            + ell.e_squared().powi(4) / 11520.0;
+        let phi_6_chi_sin_summand_factor =
+            7.0 * ell.e_squared().powi(3) / 120.0 + 81.0 * ell.e_squared().powi(4) / 1120.0;
         let phi_8_chi_sin_summand_factor = 4279.0 * ell.e_squared().powi(4) / 161280.0;
         Self {
             t_rho_factor,
@@ -94,7 +106,7 @@ impl PolarStereographicAProjection{
             lon_orig: params.lon_orig(),
             false_e: params.false_e(),
             false_n: params.false_n(),
-            
+
             ell_e: ell.e(),
         }
     }
@@ -102,39 +114,44 @@ impl PolarStereographicAProjection{
 
 impl crate::traits::Projection for PolarStereographicAProjection {
     fn rad_to_projected(&self, longitude: f64, latitude: f64) -> (f64, f64) {
-        if self.lat_orig < 0.0 { // North Pole Case
-            let t = f64::tan(std::f64::consts::FRAC_PI_4 - latitude / 2.0) * ((1.0 + self.ell_e * latitude.sin())  / (1.0 - self.ell_e * latitude.sin())).powf(self.ell_e / 2.0);
+        if self.lat_orig < 0.0 {
+            // North Pole Case
+            let t = f64::tan(std::f64::consts::FRAC_PI_4 - latitude / 2.0)
+                * ((1.0 + self.ell_e * latitude.sin()) / (1.0 - self.ell_e * latitude.sin()))
+                    .powf(self.ell_e / 2.0);
             let rho = t / self.t_rho_factor;
             (
-                self.false_e + rho * f64::sin(longitude - self.lon_orig)
-            ,
-                self.false_n - rho * f64::cos(longitude - self.lon_orig)
+                self.false_e + rho * f64::sin(longitude - self.lon_orig),
+                self.false_n - rho * f64::cos(longitude - self.lon_orig),
             )
-        } else {    // South Pole Case
-            let t = f64::tan(std::f64::consts::FRAC_PI_4 + latitude / 2.0) / ((1.0 + self.ell_e * latitude.sin())  / (1.0 - self.ell_e * latitude.sin())).powf(self.ell_e / 2.0);
+        } else {
+            // South Pole Case
+            let t = f64::tan(std::f64::consts::FRAC_PI_4 + latitude / 2.0)
+                / ((1.0 + self.ell_e * latitude.sin()) / (1.0 - self.ell_e * latitude.sin()))
+                    .powf(self.ell_e / 2.0);
             let rho = t / self.t_rho_factor;
             (
-                self.false_e + rho * f64::sin(longitude - self.lon_orig)
-            ,
-                self.false_n + rho * f64::cos(longitude - self.lon_orig)
+                self.false_e + rho * f64::sin(longitude - self.lon_orig),
+                self.false_n + rho * f64::cos(longitude - self.lon_orig),
             )
         }
-        
     }
 
     fn projected_to_rad(&self, easting: f64, northing: f64) -> (f64, f64) {
         let rho_ = ((easting - self.false_e).powi(2) + (northing - self.false_n).powi(2)).sqrt();
         let t_ = rho_ * self.t_rho_factor;
-        let chi = if self.lat_orig < 0.0 { // North Pole Case
+        let chi = if self.lat_orig < 0.0 {
+            // North Pole Case
             FRAC_PI_2 - 2.0 * t_.atan()
-        } else { // South Pole Case
+        } else {
+            // South Pole Case
             2.0 * t_.atan() - FRAC_PI_2
         };
-        let phi = chi +
-            self.phi_2_chi_sin_summand_factor * (2.0 * chi).sin() +
-            self.phi_4_chi_sin_summand_factor * (4.0 * chi).sin() +
-            self.phi_6_chi_sin_summand_factor * (6.0 * chi).sin() + 
-            self.phi_8_chi_sin_summand_factor * (8.0 * chi).sin();
+        let phi = chi
+            + self.phi_2_chi_sin_summand_factor * (2.0 * chi).sin()
+            + self.phi_4_chi_sin_summand_factor * (4.0 * chi).sin()
+            + self.phi_6_chi_sin_summand_factor * (6.0 * chi).sin()
+            + self.phi_8_chi_sin_summand_factor * (8.0 * chi).sin();
         let lambda = /*if easting == self.false_e { //this appears wrong to me so it's commented out. @ me if you think it's right tho.
             self.lat_orig
         } else*/ if self.lat_orig < 0.0 { // North Pole Case
@@ -148,11 +165,26 @@ impl crate::traits::Projection for PolarStereographicAProjection {
 impl DbContstruct for PolarStereographicAProjection {
     fn from_database_params(params: &[(u32, f64)], ellipsoid: &Ellipsoid) -> Self {
         let params = PolarStereographicAParams::new(
-            params.iter().find_map(|(c, v)| if *c == 8802{Some(*v)}else{None}).unwrap(),
-            params.iter().find_map(|(c, v)| if *c == 8801{Some(*v)}else{None}).unwrap(),
-            params.iter().find_map(|(c, v)| if *c == 8805{Some(*v)}else{None}).unwrap(),
-            params.iter().find_map(|(c, v)| if *c == 8806{Some(*v)}else{None}).unwrap(),
-            params.iter().find_map(|(c, v)| if *c == 8807{Some(*v)}else{None}).unwrap(),
+            params
+                .iter()
+                .find_map(|(c, v)| if *c == 8802 { Some(*v) } else { None })
+                .unwrap(),
+            params
+                .iter()
+                .find_map(|(c, v)| if *c == 8801 { Some(*v) } else { None })
+                .unwrap(),
+            params
+                .iter()
+                .find_map(|(c, v)| if *c == 8805 { Some(*v) } else { None })
+                .unwrap(),
+            params
+                .iter()
+                .find_map(|(c, v)| if *c == 8806 { Some(*v) } else { None })
+                .unwrap(),
+            params
+                .iter()
+                .find_map(|(c, v)| if *c == 8807 { Some(*v) } else { None })
+                .unwrap(),
         );
         Self::new(ellipsoid, &params)
     }
@@ -179,12 +211,10 @@ r"PolarStereographicAProjection{{
             self.phi_4_chi_sin_summand_factor.to_bits(),
             self.phi_6_chi_sin_summand_factor.to_bits(),
             self.phi_8_chi_sin_summand_factor.to_bits(),
-
             self.lat_orig.to_bits(),
             self.lon_orig.to_bits(),
             self.false_e.to_bits(),
             self.false_n.to_bits(),
-
             self.ell_e.to_bits()
         )
     }
@@ -204,11 +234,10 @@ pub struct ObliqueStereographicParams {
     // False easting
     false_e: f64,
     // False northing
-    false_n: f64
+    false_n: f64,
 }
 
 impl ObliqueStereographicParams {
-
     pub fn new(lon_orig: f64, lat_orig: f64, k_orig: f64, false_e: f64, false_n: f64) -> Self {
         assert!(lat_orig > 0f64);
         Self {
@@ -216,7 +245,7 @@ impl ObliqueStereographicParams {
             lon_orig,
             k_orig,
             false_e,
-            false_n
+            false_n,
         }
     }
 
@@ -259,7 +288,7 @@ pub struct ObliqueStereographicProjection {
     pub n: f64,
     pub lon_orig: f64,
     pub g: f64,
-    pub h: f64
+    pub h: f64,
 }
 
 impl ObliqueStereographicProjection {
@@ -270,12 +299,16 @@ impl ObliqueStereographicProjection {
         let rho_O = ell.rho(params.lat_orig());
         let ny_O = ell.ny(params.lat_orig());
         let R = (rho_O * ny_O).sqrt();
-        let n = (1f64 + ((ell.e_squared() * params.lat_orig().cos().powi(4))/ (1f64 - ell.e_squared()))).sqrt();
+        let n = (1f64
+            + ((ell.e_squared() * params.lat_orig().cos().powi(4)) / (1f64 - ell.e_squared())))
+        .sqrt();
         let S_1 = (1f64 + params.lat_orig().sin()) / (1f64 - params.lat_orig.sin());
-        let S_2 = (1f64 - ell.e() * params.lat_orig().sin()) / (1f64 + ell.e() * params.lat_orig().sin());
+        let S_2 =
+            (1f64 - ell.e() * params.lat_orig().sin()) / (1f64 + ell.e() * params.lat_orig().sin());
         let w_1 = (S_1 * S_2.powf(ell.e())).powf(n);
         let chi_OO_sin = (w_1 - 1f64) / (w_1 + 1f64);
-        let c = (n + params.lat_orig().sin()) * (1f64 - chi_OO_sin) / ((n - params.lat_orig().sin()) * (1f64 + chi_OO_sin));
+        let c = (n + params.lat_orig().sin()) * (1f64 - chi_OO_sin)
+            / ((n - params.lat_orig().sin()) * (1f64 + chi_OO_sin));
         let w_2 = c * w_1;
         let chi_O = ((w_2 - 1f64) / (w_2 + 1f64)).asin();
         let g = 2f64 * R * params.k_orig() * (FRAC_PI_4 - chi_O / 2f64).tan();
@@ -291,29 +324,33 @@ impl ObliqueStereographicProjection {
             n,
             lon_orig: params.lon_orig(),
             g,
-            h
+            h,
         }
     }
 }
 
 impl crate::traits::Projection for ObliqueStereographicProjection {
-    
     #[allow(non_snake_case)]
     fn projected_to_rad(&self, x: f64, y: f64) -> (f64, f64) {
         let i = (x - self.false_e).atan2(self.h + (y - self.false_n));
         let j = (x - self.false_e).atan2(self.g - (y - self.false_n)) - i;
-        let chi = self.chi_O + 2f64 * (((y - self.false_n) - (x - self.false_e) * (j / 2f64).tan()) / self.R_k_O_2).atan();
+        let chi = self.chi_O
+            + 2f64
+                * (((y - self.false_n) - (x - self.false_e) * (j / 2f64).tan()) / self.R_k_O_2)
+                    .atan();
         let psi = 0.5 * ((1f64 + chi.sin()) / (self.c * (1f64 - chi.sin()))).ln() / self.n;
         let mut phi = 2f64 * psi.exp().atan() - FRAC_PI_2;
         for _ in 0..Self::MAX_ITERATIONS {
-            let psi_ = ((phi / 2f64 + FRAC_PI_4).tan() * ((1f64 - self.ellipsoid_e * phi.sin())/(1f64 + self.ellipsoid_e * phi.sin())).powf(self.ellipsoid_e / 2f64)).ln();
-            phi = phi - (psi_ - psi) * phi.cos() * (1f64 - self.ellipsoid_e_sq * phi.sin().powi(2)) / (1f64 - self.ellipsoid_e_sq);
-            }
+            let psi_ = ((phi / 2f64 + FRAC_PI_4).tan()
+                * ((1f64 - self.ellipsoid_e * phi.sin()) / (1f64 + self.ellipsoid_e * phi.sin()))
+                    .powf(self.ellipsoid_e / 2f64))
+            .ln();
+            phi = phi
+                - (psi_ - psi) * phi.cos() * (1f64 - self.ellipsoid_e_sq * phi.sin().powi(2))
+                    / (1f64 - self.ellipsoid_e_sq);
+        }
         let DeltaLambda = j + 2f64 * i;
-        (
-            DeltaLambda / self.n + self.lon_orig,
-            phi
-        )
+        (DeltaLambda / self.n + self.lon_orig, phi)
     }
 
     #[allow(non_snake_case)]
@@ -323,10 +360,15 @@ impl crate::traits::Projection for ObliqueStereographicProjection {
         let DeltaLambda = self.n * (lon - self.lon_orig);
         let w = self.c * (S_a * S_b.powf(self.ellipsoid_e)).powf(self.n);
         let chi = ((w - 1f64) / (w + 1f64)).asin();
-        let B = 1f64 + chi.sin() * self.chi_O.sin() + chi.cos() * self.chi_O.cos() * DeltaLambda.cos();
+        let B =
+            1f64 + chi.sin() * self.chi_O.sin() + chi.cos() * self.chi_O.cos() * DeltaLambda.cos();
         (
             self.false_e + self.R_k_O_2 * chi.cos() * DeltaLambda.sin() / B,
-            self.false_n + self.R_k_O_2 * (chi.sin() * self.chi_O.cos() - chi.cos() * self.chi_O.sin() * DeltaLambda.cos()) / B
+            self.false_n
+                + self.R_k_O_2
+                    * (chi.sin() * self.chi_O.cos()
+                        - chi.cos() * self.chi_O.sin() * DeltaLambda.cos())
+                    / B,
         )
     }
 }
@@ -334,11 +376,26 @@ impl crate::traits::Projection for ObliqueStereographicProjection {
 impl DbContstruct for ObliqueStereographicProjection {
     fn from_database_params(params: &[(u32, f64)], ellipsoid: &Ellipsoid) -> Self {
         let params = ObliqueStereographicParams::new(
-            params.iter().find_map(|(c, v)| if *c == 8802{Some(*v)}else{None}).unwrap(),
-            params.iter().find_map(|(c, v)| if *c == 8801{Some(*v)}else{None}).unwrap(),
-            params.iter().find_map(|(c, v)| if *c == 8805{Some(*v)}else{None}).unwrap(),
-            params.iter().find_map(|(c, v)| if *c == 8806{Some(*v)}else{None}).unwrap(),
-            params.iter().find_map(|(c, v)| if *c == 8807{Some(*v)}else{None}).unwrap(),
+            params
+                .iter()
+                .find_map(|(c, v)| if *c == 8802 { Some(*v) } else { None })
+                .unwrap(),
+            params
+                .iter()
+                .find_map(|(c, v)| if *c == 8801 { Some(*v) } else { None })
+                .unwrap(),
+            params
+                .iter()
+                .find_map(|(c, v)| if *c == 8805 { Some(*v) } else { None })
+                .unwrap(),
+            params
+                .iter()
+                .find_map(|(c, v)| if *c == 8806 { Some(*v) } else { None })
+                .unwrap(),
+            params
+                .iter()
+                .find_map(|(c, v)| if *c == 8807 { Some(*v) } else { None })
+                .unwrap(),
         );
         Self::new(ellipsoid, &params)
     }
@@ -381,9 +438,9 @@ pub fn direct_projection_oblique(params: &[(u32, f64)], ell: Ellipsoid) -> Strin
 #[cfg(test)]
 mod tests {
 
+    use crate::ellipsoid::Ellipsoid;
     use crate::stereographic::*;
     use crate::traits::*;
-    use crate::ellipsoid::Ellipsoid;
 
     #[test]
     fn polar_stereographic_a_consistency() {
@@ -393,7 +450,7 @@ mod tests {
             -90.0f64.to_radians(),
             0.994,
             2_000_000.0,
-            2_000_000.0
+            2_000_000.0,
         );
 
         let projection = PolarStereographicAProjection::new(&ell, &params);
@@ -418,7 +475,7 @@ mod tests {
             0.910296727,
             0.9999079,
             155000.0,
-            463000.0
+            463000.0,
         );
 
         let projection = ObliqueStereographicProjection::new(&ell, &params);

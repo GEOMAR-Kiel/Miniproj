@@ -1,16 +1,16 @@
 //This file is licensed under EUPL v1.2
 
-use crate::ellipsoid::{Ellipsoid};
+use crate::ellipsoid::Ellipsoid;
 
 /// Two-dimensional coordinate operation
-pub trait Projection: Send + Sync{
+pub trait Projection: Send + Sync {
     ///Converts from a coordinate in the target coordinate system to lon/lat in EPSG 4326 in radians
     fn projected_to_rad(&self, x: f64, y: f64) -> (f64, f64);
-    
+
     ///Converts from a geographic coordinate in radians to a projected coordinate `(x, y)`, usually in meters.
     fn rad_to_projected(&self, lon: f64, lat: f64) -> (f64, f64);
 
-    ///Converts from projected coordinates to geographic coordinates `(longitude, latitude)` in decimal degrees. 
+    ///Converts from projected coordinates to geographic coordinates `(longitude, latitude)` in decimal degrees.
     fn projected_to_deg(&self, x: f64, y: f64) -> (f64, f64) {
         let tmp = self.projected_to_rad(x, y);
         (tmp.0.to_degrees(), tmp.1.to_degrees())

@@ -1,6 +1,6 @@
 //This file is licensed under EUPL v1.2 as part of the Digital Earth Viewer
 
-use crate::{ellipsoid::{Ellipsoid}, Projection, PseudoSerialize, DbContstruct};
+use crate::{ellipsoid::Ellipsoid, DbContstruct, Projection, PseudoSerialize};
 
 #[derive(Copy, Clone, Debug)]
 pub struct TransverseMercatorParams {
@@ -13,18 +13,23 @@ pub struct TransverseMercatorParams {
     /// false easting
     false_e: f64,
     /// false northing
-    false_n: f64
+    false_n: f64,
 }
 
 impl TransverseMercatorParams {
-
-    pub const fn new(lon_orig: f64, lat_orig: f64, k_orig: f64, false_e: f64, false_n: f64) -> Self {
+    pub const fn new(
+        lon_orig: f64,
+        lat_orig: f64,
+        k_orig: f64,
+        false_e: f64,
+        false_n: f64,
+    ) -> Self {
         Self {
             lat_orig,
             lon_orig,
             k_orig,
             false_e,
-            false_n
+            false_n,
         }
     }
 
@@ -75,7 +80,7 @@ pub struct TransverseMercatorProjection {
     pub h_1_: f64,
     pub h_2_: f64,
     pub h_3_: f64,
-    pub h_4_: f64
+    pub h_4_: f64,
 }
 
 impl TransverseMercatorProjection {
@@ -84,42 +89,50 @@ impl TransverseMercatorProjection {
     #[allow(non_snake_case)]
     pub fn new(ell: &Ellipsoid, params: &TransverseMercatorParams) -> Self {
         let n = ell.f() / (2.0 - ell.f());
-        let B = (ell.a() / (1.0 + n)) * (1.0 + n.powi(2)/4.0 + n.powi(4)/64.0);
-    
-        let h_1 = n / 2.0 - (2.0 / 3.0) * n.powi(2) + (5.0 / 16.0) * n.powi(3) + (41.0 / 180.0) * n.powi(4);
-        let h_2 = (13.0 / 48.0) * n.powi(2) - (3.0 / 5.0) * n.powi(3) + (557.0 / 1440.0) * n.powi(4);
+        let B = (ell.a() / (1.0 + n)) * (1.0 + n.powi(2) / 4.0 + n.powi(4) / 64.0);
+
+        let h_1 = n / 2.0 - (2.0 / 3.0) * n.powi(2)
+            + (5.0 / 16.0) * n.powi(3)
+            + (41.0 / 180.0) * n.powi(4);
+        let h_2 =
+            (13.0 / 48.0) * n.powi(2) - (3.0 / 5.0) * n.powi(3) + (557.0 / 1440.0) * n.powi(4);
         let h_3 = (61.0 / 240.0) * n.powi(3) - (103.0 / 140.0) * n.powi(4);
         let h_4 = (49561.0 / 161280.0) * n.powi(4);
-    
-        let M_orig = if params.lat_orig() == 0.0 { 0.0 }
-            else if params.lat_orig() == std::f64::consts::FRAC_PI_2 { B * std::f64::consts::FRAC_PI_2 }
-            else if params.lat_orig() == - std::f64::consts::FRAC_PI_2 { -B * std::f64::consts::FRAC_PI_2 }
-            else {
-                let Q_orig = params.lat_orig().tan().asinh() - (ell.e() * f64::atanh(ell.e() * params.lat_orig().sin()));
-    
-                let beta_orig = Q_orig.sinh().atan();
-                let xi_orig_0 = beta_orig;
-    
-                let xi_orig_1 = h_1 * f64::sin(2.0 * xi_orig_0);
-                let xi_orig_2 = h_2 * f64::sin(4.0 * xi_orig_0);
-                let xi_orig_3 = h_3 * f64::sin(6.0 * xi_orig_0);
-                let xi_orig_4 = h_4 * f64::sin(8.0 * xi_orig_0);
-                let xi_orig = xi_orig_0 + xi_orig_1 + xi_orig_2 + xi_orig_3 + xi_orig_4;
-                B * xi_orig
-            };
-        
-        let h_1_ = n / 2.0 - (2.0 / 3.0) * n.powi(2) + (37.0 / 96.0) * n.powi(3) - (1.0 / 360.0) * n.powi(4);
-        let h_2_ = (1.0 / 48.0) * n.powi(2) + (1.0 / 15.0) * n.powi(3) - (437.0 / 1440.0) * n.powi(4);
+
+        let M_orig = if params.lat_orig() == 0.0 {
+            0.0
+        } else if params.lat_orig() == std::f64::consts::FRAC_PI_2 {
+            B * std::f64::consts::FRAC_PI_2
+        } else if params.lat_orig() == -std::f64::consts::FRAC_PI_2 {
+            -B * std::f64::consts::FRAC_PI_2
+        } else {
+            let Q_orig = params.lat_orig().tan().asinh()
+                - (ell.e() * f64::atanh(ell.e() * params.lat_orig().sin()));
+
+            let beta_orig = Q_orig.sinh().atan();
+            let xi_orig_0 = beta_orig;
+
+            let xi_orig_1 = h_1 * f64::sin(2.0 * xi_orig_0);
+            let xi_orig_2 = h_2 * f64::sin(4.0 * xi_orig_0);
+            let xi_orig_3 = h_3 * f64::sin(6.0 * xi_orig_0);
+            let xi_orig_4 = h_4 * f64::sin(8.0 * xi_orig_0);
+            let xi_orig = xi_orig_0 + xi_orig_1 + xi_orig_2 + xi_orig_3 + xi_orig_4;
+            B * xi_orig
+        };
+
+        let h_1_ = n / 2.0 - (2.0 / 3.0) * n.powi(2) + (37.0 / 96.0) * n.powi(3)
+            - (1.0 / 360.0) * n.powi(4);
+        let h_2_ =
+            (1.0 / 48.0) * n.powi(2) + (1.0 / 15.0) * n.powi(3) - (437.0 / 1440.0) * n.powi(4);
         let h_3_ = (17.0 / 480.0) * n.powi(3) - (37.0 / 840.0) * n.powi(4);
         let h_4_ = (4397.0 / 161280.0) * n.powi(4);
 
-        Self{
+        Self {
             ellipsoid_e: ell.e(),
             lon_orig: params.lon_orig(),
             false_e: params.false_e(),
             false_n: params.false_n(),
             k_orig: params.k_orig(),
-
 
             B,
             h_1,
@@ -141,7 +154,8 @@ impl Projection for TransverseMercatorProjection {
     /// longitude & latitude in radians
     #[allow(non_snake_case)]
     fn rad_to_projected(&self, longitude: f64, latitude: f64) -> (f64, f64) {
-        let Q = latitude.tan().asinh() - (self.ellipsoid_e * f64::atanh(self.ellipsoid_e * latitude.sin()));
+        let Q = latitude.tan().asinh()
+            - (self.ellipsoid_e * f64::atanh(self.ellipsoid_e * latitude.sin()));
         let beta = Q.sinh().atan();
         let eta_0 = f64::atanh(beta.cos() * f64::sin(longitude - self.lon_orig));
         let xi_0 = f64::asin(beta.sin() * eta_0.cosh());
@@ -159,12 +173,11 @@ impl Projection for TransverseMercatorProjection {
         let eta = eta_0 + eta_1 + eta_2 + eta_3 + eta_4;
 
         (
-            self.false_e + self.k_orig * self.B * eta
-        ,
-            self.false_n + self.k_orig * (self.B * xi - self.M_orig)
+            self.false_e + self.k_orig * self.B * eta,
+            self.false_n + self.k_orig * (self.B * xi - self.M_orig),
         )
     }
-    
+
     /// as per IOGP Publication 373-7-2 – Geomatics Guidance Note number 7, part 2 – March 2020
     /// longitude & latitude in radians
     #[allow(non_snake_case)]
@@ -189,15 +202,13 @@ impl Projection for TransverseMercatorProjection {
         let mut Q__ = Q_ + (self.ellipsoid_e * f64::atanh(self.ellipsoid_e * Q_.tanh()));
         for _ in 0..Self::MAX_ITERATIONS {
             Q__ = Q_ + (self.ellipsoid_e * f64::atanh(self.ellipsoid_e * Q__.tanh()));
-        };
+        }
 
         (
-            self.lon_orig + f64::asin(eta_0_.tanh() / beta_.cos())
-        ,
-            Q__.sinh().atan()
+            self.lon_orig + f64::asin(eta_0_.tanh() / beta_.cos()),
+            Q__.sinh().atan(),
         )
     }
-
 }
 
 impl PseudoSerialize for TransverseMercatorProjection {
@@ -227,14 +238,12 @@ r"TransverseMercatorProjection{{
             self.false_e.to_bits(),
             self.false_n.to_bits(),
             self.k_orig.to_bits(),
-
             self.B.to_bits(),
             self.h_1.to_bits(),
             self.h_2.to_bits(),
             self.h_3.to_bits(),
             self.h_4.to_bits(),
             self.M_orig.to_bits(),
-            
             self.h_1_.to_bits(),
             self.h_2_.to_bits(),
             self.h_3_.to_bits(),
@@ -255,11 +264,26 @@ impl DbContstruct for TransverseMercatorProjection {
         ),
         */
         let params = TransverseMercatorParams::new(
-            params.iter().find_map(|(c, v)| if *c == 8802{Some(*v)}else{None}).unwrap(),
-            params.iter().find_map(|(c, v)| if *c == 8801{Some(*v)}else{None}).unwrap(),
-            params.iter().find_map(|(c, v)| if *c == 8805{Some(*v)}else{None}).unwrap(),
-            params.iter().find_map(|(c, v)| if *c == 8806{Some(*v)}else{None}).unwrap(),
-            params.iter().find_map(|(c, v)| if *c == 8807{Some(*v)}else{None}).unwrap(),
+            params
+                .iter()
+                .find_map(|(c, v)| if *c == 8802 { Some(*v) } else { None })
+                .unwrap(),
+            params
+                .iter()
+                .find_map(|(c, v)| if *c == 8801 { Some(*v) } else { None })
+                .unwrap(),
+            params
+                .iter()
+                .find_map(|(c, v)| if *c == 8805 { Some(*v) } else { None })
+                .unwrap(),
+            params
+                .iter()
+                .find_map(|(c, v)| if *c == 8806 { Some(*v) } else { None })
+                .unwrap(),
+            params
+                .iter()
+                .find_map(|(c, v)| if *c == 8807 { Some(*v) } else { None })
+                .unwrap(),
         );
         Self::new(ellipsoid, &params)
     }
@@ -271,9 +295,9 @@ pub fn direct_projection(params: &[(u32, f64)], ell: Ellipsoid) -> String {
 #[cfg(test)]
 mod tests {
 
-    use crate::transverse_mercator::*;
-    use crate::traits::*;
     use crate::ellipsoid::Ellipsoid;
+    use crate::traits::*;
+    use crate::transverse_mercator::*;
 
     #[test]
     fn transverse_mercator_consistency() {
@@ -283,7 +307,7 @@ mod tests {
             0.0f64.to_radians(),
             0.9996,
             500_000.0,
-            0.0
+            0.0,
         );
 
         let projection = TransverseMercatorProjection::new(&wgs_84_ellipsoid, &utm_32_n);

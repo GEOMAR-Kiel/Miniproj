@@ -1,7 +1,7 @@
 //This file is licensed under EUPL v1.2 as part of the Digital Earth Viewer
 
-use crate::{ellipsoid::{Ellipsoid}, Projection, PseudoSerialize, DbContstruct};
-use std::f64::consts::{FRAC_PI_4, FRAC_PI_2};
+use crate::{ellipsoid::Ellipsoid, DbContstruct, Projection, PseudoSerialize};
+use std::f64::consts::{FRAC_PI_2, FRAC_PI_4};
 
 #[derive(Copy, Clone, Debug)]
 pub struct LambertConic2SPParams {
@@ -16,18 +16,25 @@ pub struct LambertConic2SPParams {
     /// easting at false origin
     false_e: f64,
     /// easting at false northing
-    false_n: f64
+    false_n: f64,
 }
 
 impl LambertConic2SPParams {
-    pub fn new(lon_orig: f64, lat_orig: f64, lat_p1: f64, lat_p2: f64, false_e: f64, false_n: f64) -> Self {
+    pub fn new(
+        lon_orig: f64,
+        lat_orig: f64,
+        lat_p1: f64,
+        lat_p2: f64,
+        false_e: f64,
+        false_n: f64,
+    ) -> Self {
         Self {
             lat_orig,
             lon_orig,
             lat_p1,
             lat_p2,
             false_e,
-            false_n
+            false_n,
         }
     }
 
@@ -89,39 +96,53 @@ impl LambertConic2SPProjection {
         let F;
         let r_F;
         if params.lat_p1() == params.lat_p2() {
-            let m_O = params.lat_p1().cos() / (1f64 - ell.e_squared() * params.lat_p1().sin().powi(2)).sqrt();
-    
-            let t_O = (FRAC_PI_4 - params.lat_p1() / 2f64).tan() / ((1f64 - ell.e() * params.lat_p1().sin())/(1f64 + ell.e() * params.lat_p1().sin())).powf(ell.e() / 2f64);
+            let m_O = params.lat_p1().cos()
+                / (1f64 - ell.e_squared() * params.lat_p1().sin().powi(2)).sqrt();
+
+            let t_O = (FRAC_PI_4 - params.lat_p1() / 2f64).tan()
+                / ((1f64 - ell.e() * params.lat_p1().sin())
+                    / (1f64 + ell.e() * params.lat_p1().sin()))
+                .powf(ell.e() / 2f64);
             n = params.lat_p1().sin();
             F = m_O / (n * t_O.powf(n));
             r_F = ell.a() * F * t_O.powf(n);
         } else {
-            let m1 = params.lat_p1().cos() / (1f64 - ell.e_squared() * params.lat_p1().sin().powi(2)).sqrt();
-            let m2 = params.lat_p2().cos() / (1f64 - ell.e_squared() * params.lat_p2().sin().powi(2)).sqrt();
-    
-            let t1 = (FRAC_PI_4 - params.lat_p1() / 2f64).tan() / ((1f64 - ell.e() * params.lat_p1().sin())/(1f64 + ell.e() * params.lat_p1().sin())).powf(ell.e() / 2f64);
-            let t2 = (FRAC_PI_4 - params.lat_p2() / 2f64).tan() / ((1f64 - ell.e() * params.lat_p2().sin())/(1f64 + ell.e() * params.lat_p2().sin())).powf(ell.e() / 2f64);
-            let t_F = (FRAC_PI_4 - params.lat_orig() / 2f64).tan() / ((1f64 - ell.e() * params.lat_orig().sin())/(1f64 + ell.e() * params.lat_orig().sin())).powf(ell.e() / 2f64);
+            let m1 = params.lat_p1().cos()
+                / (1f64 - ell.e_squared() * params.lat_p1().sin().powi(2)).sqrt();
+            let m2 = params.lat_p2().cos()
+                / (1f64 - ell.e_squared() * params.lat_p2().sin().powi(2)).sqrt();
+
+            let t1 = (FRAC_PI_4 - params.lat_p1() / 2f64).tan()
+                / ((1f64 - ell.e() * params.lat_p1().sin())
+                    / (1f64 + ell.e() * params.lat_p1().sin()))
+                .powf(ell.e() / 2f64);
+            let t2 = (FRAC_PI_4 - params.lat_p2() / 2f64).tan()
+                / ((1f64 - ell.e() * params.lat_p2().sin())
+                    / (1f64 + ell.e() * params.lat_p2().sin()))
+                .powf(ell.e() / 2f64);
+            let t_F = (FRAC_PI_4 - params.lat_orig() / 2f64).tan()
+                / ((1f64 - ell.e() * params.lat_orig().sin())
+                    / (1f64 + ell.e() * params.lat_orig().sin()))
+                .powf(ell.e() / 2f64);
             n = (m1.ln() - m2.ln()) / (t1.ln() - t2.ln());
             F = m1 / (n * t1.powf(n));
             r_F = ell.a() * F * t_F.powf(n);
         }
-        Self{
+        Self {
             ellipsoid_e: ell.e(),
             ellipsoid_a: ell.a(),
 
             lon_orig: params.lon_orig(),
             lat_orig: params.lat_orig(),
-            
+
             false_e: params.false_e(),
             false_n: params.false_n(),
 
             n,
             r_F,
-            F
+            F,
         }
     }
-
 }
 
 impl Projection for LambertConic2SPProjection {
@@ -129,36 +150,42 @@ impl Projection for LambertConic2SPProjection {
     /// longitude & latitude in radians
     #[allow(non_snake_case)]
     fn rad_to_projected(&self, longitude: f64, latitude: f64) -> (f64, f64) {
-        
-        let t = (FRAC_PI_4 - latitude / 2f64).tan() / ((1f64 - self.ellipsoid_e * latitude.sin())/(1f64 + self.ellipsoid_e * latitude.sin())).powf(self.ellipsoid_e / 2f64);
+        let t = (FRAC_PI_4 - latitude / 2f64).tan()
+            / ((1f64 - self.ellipsoid_e * latitude.sin())
+                / (1f64 + self.ellipsoid_e * latitude.sin()))
+            .powf(self.ellipsoid_e / 2f64);
 
         let theta = self.n * (longitude - self.lon_orig);
 
         let r = self.ellipsoid_a * self.F * t.powf(self.n);
         (
-            self.false_e + r * theta.sin()
-        ,
-            self.false_n + self.r_F - r * theta.cos()
+            self.false_e + r * theta.sin(),
+            self.false_n + self.r_F - r * theta.cos(),
         )
     }
-    
+
     /// as per IOGP Publication 373-7-2 – Geomatics Guidance Note number 7, part 2 – May 2022
     /// longitude & latitude in radians
     #[allow(non_snake_case)]
     fn projected_to_rad(&self, easting: f64, northing: f64) -> (f64, f64) {
-        let theta_ = (self.n.signum() * (easting - self.false_e)).atan2(self.n.signum() * (self.r_F - (northing - self.false_n)));
-        let r_ = self.n.signum() * ((easting - self.false_e).powi(2) + (self.r_F - (northing - self.false_n)).powi(2)).sqrt();
+        let theta_ = (self.n.signum() * (easting - self.false_e))
+            .atan2(self.n.signum() * (self.r_F - (northing - self.false_n)));
+        let r_ = self.n.signum()
+            * ((easting - self.false_e).powi(2) + (self.r_F - (northing - self.false_n)).powi(2))
+                .sqrt();
         let t_ = (r_ / (self.ellipsoid_a * self.F)).powf(1f64 / self.n);
         let mut phi = FRAC_PI_2 - 2.0 * (t_.atan());
         for _ in 0..Self::MAX_ITERATIONS {
-            phi = FRAC_PI_2 - 2.0 * (t_ * ((1f64 - self.ellipsoid_e * phi.sin()) / (1f64 + self.ellipsoid_e * phi.sin())).powf(self.ellipsoid_e / 2f64)).atan()
+            phi = FRAC_PI_2
+                - 2.0
+                    * (t_
+                        * ((1f64 - self.ellipsoid_e * phi.sin())
+                            / (1f64 + self.ellipsoid_e * phi.sin()))
+                        .powf(self.ellipsoid_e / 2f64))
+                    .atan()
         }
-        (
-            theta_ / self.n + self.lon_orig,
-            phi
-        )
+        (theta_ / self.n + self.lon_orig, phi)
     }
-
 }
 
 impl PseudoSerialize for LambertConic2SPProjection {
@@ -191,12 +218,30 @@ r"LambertConic2SPProjection{{
 impl DbContstruct for LambertConic2SPProjection {
     fn from_database_params(params: &[(u32, f64)], ellipsoid: &Ellipsoid) -> Self {
         let params = LambertConic2SPParams::new(
-            params.iter().find_map(|(c, v)| if *c == 8822{Some(*v)}else{None}).unwrap(),
-            params.iter().find_map(|(c, v)| if *c == 8821{Some(*v)}else{None}).unwrap(),
-            params.iter().find_map(|(c, v)| if *c == 8823{Some(*v)}else{None}).unwrap(),
-            params.iter().find_map(|(c, v)| if *c == 8824{Some(*v)}else{None}).unwrap(),
-            params.iter().find_map(|(c, v)| if *c == 8826{Some(*v)}else{None}).unwrap(),
-            params.iter().find_map(|(c, v)| if *c == 8827{Some(*v)}else{None}).unwrap(),
+            params
+                .iter()
+                .find_map(|(c, v)| if *c == 8822 { Some(*v) } else { None })
+                .unwrap(),
+            params
+                .iter()
+                .find_map(|(c, v)| if *c == 8821 { Some(*v) } else { None })
+                .unwrap(),
+            params
+                .iter()
+                .find_map(|(c, v)| if *c == 8823 { Some(*v) } else { None })
+                .unwrap(),
+            params
+                .iter()
+                .find_map(|(c, v)| if *c == 8824 { Some(*v) } else { None })
+                .unwrap(),
+            params
+                .iter()
+                .find_map(|(c, v)| if *c == 8826 { Some(*v) } else { None })
+                .unwrap(),
+            params
+                .iter()
+                .find_map(|(c, v)| if *c == 8827 { Some(*v) } else { None })
+                .unwrap(),
         );
         Self::new(ellipsoid, &params)
     }
@@ -204,26 +249,32 @@ impl DbContstruct for LambertConic2SPProjection {
 
 #[derive(Copy, Clone, Debug)]
 pub struct LambertConic1SPAParams {
-        /// longitude of false origin
-        lon_nat_orig: f64,
-        /// latitude of false origin
-        lat_nat_orig: f64,
-        /// scale factor at natural origin
-        k_nat_orig: f64,
-        /// false easting
-        false_e: f64,
-        /// false northing
-        false_n: f64
+    /// longitude of false origin
+    lon_nat_orig: f64,
+    /// latitude of false origin
+    lat_nat_orig: f64,
+    /// scale factor at natural origin
+    k_nat_orig: f64,
+    /// false easting
+    false_e: f64,
+    /// false northing
+    false_n: f64,
 }
 
 impl LambertConic1SPAParams {
-    pub fn new(lon_nat_orig: f64, lat_nat_orig: f64, k_nat_orig: f64, false_e: f64, false_n: f64) -> Self {
+    pub fn new(
+        lon_nat_orig: f64,
+        lat_nat_orig: f64,
+        k_nat_orig: f64,
+        false_e: f64,
+        false_n: f64,
+    ) -> Self {
         Self {
             lon_nat_orig,
             lat_nat_orig,
             k_nat_orig,
             false_e,
-            false_n
+            false_n,
         }
     }
 
@@ -265,7 +316,7 @@ pub struct LambertConic1SPAProjection {
 
     pub n: f64,
     pub t_r_fac: f64,
-    pub ellipsoid_e: f64
+    pub ellipsoid_e: f64,
 }
 
 impl LambertConic1SPAProjection {
@@ -273,8 +324,12 @@ impl LambertConic1SPAProjection {
 
     #[allow(non_snake_case)]
     pub fn new(ell: &Ellipsoid, params: &LambertConic1SPAParams) -> Self {
-        let m_O = params.lat_nat_orig().cos()/(1f64 - ell.e_squared() * params.lat_nat_orig().sin().powi(2)).sqrt();
-        let t_O = (FRAC_PI_4 - params.lat_nat_orig() / 2f64).tan()/((1f64 - ell.e() * params.lat_nat_orig().sin())/(1f64 + ell.e() * params.lat_nat_orig().sin())).powf(ell.e() / 2f64);
+        let m_O = params.lat_nat_orig().cos()
+            / (1f64 - ell.e_squared() * params.lat_nat_orig().sin().powi(2)).sqrt();
+        let t_O = (FRAC_PI_4 - params.lat_nat_orig() / 2f64).tan()
+            / ((1f64 - ell.e() * params.lat_nat_orig().sin())
+                / (1f64 + ell.e() * params.lat_nat_orig().sin()))
+            .powf(ell.e() / 2f64);
         let n = params.lat_nat_orig.sin();
         let F = m_O / (n * t_O.powf(n));
         let r_O = ell.a() * F * t_O.powf(n) * params.k_nat_orig();
@@ -286,33 +341,40 @@ impl LambertConic1SPAProjection {
             lon_O: params.lon_nat_orig(),
             n,
             t_r_fac: ell.a() * F * params.k_nat_orig(),
-            ellipsoid_e: ell.e()
+            ellipsoid_e: ell.e(),
         }
     }
 }
 
 impl Projection for LambertConic1SPAProjection {
     fn projected_to_rad(&self, x: f64, y: f64) -> (f64, f64) {
-        let theta_ = (self.n.signum() * (x - self.false_e)).atan2(self.n.signum() * (self.r_O - (y - self.false_n)));
-        let r_ = self.n.signum() * ((x - self.false_e).powi(2) + (self.r_O - (y - self.false_n)).powi(2)).sqrt();
+        let theta_ = (self.n.signum() * (x - self.false_e))
+            .atan2(self.n.signum() * (self.r_O - (y - self.false_n)));
+        let r_ = self.n.signum()
+            * ((x - self.false_e).powi(2) + (self.r_O - (y - self.false_n)).powi(2)).sqrt();
         let t_ = (r_ / self.t_r_fac).powf(1f64 / self.n);
         let mut phi = FRAC_PI_2 - 2f64 * t_.atan();
         for _ in 0..Self::MAX_ITERATIONS {
-            phi = FRAC_PI_2 - 2f64 * (t_ * ((1f64 - self.ellipsoid_e * phi.sin())/(1f64 + self.ellipsoid_e * phi.sin())).powf(self.ellipsoid_e / 2f64)).atan();
+            phi = FRAC_PI_2
+                - 2f64
+                    * (t_
+                        * ((1f64 - self.ellipsoid_e * phi.sin())
+                            / (1f64 + self.ellipsoid_e * phi.sin()))
+                        .powf(self.ellipsoid_e / 2f64))
+                    .atan();
         }
-        (
-            theta_ / self.n + self.lon_O,
-            phi
-        )
+        (theta_ / self.n + self.lon_O, phi)
     }
 
     fn rad_to_projected(&self, lon: f64, lat: f64) -> (f64, f64) {
-        let t = (FRAC_PI_4 - lat / 2f64).tan()/((1f64 - self.ellipsoid_e * lat.sin())/(1f64 + self.ellipsoid_e * lat.sin())).powf(self.ellipsoid_e / 2f64);
+        let t = (FRAC_PI_4 - lat / 2f64).tan()
+            / ((1f64 - self.ellipsoid_e * lat.sin()) / (1f64 + self.ellipsoid_e * lat.sin()))
+                .powf(self.ellipsoid_e / 2f64);
         let r = self.t_r_fac * t.powf(self.n);
         let theta = self.n * (lon - self.lon_O);
         (
             self.false_e + r * theta.sin(),
-            self.false_n + self.r_O - r * theta.cos()
+            self.false_n + self.r_O - r * theta.cos(),
         )
     }
 }
@@ -320,7 +382,7 @@ impl Projection for LambertConic1SPAProjection {
 impl PseudoSerialize for LambertConic1SPAProjection {
     fn to_constructed(&self) -> String {
         format!(
-"LambertConic1SPAProjection {{
+            "LambertConic1SPAProjection {{
     false_e: f64::from_bits(0x{:x}),
     false_n: f64::from_bits(0x{:x}),
     r_O: f64::from_bits(0x{:x}),
@@ -344,14 +406,29 @@ impl PseudoSerialize for LambertConic1SPAProjection {
 impl DbContstruct for LambertConic1SPAProjection {
     fn from_database_params(params: &[(u32, f64)], ellipsoid: &Ellipsoid) -> Self {
         let params = LambertConic1SPAParams::new(
-            params.iter().find_map(|(c, v)| if *c == 8802{Some(*v)}else{None}).unwrap(),
-            params.iter().find_map(|(c, v)| if *c == 8801{Some(*v)}else{None}).unwrap(),
-            params.iter().find_map(|(c, v)| if *c == 8805{Some(*v)}else{None}).unwrap(),
-            params.iter().find_map(|(c, v)| if *c == 8806{Some(*v)}else{None}).unwrap(),
-            params.iter().find_map(|(c, v)| if *c == 8807{Some(*v)}else{None}).unwrap(),
+            params
+                .iter()
+                .find_map(|(c, v)| if *c == 8802 { Some(*v) } else { None })
+                .unwrap(),
+            params
+                .iter()
+                .find_map(|(c, v)| if *c == 8801 { Some(*v) } else { None })
+                .unwrap(),
+            params
+                .iter()
+                .find_map(|(c, v)| if *c == 8805 { Some(*v) } else { None })
+                .unwrap(),
+            params
+                .iter()
+                .find_map(|(c, v)| if *c == 8806 { Some(*v) } else { None })
+                .unwrap(),
+            params
+                .iter()
+                .find_map(|(c, v)| if *c == 8807 { Some(*v) } else { None })
+                .unwrap(),
         );
         Self::new(ellipsoid, &params)
-    }  
+    }
 }
 
 pub fn direct_projection_2sp(params: &[(u32, f64)], ell: Ellipsoid) -> String {
@@ -365,9 +442,9 @@ pub fn direct_projection_1sp_a(params: &[(u32, f64)], ell: Ellipsoid) -> String 
 #[cfg(test)]
 mod tests {
 
+    use crate::ellipsoid::Ellipsoid;
     use crate::lambert_conic_conformal::*;
     use crate::traits::*;
-    use crate::ellipsoid::Ellipsoid;
 
     #[test]
     fn lambert_conic_2sp_consistency() {
@@ -378,7 +455,7 @@ mod tests {
             36f64.to_radians(),
             38f64.to_radians(),
             2_500_000.0,
-            4_500_000.0
+            4_500_000.0,
         );
 
         let projection = LambertConic2SPProjection::new(&ell, &params);
@@ -403,7 +480,7 @@ mod tests {
             -77f64.to_radians(),
             1.0,
             2_500_000.0,
-            1_500_000.0
+            1_500_000.0,
         );
 
         let projection = LambertConic1SPAProjection::new(&ell, &params);

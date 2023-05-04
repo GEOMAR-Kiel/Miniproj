@@ -1,16 +1,13 @@
 //This file is licensed under EUPL v1.2
 #![feature(const_float_bits_conv)]
-
-
 #![doc = include_str!("../README.md")]
 
-
-mod projection_constructor;
 mod ellipsoid_constructor;
+mod projection_constructor;
 
-#[doc(inline)]
-pub use miniproj_ops::{Projection, Ellipsoid};
-#[doc(inline)]
-pub use projection_constructor::{get_projection, get_ellipsoid_code};
 #[doc(inline)]
 pub use ellipsoid_constructor::get_ellipsoid;
+#[doc(inline)]
+pub use miniproj_ops::{Ellipsoid, Projection};
+#[doc(inline)]
+pub use projection_constructor::{get_ellipsoid_code, get_projection};

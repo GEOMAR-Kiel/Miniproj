@@ -1,12 +1,14 @@
 //This file is licensed under EUPL v1.2
 
-use miniproj_ops::Projection;
-use miniproj_ops::transverse_mercator::TransverseMercatorProjection;
 use miniproj_ops::lambert_azimuthal_equal_area::LambertAzimuthalEqualAreaProjection;
-use miniproj_ops::zero_projection::ZeroProjection;
-use miniproj_ops::stereographic::{ObliqueStereographicProjection, PolarStereographicAProjection};
-use miniproj_ops::lambert_conic_conformal::{LambertConic2SPProjection, LambertConic1SPAProjection};
+use miniproj_ops::lambert_conic_conformal::{
+    LambertConic1SPAProjection, LambertConic2SPProjection,
+};
 use miniproj_ops::popvis_pseudo_mercator::PopVisPseudoMercatorProjection;
+use miniproj_ops::stereographic::{ObliqueStereographicProjection, PolarStereographicAProjection};
+use miniproj_ops::transverse_mercator::TransverseMercatorProjection;
+use miniproj_ops::zero_projection::ZeroProjection;
+use miniproj_ops::Projection;
 
 include!(concat!(env!("OUT_DIR"), "/projection_constructors.rs"));
 

@@ -2,7 +2,6 @@
 
 use crate::PseudoSerialize;
 
-
 /// Ellipsoid, a simple approximation of the earth's shape used in most `Projection`s
 #[derive(Copy, Clone, Debug)]
 pub struct Ellipsoid {
@@ -17,21 +16,20 @@ pub struct Ellipsoid {
     /// eccentricity
     pub e: f64,
     /// eccentricity squared
-    pub e_squared: f64
+    pub e_squared: f64,
 }
 impl Ellipsoid {
-
     /// Construct an ellipsoid from major and minor half axis.
     pub fn from_a_b(a: f64, b: f64) -> Self {
         let f = (a - b) / a;
         let e_squared = (2f64 * f) - f.powi(2);
-        Self{
+        Self {
             a,
             b,
             f,
             f_inv: a / (a - b),
             e_squared,
-            e: e_squared.sqrt() 
+            e: e_squared.sqrt(),
         }
     }
 
@@ -39,13 +37,13 @@ impl Ellipsoid {
     pub fn from_a_f_inv(a: f64, f_inv: f64) -> Self {
         let f = 1.0 / f_inv;
         let e_squared = (2f64 / f_inv) - f_inv.powi(-2);
-        Self{
+        Self {
             a,
             b: a - a / f_inv,
             f,
             f_inv,
             e_squared,
-            e: e_squared.sqrt() 
+            e: e_squared.sqrt(),
         }
     }
 
@@ -53,7 +51,6 @@ impl Ellipsoid {
     pub fn a(&self) -> f64 {
         self.a
     }
-
 
     /// Get minor half axis.
     pub fn b(&self) -> f64 {
@@ -97,7 +94,12 @@ impl Ellipsoid {
 
     /// Calculate radius of authalic sphere (sphere with the same surface area as the ellipsoid).
     pub fn rad_auth(&self) -> f64 {
-        self.a * ((1.0 - ((1.0 - self.e_squared()) / (2.0 * self.e())) * f64::ln((1.0 - self.e()) / (1.0 + self.e()))) * 0.5 ).sqrt()
+        self.a
+            * ((1.0
+                - ((1.0 - self.e_squared()) / (2.0 * self.e()))
+                    * f64::ln((1.0 - self.e()) / (1.0 + self.e())))
+                * 0.5)
+                .sqrt()
     }
 
     /// Calculate radius of conformal sphere.
@@ -122,7 +124,8 @@ impl Ellipsoid {
         let epsilon = self.e_squared() / (1f64 - self.e_squared());
         let p = (x.powi(2) + y.powi(2)).sqrt();
         let q = (z * self.a).atan2(p * self.b);
-        let lat = (z + epsilon * self.b * q.sin().powi(3)).atan2(p - self.e_squared() * self.a * q.cos().powi(3));
+        let lat = (z + epsilon * self.b * q.sin().powi(3))
+            .atan2(p - self.e_squared() * self.a * q.cos().powi(3));
         let h = (p / lat.cos()) - self.ny(lat);
         (lon, lat, h)
     }
@@ -134,14 +137,14 @@ impl Ellipsoid {
         (
             r * lat.cos() * lon.cos(),
             r * lat.cos() * lon.sin(),
-            ((1f64 - self.e_squared()) * ny + height) * lat.sin()
+            ((1f64 - self.e_squared()) * ny + height) * lat.sin(),
         )
     }
 }
 
 impl PseudoSerialize for Ellipsoid {
     fn to_constructed(&self) -> String {
-        format!{
+        format! {
 r"Ellipsoid{{
     a: f64::from_bits(0x{:x}),
     b: f64::from_bits(0x{:x}),
@@ -175,18 +178,13 @@ mod tests {
         let expected_y = 140253.342;
         let expected_z = 5124304.349;
 
-        let (lon, lat, eh) = ell.geocentric_to_deg(
-            expected_x,
-            expected_y,
-            expected_z
-        );
+        let (lon, lat, eh) = ell.geocentric_to_deg(expected_x, expected_y, expected_z);
 
         let (x, y, z) = ell.deg_to_geocentric(lon, lat, eh);
         eprintln!("lon: {expected_lon} - {lon}");
         eprintln!("lat: {expected_lat} - {lat}");
         eprintln!("eh: {expected_eh} - {eh}");
 
-        
         eprintln!("X: {expected_x} - {x}");
         eprintln!("Y: {expected_y} - {y}");
         eprintln!("Z: {expected_z} - {z}");
@@ -196,7 +194,5 @@ mod tests {
         assert!((expected_x - x).abs() < 0.01);
         assert!((expected_y - y).abs() < 0.01);
         assert!((expected_z - z).abs() < 0.01);
-
     }
-
 }
