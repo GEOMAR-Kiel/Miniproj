@@ -10,8 +10,6 @@ pub struct Ellipsoid {
     pub a: f64,
     // /// semi-minor axis
     pub b: f64,
-    /// inverse flattening
-    pub f_inv: f64,
     /// flattening
     pub f: f64,
     /// eccentricity
@@ -29,7 +27,6 @@ impl Ellipsoid {
             a,
             b,
             f,
-            f_inv: a / (a - b),
             e_squared,
             e: e_squared.sqrt() 
         }
@@ -43,7 +40,6 @@ impl Ellipsoid {
             a,
             b: a - a / f_inv,
             f,
-            f_inv,
             e_squared,
             e: e_squared.sqrt() 
         }
@@ -61,8 +57,9 @@ impl Ellipsoid {
     }
 
     /// Get inverse flattening.
+    #[deprecated(since="0.8.0")]
     pub fn f_inv(&self) -> f64 {
-        self.f_inv
+        1f64 / self.f
     }
 
     /// Get flattening.
@@ -148,14 +145,12 @@ r"Ellipsoid{{
     e: f64::from_bits(0x{:x}),
     e_squared: f64::from_bits(0x{:x}),
     f: f64::from_bits(0x{:x}),
-    f_inv: f64::from_bits(0x{:x}),
 }}",
             self.a.to_bits(),
             self.b.to_bits(),
             self.e.to_bits(),
             self.e_squared.to_bits(),
             self.f.to_bits(),
-            self.f_inv.to_bits()
         }
     }
 }
