@@ -38,6 +38,8 @@ EPSG Code | Operation Method Name
 
 ### Usage example
 
+
+
 ```rust
 // Get the WGS84 UTM zone 32N projection
 use miniproj::{get_projection, Projection, get_ellipsoid_code, get_ellipsoid, Ellipsoid};
