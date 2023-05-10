@@ -25,6 +25,8 @@ EPSG Code | Operation Method Name                 | # of Projected CRS covered
 9807      | Transverse Mercator                   | 3615
 9802      | Lambert Conic Conformal (2SP)         | 950
 9801      | Lambert Conic Conformal (1SP)         | 233
+9829      | Polar Stereographic (Variant B)       | 29
+9809      | Oblique Stereographic                 | 20
 9820      | Lambert Azimuthal Equal Area          | 14
 9810      | Polar Stereographic (Variant A)       | 10
 1024      | Popular Visualisation Pseudo-Mercator | 1
@@ -46,7 +48,7 @@ let (easting, northing) = (576935.86f64, 6020593.46f64);
 // To get the latitude and longitude, use the Projection::to_deg method.
 // Note that the order of the returned tuple is not alphabetical, but instead
 // follows the axis order (X for Longitude, Y for Latitude).
-let (lon, lat) = projection.to_deg(easting, northing);
+let (lon, lat) = projection.projected_to_deg(easting, northing);
 
 assert!((lon - 10.183034).abs() < 0.000001);
 assert!((lat - 54.327389).abs() < 0.000001);
@@ -75,6 +77,20 @@ you are looking for a refined, proven library, check out
 [PROJ](https://crates.io/crates/proj).
 
 ## Changelog
+
+#### 0.7.1
+
+* Updated Example
+
+#### 0.7.0
+
+* Added Oblique Stereographic (20 defined CRS)
+
+#### 0.6.0
+
+* Expose Ellipsoids
+* Added an interface to access `Ellipsoid`s by EPSG code
+* Added an interface to find the underlying ellipsoid for a projection by EPSG code
 
 #### 0.5.0
 
