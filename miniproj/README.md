@@ -135,12 +135,19 @@ you are looking for a refined, proven library, check out
 
 * Initial release
 
-## Todo
+## Roadmap
+
+#### Before 1.0.0
 
 * Implement transformations
-* Implement missing projections
-* Implement parsing of WKT
 * Add feature gating for operation methods
+* Stop requiring `nightly`
+* Stop depending on SQLite, parse the SQL file directly instead
+
+#### Long-Term
+
+* Implement all missing projections
+* Implement parsing of WKT and similar
 * Make a subset of miniproj `no-std`
 * Add interoperability with crates like `geo`
 
