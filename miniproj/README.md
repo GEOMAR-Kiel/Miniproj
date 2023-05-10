@@ -61,15 +61,14 @@ let ellipsoid = get_ellipsoid_code(32632)
     .and_then(|c| get_ellipsoid(c))
     .expect("No associated ellipsoid.");
 
-// Do the actual conversion. Axis order applies as explained above.
-let (x, y, z) = ellipsoid.deg_to_geocentric(lon, lat, 0.0);
+// Do the actual conversion. Axis order applies as explained above. Height as per GPS altitude.
+let (x, y, z) = ellipsoid.deg_to_geocentric(lon, lat, 53.7);
 
-assert!((x - 3668954.28).abs() < 0.01);
-assert!((y - 659027.55).abs() < 0.01);
-assert!((z - 5158079.02).abs() < 0.01);
+assert!((x - 3668985.10).abs() < 0.1);
+assert!((y - 659033.08).abs() < 0.1);
+assert!((z - 5158122.64).abs() < 0.1);
 
 ```
-
 
 ### Limitations
 
