@@ -1,5 +1,6 @@
 //This file is licensed under EUPL v1.2
 
+use miniproj_ops::albers_equal_area::AlbersEqualAreaProjection;
 use miniproj_ops::lambert_azimuthal_equal_area::LambertAzimuthalEqualAreaProjection;
 use miniproj_ops::lambert_conic_conformal::{
     LambertConic1SPAProjection, LambertConic2SPProjection,

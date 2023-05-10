@@ -25,6 +25,7 @@ EPSG Code | Operation Method Name                 | # of Projected CRS covered
 9807      | Transverse Mercator                   | 3615
 9802      | Lambert Conic Conformal (2SP)         | 950
 9801      | Lambert Conic Conformal (1SP)         | 233
+9822      | Albers Equal Area                     | 36
 9829      | Polar Stereographic (Variant B)       | 29
 9809      | Oblique Stereographic                 | 20
 9820      | Lambert Azimuthal Equal Area          | 14
@@ -78,9 +79,9 @@ you are looking for a refined, proven library, check out
 
 ## Changelog
 
-#### 0.7.1
+#### 0.8.0
 
-* Updated Example
+* Added Albers Equal Area (36 defined CRS)
 
 #### 0.7.0
 

@@ -40,6 +40,10 @@ pub static IMPL_CONV: &[ImplementedProjection] = &[
         9809,
         &miniproj_ops::stereographic::direct_projection_oblique,
     ),
+    (
+        9822,
+        &miniproj_ops::albers_equal_area::direct_projection
+    )
 ];
 
 /// This function copies the parameter database to the given location, to reliably make it available to build scripts.
