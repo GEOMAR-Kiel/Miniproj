@@ -56,6 +56,7 @@ mod tests {
 
     #[test]
     fn create_mem_db() {
-        MemoryDb::new();
+        let memdb = MemoryDb::new();
+        eprintln!("{memdb:#?}")
     }
 }
