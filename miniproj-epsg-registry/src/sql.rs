@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use sqlparser::{dialect::GenericDialect, parser::Parser, ast::{ObjectName, SetExpr, Expr, DataType, ColumnOption, Value, UnaryOperator}};
+use sqlparser::{dialect::GenericDialect, parser::Parser, ast::{SetExpr, Expr, DataType, ColumnOption, Value, UnaryOperator}};
 
 static DB: &'static str = include_str!("../data/gen_reg.sql");
 
@@ -17,8 +17,8 @@ impl Table {
     pub fn get_row_where_i64(&self, col: String, val: i64) -> Option<Vec<Option<Field>>> {
         let Column{name: _, data} = self.columns.iter().find(|Column{name, data: _}| name == &col)?;
         let index = match data {
-            ColumnData::IntLike(v) => v.iter().enumerate().find(|(n, v)| **v == val)?.0,
-            ColumnData::MaybeIntLike(v) => v.iter().enumerate().find(|(n, v)| v.map(|v| v == val).unwrap_or(false))?.0,
+            ColumnData::IntLike(v) => v.iter().enumerate().find(|(_n, v)| **v == val)?.0,
+            ColumnData::MaybeIntLike(v) => v.iter().enumerate().find(|(_n, v)| v.map(|v| v == val).unwrap_or(false))?.0,
             _ => return None
         };
         Some(self.columns.iter().map(|Column{name: _, data}| {
@@ -38,8 +38,8 @@ impl Table {
     pub fn get_rows_where_i64(&self, col: String, val: i64) -> Vec<Vec<Option<Field>>> {
         let Some(Column{name: _, data}) = self.columns.iter().find(|Column{name, data: _}| name == &col) else {return Vec::new()};
         let indices: Vec<_> = match data {
-            ColumnData::IntLike(v) => v.iter().enumerate().filter(|(n, v)| **v == val).map(|(i, _)| i).collect(),
-            ColumnData::MaybeIntLike(v) => v.iter().enumerate().filter(|(n, v)| v.map(|v| v == val).unwrap_or(false)).map(|(i, _)| i).collect(),
+            ColumnData::IntLike(v) => v.iter().enumerate().filter(|(_n, v)| **v == val).map(|(i, _)| i).collect(),
+            ColumnData::MaybeIntLike(v) => v.iter().enumerate().filter(|(_n, v)| v.map(|v| v == val).unwrap_or(false)).map(|(i, _)| i).collect(),
             _ => return Vec::new()
         };
         indices.into_iter().map(|index| 
@@ -99,24 +99,24 @@ impl MemoryDb {
         let mut tables = HashMap::new();
         for stmt in &ast {
             match stmt {
-                a @ sqlparser::ast::Statement::Insert {
-                    or,
-                    into,
+                _a @ sqlparser::ast::Statement::Insert {
+                    or: _,
+                    into: _,
                     table_name,
-                    columns,
-                    overwrite,
+                    columns: _,
+                    overwrite: _,
                     source,
-                    partitioned,
-                    after_columns,
-                    table,
-                    on,
-                    returning,
+                    partitioned: _,
+                    after_columns: _,
+                    table: _,
+                    on: _,
+                    returning: _,
                 } => {
                     let table: &mut Table = tables.get_mut(&table_name.0.iter().last().unwrap().value).unwrap();
                     let SetExpr::Values(values) = source.body.as_ref() else {panic!("expected values!")};
                     for row in &values.rows {
                         assert_eq!(table.columns.len(), row.len());
-                        for (expr, Column{name, data}) in row.iter().zip(table.columns.iter_mut()) {
+                        for (expr, Column{name: _, data}) in row.iter().zip(table.columns.iter_mut()) {
                             match (data, expr) {
                                 (ColumnData::MaybeStringLike(v), Expr::Value(Value::Null)) => v.push(None),
                                 (ColumnData::MaybeIntLike(v), Expr::Value(Value::Null)) => v.push(None),
@@ -141,31 +141,31 @@ impl MemoryDb {
                     }
                 },
                 sqlparser::ast::Statement::CreateTable {
-                    or_replace,
-                    temporary,
-                    external,
-                    global,
-                    if_not_exists,
-                    transient,
+                    or_replace: _,
+                    temporary: _,
+                    external: _,
+                    global: _,
+                    if_not_exists: _,
+                    transient: _,
                     name,
                     columns,
-                    constraints,
-                    hive_distribution,
-                    hive_formats,
-                    table_properties,
-                    with_options,
-                    file_format,
-                    location,
-                    query,
-                    without_rowid,
-                    like,
-                    clone,
-                    engine,
-                    default_charset,
-                    collation,
-                    on_commit,
-                    on_cluster,
-                    order_by,
+                    constraints: _,
+                    hive_distribution: _,
+                    hive_formats: _,
+                    table_properties: _,
+                    with_options: _,
+                    file_format: _,
+                    location: _,
+                    query: _,
+                    without_rowid: _,
+                    like: _,
+                    clone: _,
+                    engine: _,
+                    default_charset: _,
+                    collation: _,
+                    on_commit: _,
+                    on_cluster: _,
+                    order_by: _,
                 } => {
                     tables.insert(
                         name.0.last().unwrap().value.clone(), 
