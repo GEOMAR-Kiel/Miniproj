@@ -214,7 +214,7 @@ impl Projection for TransverseMercatorProjection {
 impl PseudoSerialize for TransverseMercatorProjection {
     fn to_constructed(&self) -> String {
         format!(
-r"TransverseMercatorProjection{{
+            r"TransverseMercatorProjection{{
     ellipsoid_e: f64::from_bits(0x{:x}),
     lon_orig: f64::from_bits(0x{:x}),
     false_e: f64::from_bits(0x{:x}),

@@ -173,7 +173,7 @@ impl crate::traits::Projection for LambertAzimuthalEqualAreaProjection {
 impl PseudoSerialize for LambertAzimuthalEqualAreaProjection {
     fn to_constructed(&self) -> String {
         format!(
-r"LambertAzimuthalEqualAreaProjection{{
+            r"LambertAzimuthalEqualAreaProjection{{
     lon_orig: f64::from_bits({}),
     false_e: f64::from_bits({}),
     false_n: f64::from_bits({}),

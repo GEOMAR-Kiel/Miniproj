@@ -54,7 +54,7 @@ impl Ellipsoid {
     }
 
     /// Get inverse flattening. This method is deprecated as the inverse flattening is not defined for spheroids (division by zero).
-    #[deprecated(since="0.8.0")]
+    #[deprecated(since = "0.8.0")]
     pub fn f_inv(&self) -> f64 {
         1f64 / self.f
     }

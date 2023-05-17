@@ -192,7 +192,7 @@ impl DbContstruct for PolarStereographicAProjection {
 impl PseudoSerialize for PolarStereographicAProjection {
     fn to_constructed(&self) -> String {
         format!(
-r"PolarStereographicAProjection{{
+            r"PolarStereographicAProjection{{
     t_rho_factor: f64::from_bits(0x{:x}),
     phi_2_chi_sin_summand_factor: f64::from_bits(0x{:x}),
     phi_4_chi_sin_summand_factor: f64::from_bits(0x{:x}),
@@ -404,7 +404,7 @@ impl DbContstruct for ObliqueStereographicProjection {
 impl PseudoSerialize for ObliqueStereographicProjection {
     fn to_constructed(&self) -> String {
         format!(
-r"ObliqueStereographicProjection{{
+            r"ObliqueStereographicProjection{{
     false_e: f64::from_bits(0x{:x}),
     false_n: f64::from_bits(0x{:x}),
     chi_O: f64::from_bits(0x{:x}),

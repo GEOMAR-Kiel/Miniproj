@@ -191,7 +191,7 @@ impl Projection for LambertConic2SPProjection {
 impl PseudoSerialize for LambertConic2SPProjection {
     fn to_constructed(&self) -> String {
         format!(
-r"LambertConic2SPProjection{{
+            r"LambertConic2SPProjection{{
     ellipsoid_e: f64::from_bits(0x{:x}),
     ellipsoid_a: f64::from_bits(0x{:x}),
     lon_orig: f64::from_bits(0x{:x}),
