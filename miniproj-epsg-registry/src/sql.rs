@@ -1,9 +1,16 @@
+use std::collections::HashMap;
+
 use sqlparser::{dialect::GenericDialect, parser::Parser};
 
 static DB: &'static str = include_str!("../data/gen_reg.sql");
 
 pub struct MemoryDb {
+    tables: HashMap<String, Table>
+}
 
+pub struct Table {
+    fields: Vec<String>,
+    data: Vec<Vec<String>>
 }
 
 impl MemoryDb {
@@ -17,6 +24,8 @@ impl MemoryDb {
                 _ => {}
             }
         }
-        Self {}
+        Self {
+            tables: HashMap::new()
+        }
     }
 }
