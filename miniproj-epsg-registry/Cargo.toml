@@ -12,6 +12,7 @@ keywords = ["geography", "projection", "codegen", "epsg", "geodesy"]
 
 [dependencies]
 rusqlite = { version ="0.29", features = ["bundled"] }
+sqlparser = "0.33.0"
 phf = { version = "~0.11.1", default_features = false}
 phf_codegen = "~0.11.1"
 miniproj-ops= {version="0.9.0", path="../miniproj-ops"}

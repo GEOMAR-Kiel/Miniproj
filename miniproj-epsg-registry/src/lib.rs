@@ -2,6 +2,8 @@
 
 mod db;
 mod helpers;
+mod sql;
+
 use std::path::Path;
 
 pub use crate::db::*;
@@ -52,4 +54,11 @@ pub fn write_db<P: AsRef<Path>>(path: P) -> std::io::Result<()> {
 }
 
 #[cfg(test)]
-mod tests {}
+mod tests {
+    use crate::sql::MemoryDb;
+
+    #[test]
+    fn create_mem_db() {
+        MemoryDb::new();
+    }
+}
