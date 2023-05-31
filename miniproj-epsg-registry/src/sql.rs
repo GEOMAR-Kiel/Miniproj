@@ -12,13 +12,24 @@ static DB: &'static str = include_str!("../data/gen_reg.sql");
 pub struct MemoryDb {
     tables: HashMap<String, Table>,
 }
+impl MemoryDb {
+    pub fn get_table(&self, name: &str) -> Option<&Table> {
+        self.tables.get(name)
+    }
+}
 
 #[derive(Debug)]
 pub struct Table {
     columns: Vec<Column>,
 }
+
 impl Table {
-    pub fn get_row_where_i64(&self, col: String, val: i64) -> Option<Vec<Option<Field>>> {
+    pub fn rows(&self) -> Option<usize> {
+        self.columns.first().map(Column::len)
+    }
+
+    pub fn get_row_where_i64<const N: usize>(&self, col: String, val: i64, select: [&str; N]) -> Option<[Option<Field>; N]> {
+        if self.columns.len() != N {return None}
         let Column { name: _, data } = self
             .columns
             .iter()
@@ -33,34 +44,73 @@ impl Table {
             }
             _ => return None,
         };
-        Some(
-            self.columns
+        let mut res = [None; N];
+            select
                 .iter()
-                .map(|Column { name: _, data }| match data {
-                    ColumnData::StringLike(v) => {
-                        v.get(index).cloned().map(|v| Field::StringLike(v))
+                .zip(res.iter_mut())
+                .try_for_each(|(select_name, field)| {
+                        let Column { name: _, data } = self.columns.iter().find(|Column { name, data: _ }| name == select_name)?;
+                        *field = match data {
+                            ColumnData::StringLike(v) => {
+                                v.get(index).map(|v| Field::StringLike(v))
+                            }
+                            ColumnData::MaybeStringLike(v) => v
+                                .get(index)
+                                .map(|v| v.as_deref())
+                                .flatten()
+                                .map(|v| Field::StringLike(v)),
+                            ColumnData::IntLike(v) => v.get(index).cloned().map(|v| Field::IntLike(v)),
+                            ColumnData::MaybeIntLike(v) => v
+                                .get(index)
+                                .cloned()
+                                .flatten()
+                                .map(|v| Field::IntLike(v.to_owned())),
+                            ColumnData::Double(v) => v.get(index).cloned().map(|v| Field::Double(v)),
+                            ColumnData::MaybeDouble(v) => {
+                                v.get(index).cloned().flatten().map(|v| Field::Double(v))
+                            }
+                        };
+                        Some(())
                     }
-                    ColumnData::MaybeStringLike(v) => v
-                        .get(index)
-                        .map(|v| v.as_deref())
-                        .flatten()
-                        .map(|v| Field::StringLike(v.to_owned())),
-                    ColumnData::IntLike(v) => v.get(index).cloned().map(|v| Field::IntLike(v)),
-                    ColumnData::MaybeIntLike(v) => v
-                        .get(index)
-                        .cloned()
-                        .flatten()
-                        .map(|v| Field::IntLike(v.to_owned())),
-                    ColumnData::Double(v) => v.get(index).cloned().map(|v| Field::Double(v)),
-                    ColumnData::MaybeDouble(v) => {
-                        v.get(index).cloned().flatten().map(|v| Field::Double(v))
-                    }
-                })
-                .collect(),
-        )
+                );
+        Some(res)
     }
 
-    pub fn get_rows_where_i64(&self, col: String, val: i64) -> Vec<Vec<Option<Field>>> {
+    pub fn get_rows<const N: usize>(&self, select: [&str; N]) -> Vec<[Option<Field>; N]> {
+        if self.columns.len() != N {return Vec::new()}
+        let Some(len) = self.rows() else{return Vec::new()};
+        (0..len).map(|index| {
+                let mut tmp = [None; N];
+                self.columns
+                    .iter()
+                    .zip(tmp.iter_mut())
+                    .for_each(|(Column { name: _, data }, field)| *field = match data {
+                        ColumnData::StringLike(v) => {
+                            v.get(index).map(|v| Field::StringLike(v))
+                        }
+                        ColumnData::MaybeStringLike(v) => v
+                            .get(index)
+                            .map(|v| v.as_deref())
+                            .flatten()
+                            .map(|v| Field::StringLike(v)),
+                        ColumnData::IntLike(v) => v.get(index).cloned().map(|v| Field::IntLike(v)),
+                        ColumnData::MaybeIntLike(v) => v
+                            .get(index)
+                            .cloned()
+                            .flatten()
+                            .map(|v| Field::IntLike(v.to_owned())),
+                        ColumnData::Double(v) => v.get(index).cloned().map(|v| Field::Double(v)),
+                        ColumnData::MaybeDouble(v) => {
+                            v.get(index).cloned().flatten().map(|v| Field::Double(v))
+                        }
+                    });
+                tmp
+            })
+            .collect()
+    }
+
+    pub fn get_rows_where_i64<const N: usize>(&self, col: &str, val: i64) -> Vec<[Option<Field>; N]> {
+        if self.columns.len() != N {return Vec::new()}
         let Some(Column{name: _, data}) = self.columns.iter().find(|Column{name, data: _}| name == &col) else {return Vec::new()};
         let indices: Vec<_> = match data {
             ColumnData::IntLike(v) => v
@@ -80,17 +130,19 @@ impl Table {
         indices
             .into_iter()
             .map(|index| {
+                let mut tmp = [None; N];
                 self.columns
                     .iter()
-                    .map(|Column { name: _, data }| match data {
+                    .zip(tmp.iter_mut())
+                    .for_each(|(Column { name: _, data }, field)| *field = match data {
                         ColumnData::StringLike(v) => {
-                            v.get(index).cloned().map(|v| Field::StringLike(v))
+                            v.get(index).map(|v| Field::StringLike(v))
                         }
                         ColumnData::MaybeStringLike(v) => v
                             .get(index)
                             .map(|v| v.as_deref())
                             .flatten()
-                            .map(|v| Field::StringLike(v.to_owned())),
+                            .map(|v| Field::StringLike(v)),
                         ColumnData::IntLike(v) => v.get(index).cloned().map(|v| Field::IntLike(v)),
                         ColumnData::MaybeIntLike(v) => v
                             .get(index)
@@ -101,8 +153,8 @@ impl Table {
                         ColumnData::MaybeDouble(v) => {
                             v.get(index).cloned().flatten().map(|v| Field::Double(v))
                         }
-                    })
-                    .collect()
+                    });
+                tmp
             })
             .collect()
     }
@@ -112,6 +164,18 @@ impl Table {
 pub struct Column {
     name: String,
     data: ColumnData,
+}
+impl Column {
+    pub fn len(&self) -> usize {
+        match &self.data {
+            ColumnData::StringLike(v) => v.len(),
+            ColumnData::MaybeStringLike(v) => v.len(),
+            ColumnData::IntLike(v) => v.len(),
+            ColumnData::MaybeIntLike(v) => v.len(),
+            ColumnData::Double(v) => v.len(),
+            ColumnData::MaybeDouble(v) => v.len(),
+        }
+    }
 }
 
 pub enum ColumnData {
@@ -123,8 +187,9 @@ pub enum ColumnData {
     MaybeDouble(Vec<Option<f64>>),
 }
 
-pub enum Field {
-    StringLike(String),
+#[derive(Copy, Clone, Debug)]
+pub enum Field<'s> {
+    StringLike(&'s str),
     IntLike(i64),
     Double(f64),
 }

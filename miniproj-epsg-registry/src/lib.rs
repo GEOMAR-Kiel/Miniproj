@@ -9,6 +9,7 @@ use std::path::Path;
 pub use crate::db::*;
 use miniproj_ops::ellipsoid::Ellipsoid;
 pub use rusqlite::Connection as DbConnection;
+pub use crate::sql::*;
 
 type ImplementedProjection = (
     u32,

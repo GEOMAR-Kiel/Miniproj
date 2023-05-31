@@ -20,5 +20,6 @@ fn main() {
     .unwrap();
     let mut ellipsoid_out = output_dir;
     ellipsoid_out.push("ellipsoid_constructors.rs");
-    std::fs::write(ellipsoid_out, gen_ellipsoid_constructors(&db).unwrap()).unwrap();
+    let memdb = MemoryDb::new();
+    std::fs::write(ellipsoid_out, gen_ellipsoid_constructors(&memdb).unwrap()).unwrap();
 }
