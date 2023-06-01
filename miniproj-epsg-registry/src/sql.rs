@@ -295,11 +295,7 @@ impl MemoryDb {
                         }
                     }
                 }
-                sqlparser::ast::Statement::CreateTable {
-                    name,
-                    columns,
-                    ..
-                } => {
+                sqlparser::ast::Statement::CreateTable { name, columns, .. } => {
                     tables.insert(
                         name.0.last().unwrap().value.clone(),
                         Table {
@@ -356,8 +352,9 @@ impl MemoryDb {
                                 .collect(),
                         },
                     );
-                },
-                sqlparser::ast::Statement::StartTransaction { .. } | sqlparser::ast::Statement::Commit { .. } => {}
+                }
+                sqlparser::ast::Statement::StartTransaction { .. }
+                | sqlparser::ast::Statement::Commit { .. } => {}
                 sqlparser::ast::Statement::Drop {
                     object_type: sqlparser::ast::ObjectType::Table,
                     if_exists: true,
@@ -367,8 +364,8 @@ impl MemoryDb {
                     for n in names {
                         tables.remove(&n.0.last().unwrap().value);
                     }
-                },
-                s => println!("cargo:warning=Unsupported SQL statement: {s:?}")
+                }
+                s => println!("cargo:warning=Unsupported SQL statement: {s:?}"),
             }
         }
         Self { tables }
