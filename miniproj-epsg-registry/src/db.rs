@@ -50,7 +50,7 @@ pub fn gen_ellipsoid_constructors(db: &MemoryDb) -> Result<String, Box<dyn Error
             }
             _ => unreachable!("Malformed DB: Ellipsoids need either b or f_inv. (row: {a:?}"),
         };
-        phf_map.entry(code, &ellipsoid.to_constructed());
+        phf_map.entry(u32::try_from(*code)?, &ellipsoid.to_constructed());
     }
     constant_defs.push_str(&phf_map.build().to_string());
     constant_defs.push(';');
