@@ -2,17 +2,35 @@
 
 use std::{collections::HashMap, error::Error};
 
-use crate::{helpers::*, ImplementedProjection, sql::{MemoryDb, Field}};
+use crate::{
+    helpers::*,
+    sql::{Field, MemoryDb},
+    ImplementedProjection,
+};
 use miniproj_ops::ellipsoid::Ellipsoid;
 use miniproj_ops::PseudoSerialize;
 use rusqlite::{Connection, Result};
 
 /// Generates rust source code mapping EPSG codes to `Ellipsoid`s.
 pub fn gen_ellipsoid_constructors(db: &MemoryDb) -> Result<String, Box<dyn Error>> {
-    let ell_rows = db.get_table("epsg_ellipsoid").ok_or("No Ellipsoid Table")?.get_rows(&["ellipsoid_code", "semi_major_axis", "semi_minor_axis", "inv_flattening", "uom_code"]);
-    let uom_rows = db.get_table("epsg_unitofmeasure").ok_or("No UOM Table")?.get_rows(&["uom_code", "factor_b", "factor_c"]);
-    
-    let mut constant_defs: String = String::from("#[allow(clippy::approx_constant)]\nstatic ELLIPSOIDS: phf::Map<u32, Ellipsoid> =");
+    let ell_rows = db
+        .get_table("epsg_ellipsoid")
+        .ok_or("No Ellipsoid Table")?
+        .get_rows(&[
+            "ellipsoid_code",
+            "semi_major_axis",
+            "semi_minor_axis",
+            "inv_flattening",
+            "uom_code",
+        ]);
+    let uom_rows = db
+        .get_table("epsg_unitofmeasure")
+        .ok_or("No UOM Table")?
+        .get_rows(&["uom_code", "factor_b", "factor_c"]);
+
+    let mut constant_defs: String = String::from(
+        "#[allow(clippy::approx_constant)]\nstatic ELLIPSOIDS: phf::Map<u32, Ellipsoid> =",
+    );
     let mut phf_map = phf_codegen::Map::new();
     for a in &ell_rows {
         let [Some(Field::IntLike(code)), _, _, _, Some(Field::IntLike(uom_code))] = a else {unreachable!("No UOM Code given. (row: {:?})", a)};
@@ -26,25 +44,36 @@ pub fn gen_ellipsoid_constructors(db: &MemoryDb) -> Result<String, Box<dyn Error
         let ellipsoid = match a {
             [_, Some(Field::Double(a)), Some(Field::Double(b)), None, _] => {
                 Ellipsoid::from_a_b(a * fac_b / fac_c, b * fac_b / fac_c)
-            },
+            }
             [_, Some(Field::Double(a)), None, Some(Field::Double(f_inv)), _] => {
                 Ellipsoid::from_a_f_inv(a * fac_b / fac_c, *f_inv)
-            },
-            _ => unreachable!("Malformed DB: Ellipsoids need either b or f_inv. (row: {a:?}")
+            }
+            _ => unreachable!("Malformed DB: Ellipsoids need either b or f_inv. (row: {a:?}"),
         };
         phf_map.entry(code, &ellipsoid.to_constructed());
     }
     constant_defs.push_str(&phf_map.build().to_string());
     constant_defs.push(';');
     Ok(constant_defs)
-
 }
 
 /// Constructs a `HashMap` mapping EPSG codes to `Ellipsoid`s.
 pub fn get_ellipsoids(db: &MemoryDb) -> Result<HashMap<u32, Ellipsoid>, Box<dyn Error>> {
-    let ell_rows = db.get_table("epsg_ellipsoid").ok_or("No Ellipsoid Table")?.get_rows(&["ellipsoid_code", "semi_major_axis", "semi_minor_axis", "inv_flattening", "uom_code"]);
-    let uom_rows = db.get_table("epsg_unitofmeasure").ok_or("No UOM Table")?.get_rows(&["uom_code", "factor_b", "factor_c"]);
- 
+    let ell_rows = db
+        .get_table("epsg_ellipsoid")
+        .ok_or("No Ellipsoid Table")?
+        .get_rows(&[
+            "ellipsoid_code",
+            "semi_major_axis",
+            "semi_minor_axis",
+            "inv_flattening",
+            "uom_code",
+        ]);
+    let uom_rows = db
+        .get_table("epsg_unitofmeasure")
+        .ok_or("No UOM Table")?
+        .get_rows(&["uom_code", "factor_b", "factor_c"]);
+
     let mut ellipsoids = HashMap::new();
     for a in &ell_rows {
         let [Some(Field::IntLike(code)), _, _, _, Some(Field::IntLike(uom_code))] = a else {unreachable!("No UOM Code given. (row: {:?})", a)};
@@ -58,11 +87,11 @@ pub fn get_ellipsoids(db: &MemoryDb) -> Result<HashMap<u32, Ellipsoid>, Box<dyn 
         let ellipsoid = match a {
             [_, Some(Field::Double(a)), Some(Field::Double(b)), None, _] => {
                 Ellipsoid::from_a_b(a * fac_b / fac_c, b * fac_b / fac_c)
-            },
+            }
             [_, Some(Field::Double(a)), None, Some(Field::Double(f_inv)), _] => {
                 Ellipsoid::from_a_f_inv(a * fac_b / fac_c, *f_inv)
-            },
-            _ => unreachable!("Malformed DB: Ellipsoids need either b or f_inv. (row: {a:?}")
+            }
+            _ => unreachable!("Malformed DB: Ellipsoids need either b or f_inv. (row: {a:?}"),
         };
         ellipsoids.insert((*code).try_into()?, ellipsoid);
     }

@@ -18,7 +18,8 @@ pub struct Ellipsoid {
 }
 impl Ellipsoid {
     /// Construct an ellipsoid from major and minor half axis.
-    #[must_use] pub fn from_a_b(a: f64, b: f64) -> Self {
+    #[must_use]
+    pub fn from_a_b(a: f64, b: f64) -> Self {
         let f = (a - b) / a;
         let e_squared = (2f64 * f) - f.powi(2);
         Self {
@@ -31,7 +32,8 @@ impl Ellipsoid {
     }
 
     /// Construct an ellipsoid from major half axis and inverse flattening.
-    #[must_use] pub fn from_a_f_inv(a: f64, f_inv: f64) -> Self {
+    #[must_use]
+    pub fn from_a_f_inv(a: f64, f_inv: f64) -> Self {
         let f = 1.0 / f_inv;
         let e_squared = (2f64 / f_inv) - f_inv.powi(-2);
         Self {

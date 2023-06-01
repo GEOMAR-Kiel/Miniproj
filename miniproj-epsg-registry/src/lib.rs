@@ -7,9 +7,9 @@ mod sql;
 use std::path::Path;
 
 pub use crate::db::*;
+pub use crate::sql::*;
 use miniproj_ops::ellipsoid::Ellipsoid;
 pub use rusqlite::Connection as DbConnection;
-pub use crate::sql::*;
 
 type ImplementedProjection = (
     u32,

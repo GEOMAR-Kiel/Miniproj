@@ -101,10 +101,7 @@ impl PseudoSerialize for PopVisPseudoMercatorProjection {
     false_e: {}f64,
     false_n: {}f64,
 }}",
-            self.ellipsoid_a,
-            self.lon_orig,
-            self.false_e,
-            self.false_n,
+            self.ellipsoid_a, self.lon_orig, self.false_e, self.false_n,
         )
     }
 }
