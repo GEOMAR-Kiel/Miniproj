@@ -6,34 +6,33 @@ use sqlparser::{
     parser::Parser,
 };
 
-static DB: &'static str = include_str!("../data/gen_reg.sql");
+static DB: &str = include_str!("../data/gen_reg.sql");
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct MemoryDb {
     tables: HashMap<String, Table>,
 }
 impl MemoryDb {
-    pub fn get_table(&self, name: &str) -> Option<&Table> {
+    #[must_use] pub fn get_table(&self, name: &str) -> Option<&Table> {
         self.tables.get(name)
     }
 }
 
 #[derive(Debug)]
 pub struct Table {
-    columns: Vec<Column>,
+    column_order: Vec<String>,
+    columns: HashMap<String, Column>,
 }
 
 impl Table {
     pub fn rows(&self) -> Option<usize> {
-        self.columns.first().map(Column::len)
+        self.columns.values().next().map(Column::len)
     }
 
-    pub fn get_row_where_i64<const N: usize>(&self, col: String, val: i64, select: [&str; N]) -> Option<[Option<Field>; N]> {
-        if self.columns.len() != N {return None}
-        let Column { name: _, data } = self
+    #[must_use] pub fn get_row_where_i64<const N: usize>(&self, col: &str, val: i64, select: &[&str; N]) -> Option<[Option<Field>; N]> {
+        let Column { data } = self
             .columns
-            .iter()
-            .find(|Column { name, data: _ }| name == &col)?;
+            .get(col)?;
         let index = match data {
             ColumnData::IntLike(v) => v.iter().enumerate().find(|(_n, v)| **v == val)?.0,
             ColumnData::MaybeIntLike(v) => {
@@ -49,25 +48,24 @@ impl Table {
                 .iter()
                 .zip(res.iter_mut())
                 .try_for_each(|(select_name, field)| {
-                        let Column { name: _, data } = self.columns.iter().find(|Column { name, data: _ }| name == select_name)?;
+                        let Column { data } = self.columns.get(*select_name)?;
                         *field = match data {
                             ColumnData::StringLike(v) => {
                                 v.get(index).map(|v| Field::StringLike(v))
                             }
                             ColumnData::MaybeStringLike(v) => v
                                 .get(index)
-                                .map(|v| v.as_deref())
-                                .flatten()
-                                .map(|v| Field::StringLike(v)),
-                            ColumnData::IntLike(v) => v.get(index).cloned().map(|v| Field::IntLike(v)),
+                                .and_then(std::option::Option::as_deref)
+                                .map(Field::StringLike),
+                            ColumnData::IntLike(v) => v.get(index).copied().map(Field::IntLike),
                             ColumnData::MaybeIntLike(v) => v
                                 .get(index)
-                                .cloned()
+                                .copied()
                                 .flatten()
-                                .map(|v| Field::IntLike(v.to_owned())),
-                            ColumnData::Double(v) => v.get(index).cloned().map(|v| Field::Double(v)),
+                                .map(Field::IntLike),
+                            ColumnData::Double(v) => v.get(index).copied().map(Field::Double),
                             ColumnData::MaybeDouble(v) => {
-                                v.get(index).cloned().flatten().map(|v| Field::Double(v))
+                                v.get(index).copied().flatten().map(Field::Double)
                             }
                         };
                         Some(())
@@ -76,32 +74,31 @@ impl Table {
         Some(res)
     }
 
-    pub fn get_rows<const N: usize>(&self, select: [&str; N]) -> Vec<[Option<Field>; N]> {
-        if self.columns.len() != N {return Vec::new()}
+    #[must_use] pub fn get_rows<const N: usize>(&self, select: &[&str; N]) -> Vec<[Option<Field>; N]> {
+        let Some(columns) = select.iter().map(|n| self.columns.get(*n)).collect::<Option<Vec<_>>>() else {panic!("could not satisfy cols: {select:?} with {:?}", self.column_order)};
         let Some(len) = self.rows() else{return Vec::new()};
         (0..len).map(|index| {
                 let mut tmp = [None; N];
-                self.columns
+                columns
                     .iter()
                     .zip(tmp.iter_mut())
-                    .for_each(|(Column { name: _, data }, field)| *field = match data {
+                    .for_each(|(Column { data }, field)| *field = match data {
                         ColumnData::StringLike(v) => {
                             v.get(index).map(|v| Field::StringLike(v))
                         }
                         ColumnData::MaybeStringLike(v) => v
                             .get(index)
-                            .map(|v| v.as_deref())
-                            .flatten()
-                            .map(|v| Field::StringLike(v)),
-                        ColumnData::IntLike(v) => v.get(index).cloned().map(|v| Field::IntLike(v)),
+                            .and_then(std::option::Option::as_deref)
+                            .map(Field::StringLike),
+                        ColumnData::IntLike(v) => v.get(index).copied().map(Field::IntLike),
                         ColumnData::MaybeIntLike(v) => v
                             .get(index)
-                            .cloned()
+                            .copied()
                             .flatten()
-                            .map(|v| Field::IntLike(v.to_owned())),
-                        ColumnData::Double(v) => v.get(index).cloned().map(|v| Field::Double(v)),
+                            .map(Field::IntLike),
+                        ColumnData::Double(v) => v.get(index).copied().map(Field::Double),
                         ColumnData::MaybeDouble(v) => {
-                            v.get(index).cloned().flatten().map(|v| Field::Double(v))
+                            v.get(index).copied().flatten().map(Field::Double)
                         }
                     });
                 tmp
@@ -109,9 +106,9 @@ impl Table {
             .collect()
     }
 
-    pub fn get_rows_where_i64<const N: usize>(&self, col: &str, val: i64) -> Vec<[Option<Field>; N]> {
-        if self.columns.len() != N {return Vec::new()}
-        let Some(Column{name: _, data}) = self.columns.iter().find(|Column{name, data: _}| name == &col) else {return Vec::new()};
+    #[must_use] pub fn get_rows_where_i64<const N: usize>(&self, col: &str, val: i64, select: &[&str; N]) -> Vec<[Option<Field>; N]> {
+        let Some(columns) = select.iter().map(|n| self.columns.get(*n)).collect::<Option<Vec<_>>>() else {return Vec::new()};
+        let Some(Column{ data }) = self.columns.get(col) else {return Vec::new()};
         let indices: Vec<_> = match data {
             ColumnData::IntLike(v) => v
                 .iter()
@@ -131,27 +128,26 @@ impl Table {
             .into_iter()
             .map(|index| {
                 let mut tmp = [None; N];
-                self.columns
+                columns
                     .iter()
                     .zip(tmp.iter_mut())
-                    .for_each(|(Column { name: _, data }, field)| *field = match data {
+                    .for_each(|(Column { data }, field)| *field = match data {
                         ColumnData::StringLike(v) => {
                             v.get(index).map(|v| Field::StringLike(v))
                         }
                         ColumnData::MaybeStringLike(v) => v
                             .get(index)
-                            .map(|v| v.as_deref())
-                            .flatten()
-                            .map(|v| Field::StringLike(v)),
-                        ColumnData::IntLike(v) => v.get(index).cloned().map(|v| Field::IntLike(v)),
+                            .and_then(std::option::Option::as_deref)
+                            .map(Field::StringLike),
+                        ColumnData::IntLike(v) => v.get(index).copied().map(Field::IntLike),
                         ColumnData::MaybeIntLike(v) => v
                             .get(index)
-                            .cloned()
+                            .copied()
                             .flatten()
-                            .map(|v| Field::IntLike(v.to_owned())),
-                        ColumnData::Double(v) => v.get(index).cloned().map(|v| Field::Double(v)),
+                            .map(Field::IntLike),
+                        ColumnData::Double(v) => v.get(index).copied().map(Field::Double),
                         ColumnData::MaybeDouble(v) => {
-                            v.get(index).cloned().flatten().map(|v| Field::Double(v))
+                            v.get(index).copied().flatten().map(Field::Double)
                         }
                     });
                 tmp
@@ -162,11 +158,10 @@ impl Table {
 
 #[derive(Debug)]
 pub struct Column {
-    name: String,
     data: ColumnData,
 }
 impl Column {
-    pub fn len(&self) -> usize {
+    #[must_use] pub fn len(&self) -> usize {
         match &self.data {
             ColumnData::StringLike(v) => v.len(),
             ColumnData::MaybeStringLike(v) => v.len(),
@@ -175,6 +170,10 @@ impl Column {
             ColumnData::Double(v) => v.len(),
             ColumnData::MaybeDouble(v) => v.len(),
         }
+    }
+
+    #[must_use] pub fn is_empty(&self) -> bool {
+        self.len() == 0
     }
 }
 
@@ -210,7 +209,8 @@ impl std::fmt::Debug for ColumnData {
 }
 
 impl MemoryDb {
-    pub fn new() -> Self {
+    #[allow(clippy::too_many_lines)]
+    #[must_use] pub fn new() -> Self {
         let dialect = GenericDialect {};
         let ast = Parser::parse_sql(&dialect, DB).expect("Parser error.");
         let mut tables = HashMap::new();
@@ -235,24 +235,25 @@ impl MemoryDb {
                     let SetExpr::Values(values) = source.body.as_ref() else {panic!("expected values!")};
                     for row in &values.rows {
                         assert_eq!(table.columns.len(), row.len());
-                        for (expr, Column { name: _, data }) in
-                            row.iter().zip(table.columns.iter_mut())
+                        for (expr, col_name) in
+                            row.iter().zip(table.column_order.iter())
                         {
+                            let Column { data } = table.columns.get_mut(col_name).expect("Missing column.");
                             match (data, expr) {
                                 (ColumnData::MaybeStringLike(v), Expr::Value(Value::Null)) => {
-                                    v.push(None)
+                                    v.push(None);
                                 }
                                 (ColumnData::MaybeIntLike(v), Expr::Value(Value::Null)) => {
-                                    v.push(None)
+                                    v.push(None);
                                 }
                                 (ColumnData::MaybeDouble(v), Expr::Value(Value::Null)) => {
-                                    v.push(None)
+                                    v.push(None);
                                 }
                                 (ColumnData::IntLike(v), Expr::Value(Value::Number(n, _))) => {
-                                    v.push(n.parse().expect("cannot parse i64"))
+                                    v.push(n.parse().expect("cannot parse i64"));
                                 }
                                 (ColumnData::MaybeIntLike(v), Expr::Value(Value::Number(n, _))) => {
-                                    v.push(Some(n.parse().expect("cannot parse i64")))
+                                    v.push(Some(n.parse().expect("cannot parse i64")));
                                 }
                                 (
                                     ColumnData::StringLike(v),
@@ -263,7 +264,7 @@ impl MemoryDb {
                                     Expr::Value(Value::SingleQuotedString(s)),
                                 ) => v.push(Some(s.clone())),
                                 (ColumnData::Double(v), Expr::Value(Value::Number(n, _))) => {
-                                    v.push(n.parse().expect("cannot parse f64"))
+                                    v.push(n.parse().expect("cannot parse f64"));
                                 }
                                 (
                                     ColumnData::Double(v),
@@ -276,7 +277,7 @@ impl MemoryDb {
                                     v.push(n.parse().expect("cannot parse f64"));
                                 }
                                 (ColumnData::MaybeDouble(v), Expr::Value(Value::Number(n, _))) => {
-                                    v.push(Some(n.parse().expect("cannot parse f64")))
+                                    v.push(Some(n.parse().expect("cannot parse f64")));
                                 }
                                 (
                                     ColumnData::MaybeDouble(v),
@@ -288,7 +289,9 @@ impl MemoryDb {
                                     let Expr::Value(Value::Number(n, _)) = expr.as_ref() else {panic!("cannot negate non-numbers")};
                                     v.push(Some(n.parse().expect("cannot parse f64")));
                                 }
-                                (d, e) => panic!("cannot push {:?} to {:?}.", e, d),
+                                (d, e) => {
+                                    panic!("cannot push {e:?} to {d:?}.")
+                                },
                             }
                         }
                     }
@@ -323,10 +326,11 @@ impl MemoryDb {
                     tables.insert(
                         name.0.last().unwrap().value.clone(),
                         Table {
+                            column_order: columns.iter().map(|c| c.name.value.clone()).collect(),
                             columns: columns
-                                .into_iter()
-                                .map(|c| Column {
-                                    name: c.name.value.clone(),
+                                .iter()
+                                .map(|c| (c.name.value.clone(),
+                                Column {
                                     data: if c
                                         .options
                                         .iter()
@@ -343,7 +347,7 @@ impl MemoryDb {
                                             DataType::Varchar(_) | DataType::Date => {
                                                 ColumnData::StringLike(Vec::new())
                                             }
-                                            a => panic!("type {:?} not supported!", a),
+                                            a => panic!("type {a:?} not supported!"),
                                         }
                                     } else {
                                         match &c.data_type {
@@ -361,10 +365,10 @@ impl MemoryDb {
                                             | DataType::Custom(_, _) => {
                                                 ColumnData::MaybeIntLike(Vec::new())
                                             }
-                                            a => panic!("type {:?} not supported!", a),
+                                            a => panic!("type {a:?} not supported!"),
                                         }
                                     },
-                                })
+                                }))
                                 .collect(),
                         },
                     );

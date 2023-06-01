@@ -11,7 +11,8 @@ fn main() {
     write_db(&data_path).expect("Could not write db object");
     let db = DbConnection::open(data_path).unwrap();
     let mut projection_out = output_dir.clone();
-    let ellipsoids = get_ellipsoids(&db).unwrap();
+    let memdb = MemoryDb::new();
+    let ellipsoids = get_ellipsoids(&memdb).unwrap();
     projection_out.push("projection_constructors.rs");
     std::fs::write(
         projection_out,
@@ -20,6 +21,5 @@ fn main() {
     .unwrap();
     let mut ellipsoid_out = output_dir;
     ellipsoid_out.push("ellipsoid_constructors.rs");
-    let memdb = MemoryDb::new();
     std::fs::write(ellipsoid_out, gen_ellipsoid_constructors(&memdb).unwrap()).unwrap();
 }

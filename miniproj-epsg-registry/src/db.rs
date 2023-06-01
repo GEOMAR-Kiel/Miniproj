@@ -9,12 +9,12 @@ use rusqlite::{Connection, Result};
 
 /// Generates rust source code mapping EPSG codes to `Ellipsoid`s.
 pub fn gen_ellipsoid_constructors(db: &MemoryDb) -> Result<String, Box<dyn Error>> {
-    let ell_rows = db.get_table("epsg_ellipsoid").ok_or_else(||"No Ellipsoid Table")?.get_rows(["code", "semi_major_axis", "semi_minor_axis", "inv_flattening", "uom_code"]);
-    let uom_rows = db.get_table("epsg_unitofmeasure").ok_or_else(||"No UOM Table")?.get_rows(["uom_code", "factor_b", "factor_c"]);
+    let ell_rows = db.get_table("epsg_ellipsoid").ok_or("No Ellipsoid Table")?.get_rows(&["ellipsoid_code", "semi_major_axis", "semi_minor_axis", "inv_flattening", "uom_code"]);
+    let uom_rows = db.get_table("epsg_unitofmeasure").ok_or("No UOM Table")?.get_rows(&["uom_code", "factor_b", "factor_c"]);
     
-    let mut constant_defs: String = String::from("static ELLIPSOIDS: phf::Map<u32, Ellipsoid> =");
+    let mut constant_defs: String = String::from("#[allow(clippy::approx_constant)]\nstatic ELLIPSOIDS: phf::Map<u32, Ellipsoid> =");
     let mut phf_map = phf_codegen::Map::new();
-    ell_rows.iter().for_each(|a| {
+    for a in &ell_rows {
         let [Some(Field::IntLike(code)), _, _, _, Some(Field::IntLike(uom_code))] = a else {unreachable!("No UOM Code given. (row: {:?})", a)};
         let Some([_ , Some(Field::Double(fac_b)), Some(Field::Double(fac_c))]) = uom_rows.iter().find(|[f, _, _]| {
             if let Some(Field::IntLike(code)) = f  {
@@ -33,7 +33,7 @@ pub fn gen_ellipsoid_constructors(db: &MemoryDb) -> Result<String, Box<dyn Error
             _ => unreachable!("Malformed DB: Ellipsoids need either b or f_inv. (row: {a:?}")
         };
         phf_map.entry(code, &ellipsoid.to_constructed());
-    });
+    }
     constant_defs.push_str(&phf_map.build().to_string());
     constant_defs.push(';');
     Ok(constant_defs)
@@ -41,40 +41,31 @@ pub fn gen_ellipsoid_constructors(db: &MemoryDb) -> Result<String, Box<dyn Error
 }
 
 /// Constructs a `HashMap` mapping EPSG codes to `Ellipsoid`s.
-pub fn get_ellipsoids(c: &Connection) -> Result<HashMap<u32, Ellipsoid>> {
-    let mut s = c.prepare(
-        "
-    SELECT
-        ellipsoid_code as code,
-        ellipsoid_name as name,
-        semi_major_axis * uom.factor_b / uom.factor_c as a,
-        semi_minor_axis * uom.factor_b / uom.factor_c as b,
-        inv_flattening as inv_f
-    FROM 
-        'epsg_ellipsoid' as ellipsoid 
-        JOIN 'epsg_unitofmeasure' as uom USING (uom_code);
-    ",
-    )?;
+pub fn get_ellipsoids(db: &MemoryDb) -> Result<HashMap<u32, Ellipsoid>, Box<dyn Error>> {
+    let ell_rows = db.get_table("epsg_ellipsoid").ok_or("No Ellipsoid Table")?.get_rows(&["ellipsoid_code", "semi_major_axis", "semi_minor_axis", "inv_flattening", "uom_code"]);
+    let uom_rows = db.get_table("epsg_unitofmeasure").ok_or("No UOM Table")?.get_rows(&["uom_code", "factor_b", "factor_c"]);
+ 
     let mut ellipsoids = HashMap::new();
-    s.query([])?
-        .mapped(|r| {
-            {
-                let code: u32 = r.get_unwrap("code");
-                let semi_major = r.get_unwrap::<_, f64>("a");
-                let semi_minor = r.get_unwrap::<_, Option<f64>>("b");
-                let inf_flat = r.get_unwrap::<_, Option<f64>>("inv_f");
-                ellipsoids.insert(
-                    code,
-                    match (semi_minor, inf_flat) {
-                        (Some(b), _) => Ellipsoid::from_a_b(semi_major, b),
-                        (_, Some(f_inv)) => Ellipsoid::from_a_f_inv(semi_major, f_inv),
-                        _ => unreachable!("Malformed DB: Ellipsoids need either b or f_inv."),
-                    },
-                );
-            };
-            Ok(())
-        })
-        .collect::<Result<()>>()?;
+    for a in &ell_rows {
+        let [Some(Field::IntLike(code)), _, _, _, Some(Field::IntLike(uom_code))] = a else {unreachable!("No UOM Code given. (row: {:?})", a)};
+        let Some([_ , Some(Field::Double(fac_b)), Some(Field::Double(fac_c))]) = uom_rows.iter().find(|[f, _, _]| {
+            if let Some(Field::IntLike(code)) = f  {
+                code == uom_code
+            } else {
+                false
+            }
+        }) else {unreachable!("No UOM found for Code in DB.")};
+        let ellipsoid = match a {
+            [_, Some(Field::Double(a)), Some(Field::Double(b)), None, _] => {
+                Ellipsoid::from_a_b(a * fac_b / fac_c, b * fac_b / fac_c)
+            },
+            [_, Some(Field::Double(a)), None, Some(Field::Double(f_inv)), _] => {
+                Ellipsoid::from_a_f_inv(a * fac_b / fac_c, *f_inv)
+            },
+            _ => unreachable!("Malformed DB: Ellipsoids need either b or f_inv. (row: {a:?}")
+        };
+        ellipsoids.insert((*code).try_into()?, ellipsoid);
+    }
     Ok(ellipsoids)
 }
 
@@ -274,7 +265,8 @@ pub fn gen_parameter_constructors(
         .collect::<Result<()>>()?;
     println!("Collected {} projected coordinate systems.", counter);
     Ok(format!(
-        r"static PROJECTIONS: phf::Map<u32, &(dyn Projection + Send + Sync)> = {};
+        r"#[allow(clippy::approx_constant)]
+static PROJECTIONS: phf::Map<u32, &(dyn Projection + Send + Sync)> = {};
 static ELLIPSOIDS: phf::Map<u32, u32> = {};
 ",
         constructors_map.build(),
