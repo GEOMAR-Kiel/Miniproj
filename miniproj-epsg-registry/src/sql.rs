@@ -223,18 +223,11 @@ impl MemoryDb {
         let mut tables = HashMap::new();
         for stmt in &ast {
             match stmt {
-                _a @ sqlparser::ast::Statement::Insert {
-                    or: _,
-                    into: _,
+                sqlparser::ast::Statement::Insert {
+                    into: true,
                     table_name,
-                    columns: _,
-                    overwrite: _,
                     source,
-                    partitioned: _,
-                    after_columns: _,
-                    table: _,
-                    on: _,
-                    returning: _,
+                    ..
                 } => {
                     let table: &mut Table = tables
                         .get_mut(&table_name.0.iter().last().unwrap().value)
@@ -303,31 +296,9 @@ impl MemoryDb {
                     }
                 }
                 sqlparser::ast::Statement::CreateTable {
-                    or_replace: _,
-                    temporary: _,
-                    external: _,
-                    global: _,
-                    if_not_exists: _,
-                    transient: _,
                     name,
                     columns,
-                    constraints: _,
-                    hive_distribution: _,
-                    hive_formats: _,
-                    table_properties: _,
-                    with_options: _,
-                    file_format: _,
-                    location: _,
-                    query: _,
-                    without_rowid: _,
-                    like: _,
-                    clone: _,
-                    engine: _,
-                    default_charset: _,
-                    collation: _,
-                    on_commit: _,
-                    on_cluster: _,
-                    order_by: _,
+                    ..
                 } => {
                     tables.insert(
                         name.0.last().unwrap().value.clone(),
@@ -385,8 +356,19 @@ impl MemoryDb {
                                 .collect(),
                         },
                     );
-                }
-                _ => {}
+                },
+                sqlparser::ast::Statement::StartTransaction { .. } | sqlparser::ast::Statement::Commit { .. } => {}
+                sqlparser::ast::Statement::Drop {
+                    object_type: sqlparser::ast::ObjectType::Table,
+                    if_exists: true,
+                    names,
+                    ..
+                } => {
+                    for n in names {
+                        tables.remove(&n.0.last().unwrap().value);
+                    }
+                },
+                s => println!("cargo:warning=Unsupported SQL statement: {s:?}")
             }
         }
         Self { tables }
