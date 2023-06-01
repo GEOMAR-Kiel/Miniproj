@@ -192,31 +192,31 @@ impl PseudoSerialize for AlbersEqualAreaProjection {
     fn to_constructed(&self) -> String {
         format!(
             r"AlbersEqualAreaProjection{{
-    false_e: f64::from_bits(0x{:x}),
-    false_n: f64::from_bits(0x{:x}),
-    lon_orig: f64::from_bits(0x{:x}),
-    ellipsoid_e: f64::from_bits(0x{:x}),
-    ellipsoid_e_sq: f64::from_bits(0x{:x}),
-    ellipsoid_a: f64::from_bits(0x{:x}),
-    C: f64::from_bits(0x{:x}),
-    n: f64::from_bits(0x{:x}),
-    rho_O: f64::from_bits(0x{:x}),
-    beta_fac_sin2: f64::from_bits(0x{:x}),
-    beta_fac_sin4: f64::from_bits(0x{:x}),
-    beta_fac_sin6: f64::from_bits(0x{:x})
+    false_e: {}f64,
+    false_n: {}f64,
+    lon_orig: {}f64,
+    ellipsoid_e: {}f64,
+    ellipsoid_e_sq: {}f64,
+    ellipsoid_a: {}f64,
+    C: {}f64,
+    n: {}f64,
+    rho_O: {}f64,
+    beta_fac_sin2: {}f64,
+    beta_fac_sin4: {}f64,
+    beta_fac_sin6: {}f64
 }}",
-            self.false_e.to_bits(),
-            self.false_n.to_bits(),
-            self.lon_orig.to_bits(),
-            self.ellipsoid_e.to_bits(),
-            self.ellipsoid_e_sq.to_bits(),
-            self.ellipsoid_a.to_bits(),
-            self.C.to_bits(),
-            self.n.to_bits(),
-            self.rho_O.to_bits(),
-            self.beta_fac_sin2.to_bits(),
-            self.beta_fac_sin4.to_bits(),
-            self.beta_fac_sin6.to_bits()
+            self.false_e,
+            self.false_n,
+            self.lon_orig,
+            self.ellipsoid_e,
+            self.ellipsoid_e_sq,
+            self.ellipsoid_a,
+            self.C,
+            self.n,
+            self.rho_O,
+            self.beta_fac_sin2,
+            self.beta_fac_sin4,
+            self.beta_fac_sin6
         )
     }
 }

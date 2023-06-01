@@ -143,17 +143,17 @@ impl PseudoSerialize for Ellipsoid {
     fn to_constructed(&self) -> String {
         format! {
 r"Ellipsoid{{
-    a: f64::from_bits(0x{:x}),
-    b: f64::from_bits(0x{:x}),
-    e: f64::from_bits(0x{:x}),
-    e_squared: f64::from_bits(0x{:x}),
-    f: f64::from_bits(0x{:x}),
+    a: {}f64,
+    b: {}f64,
+    e: {}f64,
+    e_squared: {}f64,
+    f: {}f64,
 }}",
-            self.a.to_bits(),
-            self.b.to_bits(),
-            self.e.to_bits(),
-            self.e_squared.to_bits(),
-            self.f.to_bits(),
+            self.a,
+            self.b,
+            self.e,
+            self.e_squared,
+            self.f,
         }
     }
 }

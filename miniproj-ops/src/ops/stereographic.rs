@@ -193,29 +193,29 @@ impl PseudoSerialize for PolarStereographicAProjection {
     fn to_constructed(&self) -> String {
         format!(
             r"PolarStereographicAProjection{{
-    t_rho_factor: f64::from_bits(0x{:x}),
-    phi_2_chi_sin_summand_factor: f64::from_bits(0x{:x}),
-    phi_4_chi_sin_summand_factor: f64::from_bits(0x{:x}),
-    phi_6_chi_sin_summand_factor: f64::from_bits(0x{:x}),
-    phi_8_chi_sin_summand_factor: f64::from_bits(0x{:x}),
+    t_rho_factor: {}f64,
+    phi_2_chi_sin_summand_factor: {}f64,
+    phi_4_chi_sin_summand_factor: {}f64,
+    phi_6_chi_sin_summand_factor: {}f64,
+    phi_8_chi_sin_summand_factor: {}f64,
     
-    lat_orig: f64::from_bits(0x{:x}),
-    lon_orig: f64::from_bits(0x{:x}),
-    false_e: f64::from_bits(0x{:x}),
-    false_n: f64::from_bits(0x{:x}),
+    lat_orig: {}f64,
+    lon_orig: {}f64,
+    false_e: {}f64,
+    false_n: {}f64,
 
-    ell_e: f64::from_bits(0x{:x})
+    ell_e: {}f64
 }}",
-            self.t_rho_factor.to_bits(),
-            self.phi_2_chi_sin_summand_factor.to_bits(),
-            self.phi_4_chi_sin_summand_factor.to_bits(),
-            self.phi_6_chi_sin_summand_factor.to_bits(),
-            self.phi_8_chi_sin_summand_factor.to_bits(),
-            self.lat_orig.to_bits(),
-            self.lon_orig.to_bits(),
-            self.false_e.to_bits(),
-            self.false_n.to_bits(),
-            self.ell_e.to_bits()
+            self.t_rho_factor,
+            self.phi_2_chi_sin_summand_factor,
+            self.phi_4_chi_sin_summand_factor,
+            self.phi_6_chi_sin_summand_factor,
+            self.phi_8_chi_sin_summand_factor,
+            self.lat_orig,
+            self.lon_orig,
+            self.false_e,
+            self.false_n,
+            self.ell_e
         )
     }
 }
@@ -405,29 +405,29 @@ impl PseudoSerialize for ObliqueStereographicProjection {
     fn to_constructed(&self) -> String {
         format!(
             r"ObliqueStereographicProjection{{
-    false_e: f64::from_bits(0x{:x}),
-    false_n: f64::from_bits(0x{:x}),
-    chi_O: f64::from_bits(0x{:x}),
-    R_k_O_2: f64::from_bits(0x{:x}),
-    c: f64::from_bits(0x{:x}),
-    ellipsoid_e: f64::from_bits(0x{:x}),
-    ellipsoid_e_sq: f64::from_bits(0x{:x}),
-    n: f64::from_bits(0x{:x}),
-    lon_orig: f64::from_bits(0x{:x}),
-    g: f64::from_bits(0x{:x}),
-    h: f64::from_bits(0x{:x})
+    false_e: {}f64,
+    false_n: {}f64,
+    chi_O: {}f64,
+    R_k_O_2: {}f64,
+    c: {}f64,
+    ellipsoid_e: {}f64,
+    ellipsoid_e_sq: {}f64,
+    n: {}f64,
+    lon_orig: {}f64,
+    g: {}f64,
+    h: {}f64
 }}",
-            self.false_e.to_bits(),
-            self.false_n.to_bits(),
-            self.chi_O.to_bits(),
-            self.R_k_O_2.to_bits(),
-            self.c.to_bits(),
-            self.ellipsoid_e.to_bits(),
-            self.ellipsoid_e_sq.to_bits(),
-            self.n.to_bits(),
-            self.lon_orig.to_bits(),
-            self.g.to_bits(),
-            self.h.to_bits()
+            self.false_e,
+            self.false_n,
+            self.chi_O,
+            self.R_k_O_2,
+            self.c,
+            self.ellipsoid_e,
+            self.ellipsoid_e_sq,
+            self.n,
+            self.lon_orig,
+            self.g,
+            self.h
         )
     }
 }

@@ -174,26 +174,26 @@ impl PseudoSerialize for LambertAzimuthalEqualAreaProjection {
     fn to_constructed(&self) -> String {
         format!(
             r"LambertAzimuthalEqualAreaProjection{{
-    lon_orig: f64::from_bits({}),
-    false_e: f64::from_bits({}),
-    false_n: f64::from_bits({}),
-    ellipsoid_e: f64::from_bits({}),
-    ellipsoid_e_squared: f64::from_bits({}),
+    lon_orig: {}f64,
+    false_e: {}f64,
+    false_n: {}f64,
+    ellipsoid_e: {}f64,
+    ellipsoid_e_squared: {}f64,
 
-    q_P: f64::from_bits({}),
-    beta_O: f64::from_bits({}),
-    R_q: f64::from_bits({}),
-    D: f64::from_bits({}),
+    q_P: {}f64,
+    beta_O: {}f64,
+    R_q: {}f64,
+    D: {}f64,
 }}",
-            self.lon_orig.to_bits(),
-            self.false_e.to_bits(),
-            self.false_n.to_bits(),
-            self.ellipsoid_e.to_bits(),
-            self.ellipsoid_e_squared.to_bits(),
-            self.q_P.to_bits(),
-            self.beta_O.to_bits(),
-            self.R_q.to_bits(),
-            self.D.to_bits()
+            self.lon_orig,
+            self.false_e,
+            self.false_n,
+            self.ellipsoid_e,
+            self.ellipsoid_e_squared,
+            self.q_P,
+            self.beta_O,
+            self.R_q,
+            self.D
         )
     }
 }
