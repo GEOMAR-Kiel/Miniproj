@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, error::Error};
 
 use sqlparser::{
     ast::{ColumnOption, DataType, Expr, SetExpr, UnaryOperator, Value},
@@ -75,35 +75,36 @@ impl Table {
     }
 
     #[must_use]
-    pub fn get_rows<const N: usize>(&self, select: &[&str; N]) -> Vec<[Option<Field>; N]> {
-        let Some(columns) = select.iter().map(|n| self.columns.get(*n)).collect::<Option<Vec<_>>>() else {panic!("could not satisfy cols: {select:?} with {:?}", self.column_order)};
-        let Some(len) = self.rows() else{return Vec::new()};
-        (0..len)
-            .map(|index| {
-                let mut tmp = [None; N];
-                columns
-                    .iter()
-                    .zip(tmp.iter_mut())
-                    .for_each(|(Column { data }, field)| {
-                        *field = match data {
-                            ColumnData::StringLike(v) => v.get(index).map(|v| Field::StringLike(v)),
-                            ColumnData::MaybeStringLike(v) => v
-                                .get(index)
-                                .and_then(std::option::Option::as_deref)
-                                .map(Field::StringLike),
-                            ColumnData::IntLike(v) => v.get(index).copied().map(Field::IntLike),
-                            ColumnData::MaybeIntLike(v) => {
-                                v.get(index).copied().flatten().map(Field::IntLike)
-                            }
-                            ColumnData::Double(v) => v.get(index).copied().map(Field::Double),
-                            ColumnData::MaybeDouble(v) => {
-                                v.get(index).copied().flatten().map(Field::Double)
-                            }
+    pub fn get_rows<const N: usize>(
+        &self,
+        select: &[&str; N],
+    ) -> Result<impl Iterator<Item = [Option<Field>; N]>, Box<dyn Error>> {
+        let Some(columns) = select.iter().map(|n| self.columns.get(*n)).collect::<Option<Vec<_>>>() else {return Err(format!("could not satisfy cols: {select:?} with {:?}", self.column_order).into())};
+        let len = self.rows().unwrap_or(0);
+        Ok((0..len).map(move |index| {
+            let mut tmp = [None; N];
+            columns
+                .iter()
+                .zip(tmp.iter_mut())
+                .for_each(|(Column { data }, field)| {
+                    *field = match data {
+                        ColumnData::StringLike(v) => v.get(index).map(|v| Field::StringLike(v)),
+                        ColumnData::MaybeStringLike(v) => v
+                            .get(index)
+                            .and_then(std::option::Option::as_deref)
+                            .map(Field::StringLike),
+                        ColumnData::IntLike(v) => v.get(index).copied().map(Field::IntLike),
+                        ColumnData::MaybeIntLike(v) => {
+                            v.get(index).copied().flatten().map(Field::IntLike)
                         }
-                    });
-                tmp
-            })
-            .collect()
+                        ColumnData::Double(v) => v.get(index).copied().map(Field::Double),
+                        ColumnData::MaybeDouble(v) => {
+                            v.get(index).copied().flatten().map(Field::Double)
+                        }
+                    }
+                });
+            tmp
+        }))
     }
 
     #[must_use]
