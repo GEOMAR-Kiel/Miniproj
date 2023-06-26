@@ -162,7 +162,7 @@ impl crate::traits::Projection for AlbersEqualAreaProjection {
         dbg!(rho_);
         let alpha_ = (self.C - (rho_.powi(2) * self.n.powi(2) / self.ellipsoid_a.powi(2))) /  self.n;
         dbg!(alpha_);
-        let beta_ = ((alpha_ / (1f64 - ((1f64 - self.ellipsoid_e_sq) / (2f64 * self.ellipsoid_e)) * ((1f64 - self.ellipsoid_e) / (1f64 + self.ellipsoid_e)).ln()))).asin();
+        let beta_ = (alpha_ / (1f64 - ((1f64 - self.ellipsoid_e_sq) / (2f64 * self.ellipsoid_e)) * ((1f64 - self.ellipsoid_e) / (1f64 + self.ellipsoid_e)).ln())).asin();
         dbg!(beta_);
         let lat = beta_ + (2f64 * beta_).sin() * self.beta_fac_sin2 + (4f64 * beta_).sin() * self.beta_fac_sin4 + (6f64 * beta_).sin() * self.beta_fac_sin6;
         let lon = self.lon_orig + theta_ / self.n;
