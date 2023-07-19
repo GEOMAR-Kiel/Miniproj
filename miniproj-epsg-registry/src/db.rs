@@ -131,15 +131,46 @@ pub fn gen_parameter_constructors(
     let op_table = db.get_table("epsg_coordoperation")
         .ok_or("No Op table")?
         .get_rows(&["coord_op_code", "coord_op_method_code"])?
-        .map(|row| {
-            let [Some(Field::IntLike(coord_op_code)), Some(Field::IntLike(coord_op_method_code))] = row else {return Err(format!("Missing code in {row:?}").into())};
-            Ok((u32::try_from(coord_op_code)?, u32::try_from(coord_op_method_code)?))
-        }).collect::<Result<HashMap<u32, u32>, Box<dyn Error>>>()?;
+        .filter_map(|row| {
+            let [Some(Field::IntLike(coord_op_code)), Some(Field::IntLike(coord_op_method_code))] = row else {return None};
+            Some((|| {Ok((u32::try_from(coord_op_code)?, u32::try_from(coord_op_method_code)?))})()) //this line sucks, replace this with something nicer
+        }).collect::<Result<HashMap<u32, u32>, Box<dyn Error>>>();
     let datum_table = db
         .get_table("epsg_datum")
         .ok_or("No Datum table")?
-        .get_rows(&["datum_code", "ellipsoid_code", "prime_meridian_code"])?;
-
+        .get_rows(&["datum_code", "ellipsoid_code", "prime_meridian_code"])?
+        .map(|row| {
+            let [Some(Field::IntLike(code)), ellipsoid_code, prime_meridian_code] = row else {return Err(format!("Missing code in {row:?}").into())};
+            let ellipsoid_code = ellipsoid_code.and_then(|c| {
+                let Field::IntLike(r) = c else {return None};
+                Some(r)
+            }).map(|v| u32::try_from(v)).transpose()?;
+            let prime_meridian_code = prime_meridian_code.and_then(|c| {
+                let Field::IntLike(r) = c else {return None};
+                Some(r)
+            }).map(|v| u32::try_from(v)).transpose()?;
+            Ok((u32::try_from(code)?, (ellipsoid_code, prime_meridian_code)))
+        }).collect::<Result<HashMap<u32, _>, Box<dyn Error>>>()?;
+    for (c, (e, m)) in datum_table.iter() {
+        eprintln!("cargo:warning=Datum {c} has ellipsoid {e:?} and meridian {m:?}.");
+    }
+    let mut datum_ensemble_member_table: HashMap<u32, Vec<u32>> = HashMap::new();
+    for r in db.get_table("epsg_datumensemblemember")
+        .ok_or("No Datum Ensemble Member table")?
+        .get_rows(&["datum_ensemble_code", "datum_code"])?
+        .map(|row| {
+            let [Some(Field::IntLike(datum_ensemble_code)), Some(Field::IntLike(datum_code))] = row else {return Err::<_, Box<dyn Error>>(format!("Missing code in {row:?}").into())};
+            Ok((u32::try_from(datum_ensemble_code)?, u32::try_from(datum_code)?))
+        }) {
+            let (e, d) = r?;
+            datum_ensemble_member_table.entry(e).and_modify(|v| v.push(d)).or_insert(vec![d]);
+        }
+    for (c, e) in datum_ensemble_member_table.iter() {
+            eprintln!("cargo:warning=Datum Ensemble {c} has members {e:?}");
+            for m in e {
+                eprintln!("cargo:warning=Member {m} has {:?}", datum_table.get(m));
+            }
+    }
     for (code, crs) in crs_table {}
 
     /*
