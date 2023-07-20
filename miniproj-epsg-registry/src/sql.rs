@@ -74,7 +74,6 @@ impl Table {
         Some(res)
     }
 
-    #[must_use]
     pub fn get_rows<const N: usize>(
         &self,
         select: &[&str; N],
