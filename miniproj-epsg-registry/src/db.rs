@@ -115,18 +115,43 @@ pub fn get_prime_meridians(c: &MemoryDb) -> Result<HashMap<u32, f64>, Box<dyn Er
     todo!()
 }
 
+#[derive(Debug)]
+enum CrsEntry {
+    Geographic2D{datum: u32},
+    Projected{conversion: u32, base: u32}
+}
+
 /// Generates rust source code for projected and geographic coordinate systems for all implemented projections.
 pub fn gen_parameter_constructors(
     db: &MemoryDb,
     supporteds: &[ImplementedProjection],
     ellipsoids: &HashMap<u32, Ellipsoid>,
 ) -> Result<String, Box<dyn Error>> {
+    let units = db.get_table("epsg_unitofmeasure")
+        .ok_or("No UOM table")?
+        .get_rows(&["uom_code", "factor_b", "factor_c"])?
+        .filter_map(|row| {
+            match row {
+                [Some(Field::IntLike(uom_code)), Some(Field::Double(factor_b)), Some(Field::Double(factor_c))] => 
+                    Some((u32::try_from(uom_code).ok()?, (factor_b, factor_c))),
+                _ => None
+            }
+        }).collect::<HashMap<u32, _>>();
+
+
     let crs_table = db.get_table("epsg_coordinatereferencesystem")
         .ok_or("No CRS table")?
         .get_rows(&["coord_ref_sys_code", "base_crs_code", "projection_conv_code", "datum_code", "coord_ref_sys_kind"])?
         .filter_map(|row| {
-            let [Some(Field::IntLike(code)), base_crs_code, projection_conv_code, datum_code, Some(Field::StringLike(crs_kind @ "projected")) | Some(Field::StringLike(crs_kind @ "geographic 2D"))] = row else {return None};
-            Some((u32::try_from(code).ok()?, (base_crs_code, projection_conv_code, datum_code, crs_kind)))
+            match row {
+                [Some(Field::IntLike(code)), _, _, Some(Field::IntLike(datum_code)), Some(Field::StringLike("geographic 2D"))] => {
+                    Some((u32::try_from(code).ok()?, CrsEntry::Geographic2D { datum: u32::try_from(datum_code).ok()? }))
+                },
+                [Some(Field::IntLike(code)), Some(Field::IntLike(base_crs_code)), Some(Field::IntLike(conv_code)), _, Some(Field::StringLike("projected"))] => {
+                    Some((u32::try_from(code).ok()?, CrsEntry::Projected { conversion: u32::try_from(conv_code).ok()?, base: u32::try_from(base_crs_code).ok()? }))
+                },
+                _ => None
+            }
         })
         .collect::<HashMap<u32, _>>();
     assert!(!crs_table.is_empty());
@@ -137,14 +162,34 @@ pub fn gen_parameter_constructors(
             let [Some(Field::IntLike(coord_op_code)), Some(Field::IntLike(coord_op_method_code))] = row else {return None};
             match (u32::try_from(coord_op_code), u32::try_from(coord_op_method_code)) {
                 (Ok(coord_op_code), Ok(coord_op_method_code)) => {
-                    if !supporteds.iter().any(|(code, _)| *code == coord_op_method_code) {None} else {
-                        Some(Ok((coord_op_code, coord_op_method_code)))
-                    }
+                    Some(Ok((coord_op_code, coord_op_method_code)))
                 }
                 (Err(e), _) | (_, Err(e)) => Some(Err(e))
             }
         })
         .collect::<Result<HashMap<u32, u32>, TryFromIntError>>()?;
+
+        let mut paramvalues: HashMap<u32, Vec<_>> = HashMap::new();
+        db.get_table("epsg_coordoperationparamvalue")
+            .ok_or("No Param Value table")?
+            .get_rows(&["coord_op_code", "parameter_code", "parameter_value", "uom_code"])?
+            .try_for_each::<_, Result<_, Box<dyn Error>>>(|row| {
+
+                match row {
+                    [Some(Field::IntLike(coord_op_code)), Some(Field::IntLike(parameter_code)), Some(Field::Double(v)), Some(Field::IntLike(9110))] => {
+                        paramvalues.entry(u32::try_from(coord_op_code)?).or_default().push((u32::try_from(parameter_code)?, epsg_9110_to_rad(v)));
+                    },
+                    [Some(Field::IntLike(coord_op_code)), Some(Field::IntLike(parameter_code)), Some(Field::Double(v)), Some(Field::IntLike(uom_code))] => {
+                        if let Some((factor_b, factor_c)) = units.get(&u32::try_from(uom_code)?) {
+                            paramvalues.entry(u32::try_from(coord_op_code)?).or_default().push((u32::try_from(parameter_code)?, v * factor_b / factor_c));
+                        }
+                    },
+                    //e => return Err(format!("Missing param values in {e:?}").into()),
+                    _ => {}
+                };
+                Ok(())
+            })?;
+
     assert!(!op_table.is_empty());
     let datum_table = db
         .get_table("epsg_datum")
@@ -152,11 +197,20 @@ pub fn gen_parameter_constructors(
         .get_rows(&["datum_code", "ellipsoid_code", "prime_meridian_code"])?
         .filter_map(|row| {
             let [Some(Field::IntLike(code)), Some(Field::IntLike(ellipsoid_code)), Some(Field::IntLike(prime_meridian_code))] = row else {return None};
-            Some((||{Ok((u32::try_from(code)?, (u32::try_from(ellipsoid_code)?, u32::try_from(prime_meridian_code)?)))})())
-        }).collect::<Result<HashMap<u32, _>, Box<dyn Error>>>()?;
-    for (c, (e, m)) in datum_table.iter() {
-        eprintln!("cargo:warning=Datum {c} has ellipsoid {e:?} and meridian {m:?}.");
-    }
+            match(u32::try_from(code), u32::try_from(ellipsoid_code), u32::try_from(prime_meridian_code)) {
+                (Ok(code), Ok(ellipsoid_code), Ok(8901)) => { // since correction for other meridians is currently missing.
+                    if ellipsoids.contains_key(&ellipsoid_code) {
+                        Some(Ok((code, (ellipsoid_code, 8901))))
+                    } else {
+                        None
+                    }
+                },
+                (Ok(_), Ok(_), Ok(_)) => None,
+                (Err(e), _, _) | (_, Err(e), _) | (_, _, Err(e)) => Some(Err(e))
+            }
+        }).collect::<Result<HashMap<u32, _>, TryFromIntError>>()?;
+
+
     let mut datum_ensemble_member_table: HashMap<u32, Vec<u32>> = HashMap::new();
     for r in db.get_table("epsg_datumensemblemember")
         .ok_or("No Datum Ensemble Member table")?
@@ -168,15 +222,60 @@ pub fn gen_parameter_constructors(
             let (e, d) = r?;
             datum_ensemble_member_table.entry(e).and_modify(|v| v.push(d)).or_insert(vec![d]);
         }
-    for (c, e) in datum_ensemble_member_table.iter() {
-            eprintln!("cargo:warning=Datum Ensemble {c} has members {e:?}");
-            for m in e {
-                eprintln!("cargo:warning=Member {m} has {:?}", datum_table.get(m));
-            }
+
+    let mut constructors_map = phf_codegen::Map::new();
+    let mut ellipsoids_map = phf_codegen::Map::new();
+
+    for (code, crs) in &crs_table {
+        match crs {
+            CrsEntry::Geographic2D { datum: _ } => {
+                constructors_map.entry(code, "&ZeroProjection as &(dyn Projection + Send + Sync)");
+            },
+            CrsEntry::Projected { conversion, base } => {
+                let Some(CrsEntry::Geographic2D { datum }) = crs_table.get(base) else {
+                    //println!("cargo:warning=Skipping EPSG:{code} because base CRS EPSG:{base} does not resolve.");
+                    continue;
+                };
+                let Some((ellipsoid, ellipsoid_code)) = std::iter::once(datum)
+                    .chain(datum_ensemble_member_table.get(datum).iter().flat_map(|v| v.iter()))
+                    .filter_map(|d| datum_table.get(d))
+                    .filter_map(|(e, _)| ellipsoids.get(e).map(|ell| (ell, e))) //this is the spot to handle meridians as well
+                    .next() else {
+                        //println!("cargo:warning=Skipping EPSG:{code} because datum EPSG:{datum} does not resolve.");
+                        continue;
+                    };
+                let Some(param_values) = paramvalues.get(conversion) else {
+                    //println!("cargo:warning=Skipping EPSG:{code} because parameter values do not resolve.");
+                    continue;
+                };
+                let Some(op_code) = op_table.get(conversion) else {
+                    //println!("cargo:warning=Skipping EPSG:{code} because operation EPSG:{conversion} does not resolve.");
+                    continue;
+                };
+                let Some((_, conv)) = supporteds.iter().find(|(v, _)| v == op_code) else {
+                    //println!("cargo:warning=Skipping EPSG:{code} because operation method EPSG:{op_code} is not implemented.");
+                    continue;
+                };
+                constructors_map.entry(
+                    code,
+                    &format!(
+                        "&{} as &(dyn Projection + Send + Sync)",
+                        conv(param_values, *ellipsoid)
+                    ),
+                );
+                ellipsoids_map.entry(code, &format!("{ellipsoid_code}"));
+            },
+        }
     }
-    for (code, crs) in crs_table {
-        
-    }
+
+    Ok(format!(
+        r"#[allow(clippy::approx_constant)]
+static PROJECTIONS: phf::Map<u32, &(dyn Projection + Send + Sync)> = {};
+static ELLIPSOIDS: phf::Map<u32, u32> = {};
+",
+        constructors_map.build(),
+        ellipsoids_map.build()
+    ))
 
     /*
         let mut s = c.prepare(
@@ -298,5 +397,4 @@ pub fn gen_parameter_constructors(
             constructors_map.build(),
             ellipsoids_map.build()
         ))*/
-    todo!()
 }
