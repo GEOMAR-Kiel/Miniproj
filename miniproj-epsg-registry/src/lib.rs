@@ -17,7 +17,7 @@ type ImplementedProjection = (
 
 /// Implemented projections.
 ///
-/// Pairs operation codes with a functions that map a slice of (parameter code, value)-tuples and an ellipsoid
+/// Pairs operation codes with functions that map a slice of (parameter code, value)-tuples and an ellipsoid
 /// to a `String` containing source code for constructing the `Projection` with the given parameters.
 pub static IMPL_CONV: &[ImplementedProjection] = &[
     (9807, &miniproj_ops::transverse_mercator::direct_projection),

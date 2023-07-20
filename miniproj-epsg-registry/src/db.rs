@@ -1,6 +1,6 @@
 //This file is licensed under EUPL v1.2 as part of the Digital Earth Viewer
 
-use std::{collections::HashMap, error::Error, hash::Hash};
+use std::{collections::HashMap, error::Error, hash::Hash, num::TryFromIntError};
 
 use crate::{
     helpers::*,
@@ -135,17 +135,48 @@ pub fn gen_parameter_constructors(
         .get_rows(&["coord_op_code", "coord_op_method_code"])?
         .filter_map(|row| {
             let [Some(Field::IntLike(coord_op_code)), Some(Field::IntLike(coord_op_method_code))] = row else {return None};
-            Some((u32::try_from(coord_op_code).ok()?, u32::try_from(coord_op_method_code).ok()?))
+            match (u32::try_from(coord_op_code), u32::try_from(coord_op_method_code)) {
+                (Ok(coord_op_code), Ok(coord_op_method_code)) => {
+                    if !supporteds.iter().any(|(code, _)| *code == coord_op_method_code) {None} else {
+                        Some(Ok((coord_op_code, coord_op_method_code)))
+                    }
+                }
+                (Err(e), _) | (_, Err(e)) => Some(Err(e))
+            }
         })
-        .filter(|(_, coord_op_method_code)| supporteds.iter().any(|(code, _)| code == coord_op_method_code))
-        .collect::<HashMap<u32, u32>>();
+        .collect::<Result<HashMap<u32, u32>, TryFromIntError>>()?;
     assert!(!op_table.is_empty());
     let datum_table = db
         .get_table("epsg_datum")
         .ok_or("No Datum table")?
-        .get_rows(&["datum_code", "ellipsoid_code", "prime_meridian_code"])?;
-
-    for (code, crs) in crs_table {}
+        .get_rows(&["datum_code", "ellipsoid_code", "prime_meridian_code"])?
+        .filter_map(|row| {
+            let [Some(Field::IntLike(code)), Some(Field::IntLike(ellipsoid_code)), Some(Field::IntLike(prime_meridian_code))] = row else {return None};
+            Some((||{Ok((u32::try_from(code)?, (u32::try_from(ellipsoid_code)?, u32::try_from(prime_meridian_code)?)))})())
+        }).collect::<Result<HashMap<u32, _>, Box<dyn Error>>>()?;
+    for (c, (e, m)) in datum_table.iter() {
+        eprintln!("cargo:warning=Datum {c} has ellipsoid {e:?} and meridian {m:?}.");
+    }
+    let mut datum_ensemble_member_table: HashMap<u32, Vec<u32>> = HashMap::new();
+    for r in db.get_table("epsg_datumensemblemember")
+        .ok_or("No Datum Ensemble Member table")?
+        .get_rows(&["datum_ensemble_code", "datum_code"])?
+        .map(|row| {
+            let [Some(Field::IntLike(datum_ensemble_code)), Some(Field::IntLike(datum_code))] = row else {return Err::<_, Box<dyn Error>>(format!("Missing code in {row:?}").into())};
+            Ok((u32::try_from(datum_ensemble_code)?, u32::try_from(datum_code)?))
+        }) {
+            let (e, d) = r?;
+            datum_ensemble_member_table.entry(e).and_modify(|v| v.push(d)).or_insert(vec![d]);
+        }
+    for (c, e) in datum_ensemble_member_table.iter() {
+            eprintln!("cargo:warning=Datum Ensemble {c} has members {e:?}");
+            for m in e {
+                eprintln!("cargo:warning=Member {m} has {:?}", datum_table.get(m));
+            }
+    }
+    for (code, crs) in crs_table {
+        
+    }
 
     /*
         let mut s = c.prepare(
