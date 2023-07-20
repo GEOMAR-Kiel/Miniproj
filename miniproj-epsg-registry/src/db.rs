@@ -124,17 +124,22 @@ pub fn gen_parameter_constructors(
     let crs_table = db.get_table("epsg_coordinatereferencesystem")
         .ok_or("No CRS table")?
         .get_rows(&["coord_ref_sys_code", "base_crs_code", "projection_conv_code", "datum_code", "coord_ref_sys_kind"])?
-        .map(|row| {
-            let [Some(Field::IntLike(code)), base_crs_code, projection_conv_code, datum_code, Some(Field::StringLike(crs_kind))] = row else {return Err(format!("Missing code in {row:?}").into())};
-            Ok((u32::try_from(code)?, (base_crs_code, projection_conv_code, datum_code, crs_kind)))
-        }).collect::<Result<HashMap<u32, _>, Box<dyn Error>>>()?;
+        .filter_map(|row| {
+            let [Some(Field::IntLike(code)), base_crs_code, projection_conv_code, datum_code, Some(Field::StringLike(crs_kind @ "projected")) | Some(Field::StringLike(crs_kind @ "geographic 2D"))] = row else {return None};
+            Some((u32::try_from(code).ok()?, (base_crs_code, projection_conv_code, datum_code, crs_kind)))
+        })
+        .collect::<HashMap<u32, _>>();
+    assert!(!crs_table.is_empty());
     let op_table = db.get_table("epsg_coordoperation")
         .ok_or("No Op table")?
         .get_rows(&["coord_op_code", "coord_op_method_code"])?
-        .map(|row| {
-            let [Some(Field::IntLike(coord_op_code)), Some(Field::IntLike(coord_op_method_code))] = row else {return Err(format!("Missing code in {row:?}").into())};
-            Ok((u32::try_from(coord_op_code)?, u32::try_from(coord_op_method_code)?))
-        }).collect::<Result<HashMap<u32, u32>, Box<dyn Error>>>()?;
+        .filter_map(|row| {
+            let [Some(Field::IntLike(coord_op_code)), Some(Field::IntLike(coord_op_method_code))] = row else {return None};
+            Some((u32::try_from(coord_op_code).ok()?, u32::try_from(coord_op_method_code).ok()?))
+        })
+        .filter(|(_, coord_op_method_code)| supporteds.iter().any(|(code, _)| code == coord_op_method_code))
+        .collect::<HashMap<u32, u32>>();
+    assert!(!op_table.is_empty());
     let datum_table = db
         .get_table("epsg_datum")
         .ok_or("No Datum table")?
