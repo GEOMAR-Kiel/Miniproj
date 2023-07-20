@@ -18,6 +18,7 @@ pub struct Ellipsoid {
 }
 impl Ellipsoid {
     /// Construct an ellipsoid from major and minor half axis.
+    #[must_use]
     pub fn from_a_b(a: f64, b: f64) -> Self {
         let f = (a - b) / a;
         let e_squared = (2f64 * f) - f.powi(2);
@@ -31,6 +32,7 @@ impl Ellipsoid {
     }
 
     /// Construct an ellipsoid from major half axis and inverse flattening.
+    #[must_use]
     pub fn from_a_f_inv(a: f64, f_inv: f64) -> Self {
         let f = 1.0 / f_inv;
         let e_squared = (2f64 / f_inv) - f_inv.powi(-2);
@@ -54,7 +56,7 @@ impl Ellipsoid {
     }
 
     /// Get inverse flattening. This method is deprecated as the inverse flattening is not defined for spheroids (division by zero).
-    #[deprecated(since="0.8.0")]
+    #[deprecated(since = "0.8.0")]
     pub fn f_inv(&self) -> f64 {
         1f64 / self.f
     }
@@ -143,17 +145,17 @@ impl PseudoSerialize for Ellipsoid {
     fn to_constructed(&self) -> String {
         format! {
 r"Ellipsoid{{
-    a: f64::from_bits(0x{:x}),
-    b: f64::from_bits(0x{:x}),
-    e: f64::from_bits(0x{:x}),
-    e_squared: f64::from_bits(0x{:x}),
-    f: f64::from_bits(0x{:x}),
+    a: {}f64,
+    b: {}f64,
+    e: {}f64,
+    e_squared: {}f64,
+    f: {}f64,
 }}",
-            self.a.to_bits(),
-            self.b.to_bits(),
-            self.e.to_bits(),
-            self.e_squared.to_bits(),
-            self.f.to_bits(),
+            self.a,
+            self.b,
+            self.e,
+            self.e_squared,
+            self.f,
         }
     }
 }

@@ -191,26 +191,26 @@ impl Projection for LambertConic2SPProjection {
 impl PseudoSerialize for LambertConic2SPProjection {
     fn to_constructed(&self) -> String {
         format!(
-r"LambertConic2SPProjection{{
-    ellipsoid_e: f64::from_bits(0x{:x}),
-    ellipsoid_a: f64::from_bits(0x{:x}),
-    lon_orig: f64::from_bits(0x{:x}),
-    lat_orig: f64::from_bits(0x{:x}),
-    false_e: f64::from_bits(0x{:x}),
-    false_n: f64::from_bits(0x{:x}),
-    n: f64::from_bits(0x{:x}),
-    r_F: f64::from_bits(0x{:x}),
-    F: f64::from_bits(0x{:x}),
+            r"LambertConic2SPProjection{{
+    ellipsoid_e: {}f64,
+    ellipsoid_a: {}f64,
+    lon_orig: {}f64,
+    lat_orig: {}f64,
+    false_e: {}f64,
+    false_n: {}f64,
+    n: {}f64,
+    r_F: {}f64,
+    F: {}f64,
 }}",
-            self.ellipsoid_e.to_bits(),
-            self.ellipsoid_a.to_bits(),
-            self.lon_orig.to_bits(),
-            self.lat_orig.to_bits(),
-            self.false_e.to_bits(),
-            self.false_n.to_bits(),
-            self.n.to_bits(),
-            self.r_F.to_bits(),
-            self.F.to_bits()
+            self.ellipsoid_e,
+            self.ellipsoid_a,
+            self.lon_orig,
+            self.lat_orig,
+            self.false_e,
+            self.false_n,
+            self.n,
+            self.r_F,
+            self.F
         )
     }
 }
@@ -383,22 +383,22 @@ impl PseudoSerialize for LambertConic1SPAProjection {
     fn to_constructed(&self) -> String {
         format!(
             "LambertConic1SPAProjection {{
-    false_e: f64::from_bits(0x{:x}),
-    false_n: f64::from_bits(0x{:x}),
-    r_O: f64::from_bits(0x{:x}),
-    lon_O: f64::from_bits(0x{:x}),
-    n: f64::from_bits(0x{:x}),
-    t_r_fac: f64::from_bits(0x{:x}),
-    ellipsoid_e: f64::from_bits(0x{:x})
+    false_e: {}f64,
+    false_n: {}f64,
+    r_O: {}f64,
+    lon_O: {}f64,
+    n: {}f64,
+    t_r_fac: {}f64,
+    ellipsoid_e: {}f64
 }}
 ",
-            self.false_e.to_bits(),
-            self.false_n.to_bits(),
-            self.r_O.to_bits(),
-            self.lon_O.to_bits(),
-            self.n.to_bits(),
-            self.t_r_fac.to_bits(),
-            self.ellipsoid_e.to_bits()
+            self.false_e,
+            self.false_n,
+            self.r_O,
+            self.lon_O,
+            self.n,
+            self.t_r_fac,
+            self.ellipsoid_e
         )
     }
 }

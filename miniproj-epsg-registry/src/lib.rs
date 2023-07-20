@@ -2,11 +2,11 @@
 
 mod db;
 mod helpers;
-use std::path::Path;
+mod sql;
 
 pub use crate::db::*;
+pub use crate::sql::*;
 use miniproj_ops::ellipsoid::Ellipsoid;
-pub use rusqlite::Connection as DbConnection;
 
 type ImplementedProjection = (
     u32,
@@ -15,7 +15,7 @@ type ImplementedProjection = (
 
 /// Implemented projections.
 ///
-/// Pairs operation codes with a functions that map a slice of (parameter code, value)-tuples and an ellipsoid
+/// Pairs operation codes with functions that map a slice of (parameter code, value)-tuples and an ellipsoid
 /// to a `String` containing source code for constructing the `Projection` with the given parameters.
 pub static IMPL_CONV: &[ImplementedProjection] = &[
     (9807, &miniproj_ops::transverse_mercator::direct_projection),
@@ -40,16 +40,16 @@ pub static IMPL_CONV: &[ImplementedProjection] = &[
         9809,
         &miniproj_ops::stereographic::direct_projection_oblique,
     ),
-    (
-        9822,
-        &miniproj_ops::albers_equal_area::direct_projection
-    )
+    (9822, &miniproj_ops::albers_equal_area::direct_projection),
 ];
 
-/// This function copies the parameter database to the given location, to reliably make it available to build scripts.
-pub fn write_db<P: AsRef<Path>>(path: P) -> std::io::Result<()> {
-    std::fs::write(path, include_bytes!("../data/parameters.sqlite"))
-}
-
 #[cfg(test)]
-mod tests {}
+mod tests {
+    use crate::sql::MemoryDb;
+
+    #[test]
+    fn create_mem_db() {
+        let memdb = MemoryDb::new();
+        eprintln!("{memdb:#?}")
+    }
+}

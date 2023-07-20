@@ -95,16 +95,13 @@ impl Projection for PopVisPseudoMercatorProjection {
 impl PseudoSerialize for PopVisPseudoMercatorProjection {
     fn to_constructed(&self) -> String {
         format!(
-r"PopVisPseudoMercatorProjection{{
-    ellipsoid_a: f64::from_bits(0x{:x}),
-    lon_orig: f64::from_bits(0x{:x}),
-    false_e: f64::from_bits(0x{:x}),
-    false_n: f64::from_bits(0x{:x}),
+            r"PopVisPseudoMercatorProjection{{
+    ellipsoid_a: {}f64,
+    lon_orig: {}f64,
+    false_e: {}f64,
+    false_n: {}f64,
 }}",
-            self.ellipsoid_a.to_bits(),
-            self.lon_orig.to_bits(),
-            self.false_e.to_bits(),
-            self.false_n.to_bits(),
+            self.ellipsoid_a, self.lon_orig, self.false_e, self.false_n,
         )
     }
 }

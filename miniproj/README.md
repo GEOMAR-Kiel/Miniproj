@@ -24,11 +24,10 @@ Miniproj is **not** related to or derived from Proj.
 
 EPSG Code | Operation Method Name                 | # of Projected CRS covered
 ----------|---------------------------------------|---------------------------
-9807      | Transverse Mercator                   | 3615
-9802      | Lambert Conic Conformal (2SP)         | 950
-9801      | Lambert Conic Conformal (1SP)         | 233
+9807      | Transverse Mercator                   | 3591
+9802      | Lambert Conic Conformal (2SP)         | 949
+9801      | Lambert Conic Conformal (1SP)         | 215
 9822      | Albers Equal Area                     | 36
-9829      | Polar Stereographic (Variant B)       | 29
 9809      | Oblique Stereographic                 | 20
 9820      | Lambert Azimuthal Equal Area          | 14
 9810      | Polar Stereographic (Variant A)       | 10
@@ -97,6 +96,13 @@ you are looking for a refined, proven library, check out
 
 ## Changelog
 
+#### 0.9.0
+
+* Removed Dependency `rusqlite`
+* `miniproj` can now be built with stable `rustc` (1.71.0)
+* No longer special-case "Identity" Projection, now it allows more geographic coordinate systems to be treated as if they were projected (606 defined CRS)
+* For now, filter CRS that do not use the Greenwich Meridian
+
 #### 0.8.0
 
 * Added Albers Equal Area (36 defined CRS)
@@ -140,9 +146,8 @@ you are looking for a refined, proven library, check out
 #### Before 1.0.0
 
 * Implement transformations
+* Implement refined handling of nonstandard meridians
 * Add feature gating for operation methods
-* Stop requiring `nightly`
-* Stop depending on SQLite, parse the SQL file directly instead
 
 #### Long-Term
 

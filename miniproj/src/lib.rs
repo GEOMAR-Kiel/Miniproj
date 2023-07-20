@@ -1,5 +1,4 @@
 //This file is licensed under EUPL v1.2
-#![feature(const_float_bits_conv)]
 #![doc = include_str!("../README.md")]
 
 mod ellipsoid_constructor;

@@ -8,7 +8,7 @@ use miniproj_ops::lambert_conic_conformal::{
 use miniproj_ops::popvis_pseudo_mercator::PopVisPseudoMercatorProjection;
 use miniproj_ops::stereographic::{ObliqueStereographicProjection, PolarStereographicAProjection};
 use miniproj_ops::transverse_mercator::TransverseMercatorProjection;
-use miniproj_ops::zero_projection::ZeroProjection;
+use miniproj_ops::identity_projection::IdentityProjection;
 use miniproj_ops::Projection;
 
 include!(concat!(env!("OUT_DIR"), "/projection_constructors.rs"));

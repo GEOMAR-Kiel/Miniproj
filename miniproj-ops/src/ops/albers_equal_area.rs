@@ -19,7 +19,14 @@ pub struct AlbersEqualAreaParams {
 }
 
 impl AlbersEqualAreaParams {
-    pub const fn new(lon_orig: f64, lat_orig: f64, lat_sp1: f64, lat_sp2: f64, false_e: f64, false_n: f64) -> Self {
+    pub const fn new(
+        lon_orig: f64,
+        lat_orig: f64,
+        lat_sp1: f64,
+        lat_sp2: f64,
+        false_e: f64,
+        false_n: f64,
+    ) -> Self {
         Self {
             lon_orig,
             lat_orig,
@@ -76,7 +83,7 @@ pub struct AlbersEqualAreaProjection {
     pub rho_O: f64,
     pub beta_fac_sin2: f64,
     pub beta_fac_sin4: f64,
-    pub beta_fac_sin6: f64
+    pub beta_fac_sin6: f64,
 }
 
 impl AlbersEqualAreaProjection {
@@ -90,9 +97,11 @@ impl AlbersEqualAreaProjection {
         dbg!(alpha_1);
         let alpha_2 = Self::alpha(ell.e_squared(), params.lat_sp2(), ell.e());
         dbg!(alpha_2);
-        let m1 = params.lat_sp1().cos() / (1f64 - ell.e_squared() * params.lat_sp1().sin().powi(2)).sqrt();
+        let m1 = params.lat_sp1().cos()
+            / (1f64 - ell.e_squared() * params.lat_sp1().sin().powi(2)).sqrt();
         dbg!(m1);
-        let m2 = params.lat_sp2().cos() / (1f64 - ell.e_squared() * params.lat_sp2().sin().powi(2)).sqrt();
+        let m2 = params.lat_sp2().cos()
+            / (1f64 - ell.e_squared() * params.lat_sp2().sin().powi(2)).sqrt();
         dbg!(m2);
         let n = (m1.powi(2) - m2.powi(2)) / (alpha_2 - alpha_1);
         dbg!(n);
@@ -101,15 +110,12 @@ impl AlbersEqualAreaProjection {
         let rho_O = (ell.a() * (C - n * alpha_O).sqrt()) / n;
         dbg!(rho_O);
 
-        let beta_fac_sin2 = 
-            ell.e_squared() / 3f64 + 
-            31f64 * ell.e_squared().powi(2) / 180f64 +
-            517f64 * ell.e_squared().powi(3) / 5040f64;
-        let beta_fac_sin4 = 
-            23f64 * ell.e_squared().powi(2) / 360f64 +
-            251f64 * ell.e_squared().powi(3) / 3708f64;
-        let beta_fac_sin6 =
-            761f64 * ell.e_squared().powi(3) / 45360f64;
+        let beta_fac_sin2 = ell.e_squared() / 3f64
+            + 31f64 * ell.e_squared().powi(2) / 180f64
+            + 517f64 * ell.e_squared().powi(3) / 5040f64;
+        let beta_fac_sin4 =
+            23f64 * ell.e_squared().powi(2) / 360f64 + 251f64 * ell.e_squared().powi(3) / 3708f64;
+        let beta_fac_sin6 = 761f64 * ell.e_squared().powi(3) / 45360f64;
 
         Self {
             false_e: params.false_e(),
@@ -123,13 +129,15 @@ impl AlbersEqualAreaProjection {
             rho_O,
             beta_fac_sin2,
             beta_fac_sin4,
-            beta_fac_sin6
+            beta_fac_sin6,
         }
     }
 
     //#[inline]
     fn alpha(e_sq: f64, phi: f64, e: f64) -> f64 {
-        (1f64 - e_sq) * ((phi.sin() / (1f64 - e_sq * phi.sin().powi(2))) - (1f64 / (2f64 * e)) * ((1f64 - e * phi.sin()) / (1f64 + e * phi.sin())).ln())
+        (1f64 - e_sq)
+            * ((phi.sin() / (1f64 - e_sq * phi.sin().powi(2)))
+                - (1f64 / (2f64 * e)) * ((1f64 - e * phi.sin()) / (1f64 + e * phi.sin())).ln())
     }
 }
 
@@ -146,7 +154,7 @@ impl crate::traits::Projection for AlbersEqualAreaProjection {
         dbg!(rho);
         (
             self.false_e + (rho * theta.sin()),
-            self.false_n + self.rho_O - (rho * theta.cos())
+            self.false_n + self.rho_O - (rho * theta.cos()),
         )
     }
 
@@ -156,52 +164,59 @@ impl crate::traits::Projection for AlbersEqualAreaProjection {
     /// The approximation for latitude isn't very precise (6 decimal digits)
     #[allow(non_snake_case)]
     fn projected_to_rad(&self, easting: f64, northing: f64) -> (f64, f64) {
-        let theta_: f64 = ((easting - self.false_e) * self.n.signum()).atan2((self.rho_O - (northing - self.false_n)) * self.n.signum());
+        let theta_: f64 = ((easting - self.false_e) * self.n.signum())
+            .atan2((self.rho_O - (northing - self.false_n)) * self.n.signum());
         dbg!(theta_);
-        let rho_ = ((easting - self.false_e).powi(2) + (self.rho_O - (northing - self.false_n)).powi(2)).sqrt();
+        let rho_ = ((easting - self.false_e).powi(2)
+            + (self.rho_O - (northing - self.false_n)).powi(2))
+        .sqrt();
         dbg!(rho_);
-        let alpha_ = (self.C - (rho_.powi(2) * self.n.powi(2) / self.ellipsoid_a.powi(2))) /  self.n;
+        let alpha_ = (self.C - (rho_.powi(2) * self.n.powi(2) / self.ellipsoid_a.powi(2))) / self.n;
         dbg!(alpha_);
-        let beta_ = (alpha_ / (1f64 - ((1f64 - self.ellipsoid_e_sq) / (2f64 * self.ellipsoid_e)) * ((1f64 - self.ellipsoid_e) / (1f64 + self.ellipsoid_e)).ln())).asin();
+        let beta_ = (alpha_
+            / (1f64
+                - ((1f64 - self.ellipsoid_e_sq) / (2f64 * self.ellipsoid_e))
+                    * ((1f64 - self.ellipsoid_e) / (1f64 + self.ellipsoid_e)).ln()))
+        .asin();
         dbg!(beta_);
-        let lat = beta_ + (2f64 * beta_).sin() * self.beta_fac_sin2 + (4f64 * beta_).sin() * self.beta_fac_sin4 + (6f64 * beta_).sin() * self.beta_fac_sin6;
+        let lat = beta_
+            + (2f64 * beta_).sin() * self.beta_fac_sin2
+            + (4f64 * beta_).sin() * self.beta_fac_sin4
+            + (6f64 * beta_).sin() * self.beta_fac_sin6;
         let lon = self.lon_orig + theta_ / self.n;
-        (
-            lon,
-            lat
-        ) 
+        (lon, lat)
     }
 }
 
 impl PseudoSerialize for AlbersEqualAreaProjection {
     fn to_constructed(&self) -> String {
         format!(
-r"AlbersEqualAreaProjection{{
-    false_e: f64::from_bits(0x{:x}),
-    false_n: f64::from_bits(0x{:x}),
-    lon_orig: f64::from_bits(0x{:x}),
-    ellipsoid_e: f64::from_bits(0x{:x}),
-    ellipsoid_e_sq: f64::from_bits(0x{:x}),
-    ellipsoid_a: f64::from_bits(0x{:x}),
-    C: f64::from_bits(0x{:x}),
-    n: f64::from_bits(0x{:x}),
-    rho_O: f64::from_bits(0x{:x}),
-    beta_fac_sin2: f64::from_bits(0x{:x}),
-    beta_fac_sin4: f64::from_bits(0x{:x}),
-    beta_fac_sin6: f64::from_bits(0x{:x})
+            r"AlbersEqualAreaProjection{{
+    false_e: {}f64,
+    false_n: {}f64,
+    lon_orig: {}f64,
+    ellipsoid_e: {}f64,
+    ellipsoid_e_sq: {}f64,
+    ellipsoid_a: {}f64,
+    C: {}f64,
+    n: {}f64,
+    rho_O: {}f64,
+    beta_fac_sin2: {}f64,
+    beta_fac_sin4: {}f64,
+    beta_fac_sin6: {}f64
 }}",
-            self.false_e.to_bits(),
-            self.false_n.to_bits(),
-            self.lon_orig.to_bits(),
-            self.ellipsoid_e.to_bits(),
-            self.ellipsoid_e_sq.to_bits(),
-            self.ellipsoid_a.to_bits(),
-            self.C.to_bits(),
-            self.n.to_bits(),
-            self.rho_O.to_bits(),
-            self.beta_fac_sin2.to_bits(),
-            self.beta_fac_sin4.to_bits(),
-            self.beta_fac_sin6.to_bits()
+            self.false_e,
+            self.false_n,
+            self.lon_orig,
+            self.ellipsoid_e,
+            self.ellipsoid_e_sq,
+            self.ellipsoid_a,
+            self.C,
+            self.n,
+            self.rho_O,
+            self.beta_fac_sin2,
+            self.beta_fac_sin4,
+            self.beta_fac_sin6
         )
     }
 }
@@ -253,8 +268,8 @@ pub fn direct_projection(params: &[(u32, f64)], ell: Ellipsoid) -> String {
 #[cfg(test)]
 mod tests {
 
-    use crate::ellipsoid::Ellipsoid;
     use crate::albers_equal_area::*;
+    use crate::ellipsoid::Ellipsoid;
     use crate::traits::*;
 
     // TODO: While passing the round-trip, this test does not match what is given in the EPSG Guidance Note 7-2, May 22.
@@ -267,7 +282,7 @@ mod tests {
             0.49538262,
             0.52854388,
             1000000.000,
-            1000000.000
+            1000000.000,
         );
 
         let projection = AlbersEqualAreaProjection::new(&ell, &params);
@@ -287,14 +302,14 @@ mod tests {
 
     #[test]
     fn albers_equal_area_consistency_south() {
-        let ell = Ellipsoid::from_a_f_inv(6378160.0,  298.25);
+        let ell = Ellipsoid::from_a_f_inv(6378160.0, 298.25);
         let params = AlbersEqualAreaParams::new(
             -60f64.to_radians(),
             -32f64.to_radians(),
             -5f64.to_radians(),
             -42f64.to_radians(),
             0.0,
-            0.0
+            0.0,
         );
 
         let projection = AlbersEqualAreaProjection::new(&ell, &params);
