@@ -1,6 +1,7 @@
 //This file is licensed under EUPL v1.2
 
 use miniproj_ops::albers_equal_area::AlbersEqualAreaProjection;
+use miniproj_ops::identity_projection::IdentityProjection;
 use miniproj_ops::lambert_azimuthal_equal_area::LambertAzimuthalEqualAreaProjection;
 use miniproj_ops::lambert_conic_conformal::{
     LambertConic1SPAProjection, LambertConic2SPProjection,
@@ -8,14 +9,13 @@ use miniproj_ops::lambert_conic_conformal::{
 use miniproj_ops::popvis_pseudo_mercator::PopVisPseudoMercatorProjection;
 use miniproj_ops::stereographic::{ObliqueStereographicProjection, PolarStereographicAProjection};
 use miniproj_ops::transverse_mercator::TransverseMercatorProjection;
-use miniproj_ops::identity_projection::IdentityProjection;
 use miniproj_ops::Projection;
 
 include!(concat!(env!("OUT_DIR"), "/projection_constructors.rs"));
 
 /// Returns the Projection corresponding to the EPSG code passed as the argument.
 /// If the code refers to a projection that is not implemented, the method returns `None`
-pub fn get_projection(code: u32) -> Option<&'static (dyn Projection + Send + Sync)> {
+pub fn get_projection(code: u32) -> Option<&'static dyn Projection> {
     PROJECTIONS.get(&code).cloned()
 }
 
@@ -24,4 +24,16 @@ pub fn get_projection(code: u32) -> Option<&'static (dyn Projection + Send + Syn
 /// unknown.
 pub fn get_ellipsoid_code(projection_code: u32) -> Option<u32> {
     ELLIPSOIDS.get(&projection_code).copied()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn dyn_projection_is_send_sync() {
+        fn is_send_sync<T: Send + Sync>(_: T) {}
+
+        is_send_sync(get_projection(4326));
+    }
 }

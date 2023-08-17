@@ -6,8 +6,6 @@ use std::path::PathBuf;
 
 fn main() {
     let output_dir = PathBuf::from(env::var_os("OUT_DIR").unwrap());
-    let mut data_path = output_dir.clone();
-    data_path.push("parameters.sqlite");
     let mut projection_out = output_dir.clone();
     let memdb = MemoryDb::new();
     let ellipsoids = get_ellipsoids(&memdb).unwrap();

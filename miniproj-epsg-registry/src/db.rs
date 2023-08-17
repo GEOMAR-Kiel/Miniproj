@@ -117,8 +117,8 @@ pub fn get_prime_meridians(_c: &MemoryDb) -> Result<HashMap<u32, f64>, Box<dyn E
 
 #[derive(Debug)]
 enum CrsEntry {
-    Geographic2D{datum: u32},
-    Projected{conversion: u32, base: u32}
+    Geographic2D { datum: u32 },
+    Projected { conversion: u32, base: u32 },
 }
 
 /// Generates rust source code for projected and geographic coordinate systems for all implemented projections.
@@ -132,12 +132,11 @@ pub fn gen_parameter_constructors(
         .get_rows(&["uom_code", "factor_b", "factor_c"])?
         .filter_map(|row| {
             match row {
-                [Some(Field::IntLike(uom_code)), Some(Field::Double(factor_b)), Some(Field::Double(factor_c))] => 
+                [Some(Field::IntLike(uom_code)), Some(Field::Double(factor_b)), Some(Field::Double(factor_c))] =>
                     Some((u32::try_from(uom_code).ok()?, (factor_b, factor_c))),
                 _ => None
             }
         }).collect::<HashMap<u32, _>>();
-
 
     let crs_table = db.get_table("epsg_coordinatereferencesystem")
         .ok_or("No CRS table")?
@@ -169,8 +168,8 @@ pub fn gen_parameter_constructors(
         })
         .collect::<Result<HashMap<u32, u32>, TryFromIntError>>()?;
 
-        let mut paramvalues: HashMap<u32, Vec<_>> = HashMap::new();
-        db.get_table("epsg_coordoperationparamvalue")
+    let mut paramvalues: HashMap<u32, Vec<_>> = HashMap::new();
+    db.get_table("epsg_coordoperationparamvalue")
             .ok_or("No Param Value table")?
             .get_rows(&["coord_op_code", "parameter_code", "parameter_value", "uom_code"])?
             .try_for_each::<_, Result<_, Box<dyn Error>>>(|row| {
@@ -210,7 +209,6 @@ pub fn gen_parameter_constructors(
             }
         }).collect::<Result<HashMap<u32, _>, TryFromIntError>>()?;
 
-
     let mut datum_ensemble_member_table: HashMap<u32, Vec<u32>> = HashMap::new();
     for r in db.get_table("epsg_datumensemblemember")
         .ok_or("No Datum Ensemble Member table")?
@@ -229,8 +227,8 @@ pub fn gen_parameter_constructors(
     for (code, crs) in &crs_table {
         match crs {
             CrsEntry::Geographic2D { datum: _ } => {
-                constructors_map.entry(code, "&IdentityProjection as &(dyn Projection + Send + Sync)");
-            },
+                constructors_map.entry(code, "&IdentityProjection as &dyn Projection");
+            }
             CrsEntry::Projected { conversion, base } => {
                 let Some(CrsEntry::Geographic2D { datum }) = crs_table.get(base) else {
                     //println!("cargo:warning=Skipping EPSG:{code} because base CRS EPSG:{base} does not resolve.");
@@ -258,19 +256,16 @@ pub fn gen_parameter_constructors(
                 };
                 constructors_map.entry(
                     code,
-                    &format!(
-                        "&{} as &(dyn Projection + Send + Sync)",
-                        conv(param_values, *ellipsoid)
-                    ),
+                    &format!("&{} as &dyn Projection", conv(param_values, *ellipsoid)),
                 );
                 ellipsoids_map.entry(code, &format!("{ellipsoid_code}"));
-            },
+            }
         }
     }
 
     Ok(format!(
         r"#[allow(clippy::approx_constant)]
-static PROJECTIONS: phf::Map<u32, &(dyn Projection + Send + Sync)> = {};
+static PROJECTIONS: phf::Map<u32, &dyn Projection> = {};
 static ELLIPSOIDS: phf::Map<u32, u32> = {};
 ",
         constructors_map.build(),
