@@ -18,26 +18,7 @@ pub mod popvis_pseudo_mercator;
 pub mod stereographic;
 pub mod transverse_mercator;
 
-type ImplementedProjection = (
-    u32,
-    &'static (dyn (Fn(&[(u32, f64)], Ellipsoid) -> String) + Send + Sync),
-);
-
-/// Implemented projections.
-///
-/// Pairs operation codes with functions that map a slice of (parameter code, value)-tuples and an ellipsoid
-/// to a `String` containing source code for constructing the `Projection` with the given parameters.
-pub static IMPL_CONV: &[ImplementedProjection] = &[
-    (9807, &transverse_mercator::direct_projection),
-    (9820, &lambert_azimuthal_equal_area::direct_projection),
-    (9810, &stereographic::direct_projection_a),
-    (9802, &lambert_conic_conformal::direct_projection_2sp),
-    (1024, &popvis_pseudo_mercator::direct_projection),
-    (9801, &lambert_conic_conformal::direct_projection_1sp_a),
-    (9809, &stereographic::direct_projection_oblique),
-    (9822, &albers_equal_area::direct_projection),
-];
-
+/// Try to construct a projection for a specific method code with a getter that provides the parameter values.
 pub fn custom_projection<G>(
     pmethod_code: u32,
     getter: G,
