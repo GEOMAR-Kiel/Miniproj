@@ -96,6 +96,11 @@ you are looking for a refined, proven library, check out
 
 ## Changelog
 
+#### 0.10.0
+
+* Expose constructing projections for a given projection method code.
+    This can be used to create a projection instance for parameter sets or ellipsoids that aren't part of the EPSG registry.
+
 #### 0.9.0
 
 * Removed Dependency `rusqlite`
