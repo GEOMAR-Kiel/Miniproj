@@ -11,7 +11,7 @@ categories = ["science::geo"]
 keywords = ["geoprocessing", "projection", "mapping", "epsg", "geodesy"]
 
 [build-dependencies]
-miniproj-epsg-registry = {version="0.10.0", path="../miniproj-epsg-registry"}
+miniproj-epsg-registry = {version="0.10.1", path="../miniproj-epsg-registry"}
 
 [dependencies]
 phf = { version = "~0.11.1", default_features = false}

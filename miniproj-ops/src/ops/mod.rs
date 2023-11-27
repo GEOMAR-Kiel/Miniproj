@@ -20,7 +20,7 @@ pub mod transverse_mercator;
 
 /// Try to construct a projection for a specific method code with a getter that provides the parameter values.
 /// 
-/// Not that despite taking a reference to an ellipsoid the resulting projection will not update when the ellipsoid is altered.
+/// Note that despite taking a reference to an ellipsoid the resulting projection will not update when the ellipsoid is altered.
 /// Reconstruct the projection if you need it for a different ellipsoid.
 /// Similarly, the getter is called once per required parameter on construction, and in no guaranteed order.
 pub fn custom_projection<G>(
