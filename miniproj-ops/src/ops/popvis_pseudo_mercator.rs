@@ -2,7 +2,7 @@
 
 use std::f64::consts::{FRAC_PI_2, FRAC_PI_4};
 
-use crate::{ellipsoid::Ellipsoid, DbContstruct, Projection, PseudoSerialize};
+use crate::{ellipsoid::Ellipsoid, DbContstruct, Projection, PseudoSerialize, traits::GetterContstruct};
 
 #[derive(Copy, Clone, Debug)]
 pub struct PopVisPseudoMercatorParams {
@@ -127,6 +127,18 @@ impl DbContstruct for PopVisPseudoMercatorProjection {
                 .unwrap(),
         );
         Self::new(ellipsoid, &params)
+    }
+}
+
+impl GetterContstruct for PopVisPseudoMercatorProjection{
+    fn with_db_getter<G>(mut getter: G, ellipsoid: &Ellipsoid) -> Option<Self> where G: FnMut(u32) -> Option<f64> {
+        let params = PopVisPseudoMercatorParams::new(
+            getter(8802)?,
+            getter(8801)?,
+            getter(8806)?,
+            getter(8807)?
+        );
+        Some(Self::new(ellipsoid, &params))
     }
 }
 

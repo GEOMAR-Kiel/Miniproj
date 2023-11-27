@@ -1,6 +1,6 @@
 //This file is licensed under EUPL v1.2
 
-use crate::PseudoSerialize;
+use crate::{PseudoSerialize, traits::GetterContstruct};
 
 /// Ellipsoid, a simple approximation of the earth's shape used in most `Projection`s
 #[derive(Copy, Clone, Debug)]

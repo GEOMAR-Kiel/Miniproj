@@ -1,6 +1,6 @@
 //This file is licensed under EUPL v1.2
 
-use crate::ellipsoid::Ellipsoid;
+use crate::ellipsoid::{Ellipsoid, self};
 
 /// Two-dimensional coordinate operation
 pub trait Projection: Send + Sync {
@@ -28,4 +28,8 @@ pub trait PseudoSerialize {
 
 pub trait DbContstruct {
     fn from_database_params(params: &[(u32, f64)], ellipsoid: &Ellipsoid) -> Self;
+}
+
+pub trait GetterContstruct: Sized {
+    fn with_db_getter<G>(getter: G, ellipsoid: &Ellipsoid) -> Option<Self> where G: FnMut(u32) -> Option<f64>;
 }

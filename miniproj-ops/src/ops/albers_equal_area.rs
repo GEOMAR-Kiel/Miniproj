@@ -1,6 +1,6 @@
 //This file is licensed under EUPL v1.2 as part of the Digital Earth Viewer
 
-use crate::{ellipsoid::Ellipsoid, DbContstruct, PseudoSerialize};
+use crate::{ellipsoid::{Ellipsoid, self}, DbContstruct, PseudoSerialize, traits::GetterContstruct};
 
 #[derive(Copy, Clone, Debug)]
 pub struct AlbersEqualAreaParams {
@@ -258,6 +258,20 @@ impl DbContstruct for AlbersEqualAreaProjection {
                 .unwrap(),
         );
         Self::new(ellipsoid, &params)
+    }
+}
+
+impl GetterContstruct for AlbersEqualAreaProjection {
+    fn with_db_getter<G>(mut getter: G, ellipsoid: &Ellipsoid) -> Option<Self> where G: FnMut(u32) -> Option<f64> {
+        let params = AlbersEqualAreaParams::new(
+            getter(8822)?,
+                getter(8821)?,
+                getter(8823)?,
+                getter(8824)?,
+                getter(8826)?,
+                getter(8827)?
+        );
+        Some(Self::new(ellipsoid, &params))
     }
 }
 
