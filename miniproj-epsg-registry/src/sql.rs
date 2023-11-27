@@ -78,7 +78,17 @@ impl Table {
         &self,
         select: &[&str; N],
     ) -> Result<impl Iterator<Item = [Option<Field>; N]>, Box<dyn Error>> {
-        let Some(columns) = select.iter().map(|n| self.columns.get(*n)).collect::<Option<Vec<_>>>() else {return Err(format!("could not satisfy cols: {select:?} with {:?}", self.column_order).into())};
+        let Some(columns) = select
+            .iter()
+            .map(|n| self.columns.get(*n))
+            .collect::<Option<Vec<_>>>()
+        else {
+            return Err(format!(
+                "could not satisfy cols: {select:?} with {:?}",
+                self.column_order
+            )
+            .into());
+        };
         let len = self.rows().unwrap_or(0);
         Ok((0..len).map(move |index| {
             let mut tmp = [None; N];
@@ -113,8 +123,16 @@ impl Table {
         val: i64,
         select: &[&str; N],
     ) -> Vec<[Option<Field>; N]> {
-        let Some(columns) = select.iter().map(|n| self.columns.get(*n)).collect::<Option<Vec<_>>>() else {return Vec::new()};
-        let Some(Column{ data }) = self.columns.get(col) else {return Vec::new()};
+        let Some(columns) = select
+            .iter()
+            .map(|n| self.columns.get(*n))
+            .collect::<Option<Vec<_>>>()
+        else {
+            return Vec::new();
+        };
+        let Some(Column { data }) = self.columns.get(col) else {
+            return Vec::new();
+        };
         let indices: Vec<_> = match data {
             ColumnData::IntLike(v) => v
                 .iter()
@@ -232,7 +250,9 @@ impl MemoryDb {
                     let table: &mut Table = tables
                         .get_mut(&table_name.0.iter().last().unwrap().value)
                         .unwrap();
-                    let SetExpr::Values(values) = source.body.as_ref() else {panic!("expected values!")};
+                    let SetExpr::Values(values) = source.body.as_ref() else {
+                        panic!("expected values!")
+                    };
                     for row in &values.rows {
                         assert_eq!(table.columns.len(), row.len());
                         for (expr, col_name) in row.iter().zip(table.column_order.iter()) {
@@ -272,7 +292,9 @@ impl MemoryDb {
                                         expr,
                                     },
                                 ) => {
-                                    let Expr::Value(Value::Number(n, _)) = expr.as_ref() else {panic!("cannot negate non-numbers")};
+                                    let Expr::Value(Value::Number(n, _)) = expr.as_ref() else {
+                                        panic!("cannot negate non-numbers")
+                                    };
                                     v.push(n.parse().expect("cannot parse f64"));
                                 }
                                 (ColumnData::MaybeDouble(v), Expr::Value(Value::Number(n, _))) => {
@@ -285,7 +307,9 @@ impl MemoryDb {
                                         expr,
                                     },
                                 ) => {
-                                    let Expr::Value(Value::Number(n, _)) = expr.as_ref() else {panic!("cannot negate non-numbers")};
+                                    let Expr::Value(Value::Number(n, _)) = expr.as_ref() else {
+                                        panic!("cannot negate non-numbers")
+                                    };
                                     v.push(Some(n.parse().expect("cannot parse f64")));
                                 }
                                 (d, e) => {

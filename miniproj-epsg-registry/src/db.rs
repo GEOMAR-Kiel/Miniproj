@@ -34,14 +34,20 @@ pub fn gen_ellipsoid_constructors(db: &MemoryDb) -> Result<String, Box<dyn Error
     );
     let mut phf_map = phf_codegen::Map::new();
     for a in &ell_rows {
-        let [Some(Field::IntLike(code)), _, _, _, Some(Field::IntLike(uom_code))] = a else {unreachable!("No UOM Code given. (row: {:?})", a)};
-        let Some([_ , Some(Field::Double(fac_b)), Some(Field::Double(fac_c))]) = uom_rows.iter().find(|[f, _, _]| {
-            if let Some(Field::IntLike(code)) = f  {
-                code == uom_code
-            } else {
-                false
-            }
-        }) else {unreachable!("No UOM found for Code in DB.")};
+        let [Some(Field::IntLike(code)), _, _, _, Some(Field::IntLike(uom_code))] = a else {
+            unreachable!("No UOM Code given. (row: {:?})", a)
+        };
+        let Some([_, Some(Field::Double(fac_b)), Some(Field::Double(fac_c))]) =
+            uom_rows.iter().find(|[f, _, _]| {
+                if let Some(Field::IntLike(code)) = f {
+                    code == uom_code
+                } else {
+                    false
+                }
+            })
+        else {
+            unreachable!("No UOM found for Code in DB.")
+        };
         let ellipsoid = match a {
             [_, Some(Field::Double(a)), Some(Field::Double(b)), None, _] => {
                 Ellipsoid::from_a_b(a * fac_b / fac_c, b * fac_b / fac_c)
@@ -79,14 +85,20 @@ pub fn get_ellipsoids(db: &MemoryDb) -> Result<HashMap<u32, Ellipsoid>, Box<dyn 
 
     let mut ellipsoids = HashMap::new();
     for a in &ell_rows {
-        let [Some(Field::IntLike(code)), _, _, _, Some(Field::IntLike(uom_code))] = a else {return Err(format!("No UOM Code given. (row: {:?})", a).into())};
-        let Some([_ , Some(Field::Double(fac_b)), Some(Field::Double(fac_c))]) = uom_rows.iter().find(|[f, _, _]| {
-            if let Some(Field::IntLike(code)) = f  {
-                code == uom_code
-            } else {
-                false
-            }
-        }) else {unreachable!("No UOM found for Code in DB.")};
+        let [Some(Field::IntLike(code)), _, _, _, Some(Field::IntLike(uom_code))] = a else {
+            return Err(format!("No UOM Code given. (row: {:?})", a).into());
+        };
+        let Some([_, Some(Field::Double(fac_b)), Some(Field::Double(fac_c))]) =
+            uom_rows.iter().find(|[f, _, _]| {
+                if let Some(Field::IntLike(code)) = f {
+                    code == uom_code
+                } else {
+                    false
+                }
+            })
+        else {
+            unreachable!("No UOM found for Code in DB.")
+        };
         let ellipsoid = match a {
             [_, Some(Field::Double(a)), Some(Field::Double(b)), None, _] => {
                 Ellipsoid::from_a_b(a * fac_b / fac_c, b * fac_b / fac_c)
@@ -154,16 +166,24 @@ pub fn gen_parameter_constructors(
         })
         .collect::<HashMap<u32, _>>();
     assert!(!crs_table.is_empty());
-    let op_table = db.get_table("epsg_coordoperation")
+    let op_table = db
+        .get_table("epsg_coordoperation")
         .ok_or("No Op table")?
         .get_rows(&["coord_op_code", "coord_op_method_code"])?
         .filter_map(|row| {
-            let [Some(Field::IntLike(coord_op_code)), Some(Field::IntLike(coord_op_method_code))] = row else {return None};
-            match (u32::try_from(coord_op_code), u32::try_from(coord_op_method_code)) {
+            let [Some(Field::IntLike(coord_op_code)), Some(Field::IntLike(coord_op_method_code))] =
+                row
+            else {
+                return None;
+            };
+            match (
+                u32::try_from(coord_op_code),
+                u32::try_from(coord_op_method_code),
+            ) {
                 (Ok(coord_op_code), Ok(coord_op_method_code)) => {
                     Some(Ok((coord_op_code, coord_op_method_code)))
                 }
-                (Err(e), _) | (_, Err(e)) => Some(Err(e))
+                (Err(e), _) | (_, Err(e)) => Some(Err(e)),
             }
         })
         .collect::<Result<HashMap<u32, u32>, TryFromIntError>>()?;
@@ -210,16 +230,27 @@ pub fn gen_parameter_constructors(
         }).collect::<Result<HashMap<u32, _>, TryFromIntError>>()?;
 
     let mut datum_ensemble_member_table: HashMap<u32, Vec<u32>> = HashMap::new();
-    for r in db.get_table("epsg_datumensemblemember")
+    for r in db
+        .get_table("epsg_datumensemblemember")
         .ok_or("No Datum Ensemble Member table")?
         .get_rows(&["datum_ensemble_code", "datum_code"])?
         .map(|row| {
-            let [Some(Field::IntLike(datum_ensemble_code)), Some(Field::IntLike(datum_code))] = row else {return Err::<_, Box<dyn Error>>(format!("Missing code in {row:?}").into())};
-            Ok((u32::try_from(datum_ensemble_code)?, u32::try_from(datum_code)?))
-        }) {
-            let (e, d) = r?;
-            datum_ensemble_member_table.entry(e).and_modify(|v| v.push(d)).or_insert(vec![d]);
-        }
+            let [Some(Field::IntLike(datum_ensemble_code)), Some(Field::IntLike(datum_code))] = row
+            else {
+                return Err::<_, Box<dyn Error>>(format!("Missing code in {row:?}").into());
+            };
+            Ok((
+                u32::try_from(datum_ensemble_code)?,
+                u32::try_from(datum_code)?,
+            ))
+        })
+    {
+        let (e, d) = r?;
+        datum_ensemble_member_table
+            .entry(e)
+            .and_modify(|v| v.push(d))
+            .or_insert(vec![d]);
+    }
 
     let mut constructors_map = phf_codegen::Map::new();
     let mut ellipsoids_map = phf_codegen::Map::new();
@@ -235,13 +266,19 @@ pub fn gen_parameter_constructors(
                     continue;
                 };
                 let Some((ellipsoid, ellipsoid_code)) = std::iter::once(datum)
-                    .chain(datum_ensemble_member_table.get(datum).iter().flat_map(|v| v.iter()))
+                    .chain(
+                        datum_ensemble_member_table
+                            .get(datum)
+                            .iter()
+                            .flat_map(|v| v.iter()),
+                    )
                     .filter_map(|d| datum_table.get(d))
                     .filter_map(|(e, _)| ellipsoids.get(e).map(|ell| (ell, e))) //this is the spot to handle meridians as well
-                    .next() else {
-                        //println!("cargo:warning=Skipping EPSG:{code} because datum EPSG:{datum} does not resolve.");
-                        continue;
-                    };
+                    .next()
+                else {
+                    //println!("cargo:warning=Skipping EPSG:{code} because datum EPSG:{datum} does not resolve.");
+                    continue;
+                };
                 let Some(param_values) = paramvalues.get(conversion) else {
                     //println!("cargo:warning=Skipping EPSG:{code} because parameter values do not resolve.");
                     continue;

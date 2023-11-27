@@ -1,6 +1,6 @@
 //This file is licensed under EUPL v1.2 as part of the Digital Earth Viewer
 
-use crate::{ellipsoid::Ellipsoid, DbContstruct, PseudoSerialize, traits::GetterContstruct};
+use crate::{ellipsoid::Ellipsoid, traits::GetterContstruct, DbContstruct, PseudoSerialize};
 
 #[derive(Copy, Clone, Debug)]
 pub struct LambertAzimuthalEqualAreaParams {
@@ -235,7 +235,10 @@ pub fn direct_projection(params: &[(u32, f64)], ell: Ellipsoid) -> String {
 }
 
 impl GetterContstruct for LambertAzimuthalEqualAreaProjection {
-    fn with_db_getter<G>(mut getter: G, ellipsoid: &Ellipsoid) -> Option<Self> where G: FnMut(u32) -> Option<f64> {
+    fn with_db_getter<G>(mut getter: G, ellipsoid: &Ellipsoid) -> Option<Self>
+    where
+        G: FnMut(u32) -> Option<f64>,
+    {
         let params = LambertAzimuthalEqualAreaParams::new(
             getter(8802)?,
             getter(8801)?,

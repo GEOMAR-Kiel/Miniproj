@@ -1,6 +1,8 @@
 //This file is licensed under EUPL v1.2 as part of the Digital Earth Viewer
 
-use crate::{ellipsoid::Ellipsoid, DbContstruct, Projection, PseudoSerialize, traits::GetterContstruct};
+use crate::{
+    ellipsoid::Ellipsoid, traits::GetterContstruct, DbContstruct, Projection, PseudoSerialize,
+};
 
 #[derive(Copy, Clone, Debug)]
 pub struct TransverseMercatorParams {
@@ -290,7 +292,10 @@ impl DbContstruct for TransverseMercatorProjection {
 }
 
 impl GetterContstruct for TransverseMercatorProjection {
-    fn with_db_getter<G>(mut getter: G, ellipsoid: &Ellipsoid) -> Option<Self> where G: FnMut(u32) -> Option<f64> {
+    fn with_db_getter<G>(mut getter: G, ellipsoid: &Ellipsoid) -> Option<Self>
+    where
+        G: FnMut(u32) -> Option<f64>,
+    {
         let params = TransverseMercatorParams::new(
             getter(8802)?,
             getter(8801)?,

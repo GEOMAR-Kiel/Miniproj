@@ -1,6 +1,8 @@
 //This file is licensed under EUPL v1.2 as part of the Digital Earth Viewer
 
-use crate::{ellipsoid::Ellipsoid, DbContstruct, Projection, PseudoSerialize, traits::GetterContstruct};
+use crate::{
+    ellipsoid::Ellipsoid, traits::GetterContstruct, DbContstruct, Projection, PseudoSerialize,
+};
 use std::f64::consts::{FRAC_PI_2, FRAC_PI_4};
 
 #[derive(Copy, Clone, Debug)]
@@ -248,14 +250,17 @@ impl DbContstruct for LambertConic2SPProjection {
 }
 
 impl GetterContstruct for LambertConic2SPProjection {
-    fn with_db_getter<G>(mut getter: G, ellipsoid: &Ellipsoid) -> Option<Self> where G: FnMut(u32) -> Option<f64> {
+    fn with_db_getter<G>(mut getter: G, ellipsoid: &Ellipsoid) -> Option<Self>
+    where
+        G: FnMut(u32) -> Option<f64>,
+    {
         let params = LambertConic2SPParams::new(
             getter(8822)?,
-                getter(8821)?,
-                getter(8823)?,
-                getter(8824)?,
-                getter(8826)?,
-                getter(8827)?
+            getter(8821)?,
+            getter(8823)?,
+            getter(8824)?,
+            getter(8826)?,
+            getter(8827)?,
         );
         Some(Self::new(ellipsoid, &params))
     }
@@ -446,13 +451,16 @@ impl DbContstruct for LambertConic1SPAProjection {
 }
 
 impl GetterContstruct for LambertConic1SPAProjection {
-    fn with_db_getter<G>(mut getter: G, ellipsoid: &Ellipsoid) -> Option<Self> where G: FnMut(u32) -> Option<f64> {
+    fn with_db_getter<G>(mut getter: G, ellipsoid: &Ellipsoid) -> Option<Self>
+    where
+        G: FnMut(u32) -> Option<f64>,
+    {
         let params = LambertConic1SPAParams::new(
             getter(8802)?,
             getter(8801)?,
             getter(8805)?,
             getter(8806)?,
-            getter(8807)?
+            getter(8807)?,
         );
         Some(Self::new(ellipsoid, &params))
     }
