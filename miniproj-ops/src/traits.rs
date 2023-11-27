@@ -1,6 +1,6 @@
 //This file is licensed under EUPL v1.2
 
-use crate::ellipsoid::{self, Ellipsoid};
+use crate::ellipsoid::{Ellipsoid};
 
 /// Two-dimensional coordinate operation
 pub trait Projection: Send + Sync {
