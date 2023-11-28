@@ -2,6 +2,7 @@ use crate::{traits::GetterContstruct, Ellipsoid, Projection};
 
 use self::{
     albers_equal_area::AlbersEqualAreaProjection,
+    lambert_azimuthal_equal_area::LambertAzimuthalEqualAreaProjection,
     lambert_conic_conformal::{LambertConic1SPAProjection, LambertConic2SPProjection},
     popvis_pseudo_mercator::PopVisPseudoMercatorProjection,
     stereographic::{ObliqueStereographicProjection, PolarStereographicAProjection},
@@ -19,7 +20,7 @@ pub mod stereographic;
 pub mod transverse_mercator;
 
 /// Try to construct a projection for a specific method code with a getter that provides the parameter values.
-/// 
+///
 /// Note that despite taking a reference to an ellipsoid the resulting projection will not update when the ellipsoid is altered.
 /// Reconstruct the projection if you need it for a different ellipsoid.
 /// Similarly, the getter is called once per required parameter on construction, and in no guaranteed order.
@@ -53,6 +54,9 @@ where
         9822 => Some(Box::new(AlbersEqualAreaProjection::with_db_getter(
             getter, ellipsoid,
         )?)),
+        9820 => Some(Box::new(
+            LambertAzimuthalEqualAreaProjection::with_db_getter(getter, ellipsoid)?,
+        )),
         _ => None,
     }
 }

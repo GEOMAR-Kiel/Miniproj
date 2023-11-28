@@ -1,10 +1,6 @@
 //This file is licensed under EUPL v1.2 as part of the Digital Earth Viewer
 
-use crate::{
-    ellipsoid::{Ellipsoid},
-    traits::GetterContstruct,
-    DbContstruct, PseudoSerialize,
-};
+use crate::{ellipsoid::Ellipsoid, traits::GetterContstruct, DbContstruct, PseudoSerialize};
 
 #[derive(Copy, Clone, Debug)]
 pub struct AlbersEqualAreaParams {

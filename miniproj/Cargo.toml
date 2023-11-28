@@ -1,6 +1,6 @@
 [package]
 name = "miniproj"
-version = "0.10.0"
+version = "0.10.1"
 edition="2021"
 license-file = "../LICENSE.md"
 authors = ["Flemming Stäbler <fstaebler@geomar.de>", "Valentin Buck <vbuck@geomar.de>"]
@@ -15,4 +15,4 @@ miniproj-epsg-registry = {version="0.10.1", path="../miniproj-epsg-registry"}
 
 [dependencies]
 phf = { version = "~0.11.1", default_features = false}
-miniproj-ops= {version="0.10.0", path="../miniproj-ops"}
+miniproj-ops= {version="0.10.1", path="../miniproj-ops"}
