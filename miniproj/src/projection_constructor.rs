@@ -9,11 +9,11 @@ use miniproj_ops::lambert_conic_conformal::{
 use miniproj_ops::popvis_pseudo_mercator::PopVisPseudoMercatorProjection;
 use miniproj_ops::stereographic::{ObliqueStereographicProjection, PolarStereographicAProjection};
 use miniproj_ops::transverse_mercator::TransverseMercatorProjection;
-use miniproj_ops::Projection;
+use miniproj_ops::{Projection, Ellipsoid};
 
 include!(concat!(env!("OUT_DIR"), "/projection_constructors.rs"));
 
-/// Returns the Projection corresponding to the EPSG code passed as the argument.
+/// Returns the Projected Coordinate Reference System corresponding to the EPSG code passed as the argument.
 /// If the code refers to a projection that is not implemented, the method returns `None`
 pub fn get_projection(code: u32) -> Option<&'static dyn Projection> {
     PROJECTIONS.get(&code).cloned()
@@ -24,6 +24,13 @@ pub fn get_projection(code: u32) -> Option<&'static dyn Projection> {
 /// unknown.
 pub fn get_ellipsoid_code(projection_code: u32) -> Option<u32> {
     ELLIPSOIDS.get(&projection_code).copied()
+}
+
+/// Create the Projection corresponding to the EPSG code passed as the argument, using the passed ellipsoid.
+/// The `&Ellipsoid` is not held by the returned projection, if you want the projection for a different
+/// ellipsoid you need to construct it again.
+pub fn create_projection(code: u32, ellipsoid: &Ellipsoid) -> Option<Box<dyn Projection>> {
+    todo!()
 }
 
 #[cfg(test)]
