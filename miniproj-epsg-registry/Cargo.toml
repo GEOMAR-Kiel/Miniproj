@@ -1,6 +1,6 @@
 [package]
 name = "miniproj-epsg-registry"
-version = "0.10.1"
+version = "0.10.2"
 edition="2021"
 license-file = "../LICENSE.md"
 authors = ["Flemming Stäbler <fstaebler@geomar.de>", "Valentin Buck <vbuck@geomar.de>"]
@@ -11,7 +11,7 @@ categories = ["science::geo"]
 keywords = ["geography", "projection", "codegen", "epsg", "geodesy"]
 
 [dependencies]
-sqlparser = "0.33.0"
-phf = { version = "~0.11.1", default_features = false}
-phf_codegen = "~0.11.1"
+sqlparser = "0.43.1"
+phf = { version = "~0.11.2", default_features = false}
+phf_codegen = "~0.11.2"
 miniproj-ops= {version="0.10.1", path="../miniproj-ops"}

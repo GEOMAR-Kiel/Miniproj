@@ -1,7 +1,7 @@
 use std::{collections::HashMap, error::Error};
 
 use sqlparser::{
-    ast::{ColumnOption, DataType, Expr, SetExpr, UnaryOperator, Value},
+    ast::{ColumnOption, DataType, Expr, SetExpr, UnaryOperator, Value, Ident},
     dialect::GenericDialect,
     parser::Parser,
 };
@@ -244,18 +244,37 @@ impl MemoryDb {
                 sqlparser::ast::Statement::Insert {
                     into: true,
                     table_name,
-                    source,
+                    source: Some(source),
+                    columns,
                     ..
                 } => {
                     let table: &mut Table = tables
                         .get_mut(&table_name.0.iter().last().unwrap().value)
                         .unwrap();
-                    let SetExpr::Values(values) = source.body.as_ref() else {
+                    let SetExpr::Values(ref values) = *source.body else {
                         panic!("expected values!")
                     };
                     for row in &values.rows {
-                        assert_eq!(table.columns.len(), row.len());
-                        for (expr, col_name) in row.iter().zip(table.column_order.iter()) {
+                        
+                        let mapping = if columns.is_empty() {
+                            if row.len() == table.columns.len() {
+                                row.iter().zip(table.column_order.iter()).collect::<Vec<_>>()
+                            } else {
+                                panic!("table {table_name:#?} could not be set.")
+                            }
+                        } else {
+                            table.column_order.iter().map(|name| {
+                                if let Some((index, _)) = columns.iter().enumerate().find(|(_, Ident{value, ..})| {
+                                    value == name
+                                }) {
+                                    (&row[index], name)
+                                } else {
+                                    (&Expr::Value(Value::Null), name)
+                                }
+                            }).collect::<Vec<_>>()
+                        };
+                        
+                        for (expr, col_name) in mapping {
                             let Column { data } =
                                 table.columns.get_mut(col_name).expect("Missing column.");
                             match (data, expr) {
@@ -295,10 +314,10 @@ impl MemoryDb {
                                     let Expr::Value(Value::Number(n, _)) = expr.as_ref() else {
                                         panic!("cannot negate non-numbers")
                                     };
-                                    v.push(n.parse().expect("cannot parse f64"));
+                                    v.push(-n.parse::<f64>().expect("cannot parse f64"));
                                 }
                                 (ColumnData::MaybeDouble(v), Expr::Value(Value::Number(n, _))) => {
-                                    v.push(Some(n.parse().expect("cannot parse f64")));
+                                    v.push(Some(n.parse::<f64>().expect("cannot parse f64")));
                                 }
                                 (
                                     ColumnData::MaybeDouble(v),
@@ -310,7 +329,7 @@ impl MemoryDb {
                                     let Expr::Value(Value::Number(n, _)) = expr.as_ref() else {
                                         panic!("cannot negate non-numbers")
                                     };
-                                    v.push(Some(n.parse().expect("cannot parse f64")));
+                                    v.push(Some(-n.parse::<f64>().expect("cannot parse f64")));
                                 }
                                 (d, e) => {
                                     panic!("cannot push {e:?} to {d:?}.")
