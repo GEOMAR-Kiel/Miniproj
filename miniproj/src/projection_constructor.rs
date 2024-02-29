@@ -29,9 +29,9 @@ pub fn get_ellipsoid_code(projection_code: u32) -> Option<u32> {
 /// Create the Projection corresponding to the EPSG code passed as the argument, using the passed ellipsoid.
 /// The `&Ellipsoid` is not held by the returned projection, if you want the projection for a different
 /// ellipsoid you need to construct it again.
-pub fn create_projection(code: u32, ellipsoid: &Ellipsoid) -> Option<Box<dyn Projection>> {
-    todo!()
-}
+//pub fn create_projection(code: u32, ellipsoid: &Ellipsoid) -> Option<Box<dyn Projection>> {
+//    todo!()
+//}
 
 #[cfg(test)]
 mod tests {

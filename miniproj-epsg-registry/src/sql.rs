@@ -255,7 +255,6 @@ impl MemoryDb {
                         panic!("expected values!")
                     };
                     for row in &values.rows {
-                        
                         let mapping = if columns.is_empty() {
                             if row.len() == table.columns.len() {
                                 row.iter().zip(table.column_order.iter()).collect::<Vec<_>>()
