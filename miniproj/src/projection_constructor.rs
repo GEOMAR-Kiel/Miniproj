@@ -9,7 +9,7 @@ use miniproj_ops::lambert_conic_conformal::{
 use miniproj_ops::popvis_pseudo_mercator::PopVisPseudoMercatorProjection;
 use miniproj_ops::stereographic::{ObliqueStereographicProjection, PolarStereographicAProjection};
 use miniproj_ops::transverse_mercator::TransverseMercatorProjection;
-use miniproj_ops::{Projection, Ellipsoid};
+use miniproj_ops::Projection;
 
 include!(concat!(env!("OUT_DIR"), "/projection_constructors.rs"));
 
