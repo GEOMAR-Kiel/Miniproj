@@ -1,6 +1,6 @@
 [package]
 name = "miniproj"
-version = "0.10.2"
+version = "0.10.3"
 edition="2021"
 license-file = "../LICENSE.md"
 authors = ["Flemming Stäbler <fstaebler@geomar.de>", "Valentin Buck <vbuck@geomar.de>"]
