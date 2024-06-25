@@ -166,6 +166,18 @@ pub fn gen_parameter_constructors(
         })
         .collect::<HashMap<u32, _>>();
     assert!(!crs_table.is_empty());
+    let names_table = db.get_table("epsg_coordinatereferencesystem")
+        .ok_or("No CRS table")?
+        .get_rows(&["coord_ref_sys_code", "coord_ref_sys_name"])?
+        .filter_map(|row| {
+            match row {
+                [Some(Field::IntLike(code)), Some(Field::StringLike(name))] => {
+                    Some((u32::try_from(code).ok()?, name))
+                },
+                _ => None
+            }
+        })
+        .collect::<HashMap<u32, _>>();
     let op_table = db
         .get_table("epsg_coordoperation")
         .ok_or("No Op table")?
@@ -254,11 +266,14 @@ pub fn gen_parameter_constructors(
 
     let mut constructors_map = phf_codegen::Map::new();
     let mut ellipsoids_map = phf_codegen::Map::new();
+    let mut names_map = phf_codegen::Map::new();
 
     for (code, crs) in &crs_table {
+        let name = names_table.get(code).unwrap_or(&"Unknown Coordinate Reference System");
         match crs {
             CrsEntry::Geographic2D { datum: _ } => {
                 constructors_map.entry(code, "&IdentityProjection as &dyn Projection");
+                names_map.entry(code, &format!("{name:?}"));
             }
             CrsEntry::Projected { conversion, base } => {
                 let Some(CrsEntry::Geographic2D { datum }) = crs_table.get(base) else {
@@ -296,6 +311,7 @@ pub fn gen_parameter_constructors(
                     &format!("&{} as &dyn Projection", conv(param_values, *ellipsoid)),
                 );
                 ellipsoids_map.entry(code, &format!("{ellipsoid_code}"));
+                names_map.entry(code, &format!("{name:?}"));
             }
         }
     }
@@ -304,8 +320,10 @@ pub fn gen_parameter_constructors(
         r"#[allow(clippy::approx_constant)]
 static PROJECTIONS: phf::Map<u32, &dyn Projection> = {};
 static ELLIPSOIDS: phf::Map<u32, u32> = {};
+static NAMES: phf::Map<u32, &str> = {};
 ",
         constructors_map.build(),
-        ellipsoids_map.build()
+        ellipsoids_map.build(),
+        names_map.build()
     ))
 }

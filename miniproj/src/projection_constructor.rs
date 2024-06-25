@@ -13,7 +13,7 @@ use miniproj_ops::Projection;
 
 include!(concat!(env!("OUT_DIR"), "/projection_constructors.rs"));
 
-/// Returns the Projected Coordinate Reference System corresponding to the EPSG code passed as the argument.
+/// Returns the Coordinate Reference System corresponding to the EPSG code passed as the argument.
 /// If the code refers to a projection that is not implemented, the method returns `None`
 pub fn get_projection(code: u32) -> Option<&'static dyn Projection> {
     PROJECTIONS.get(&code).cloned()
@@ -24,6 +24,11 @@ pub fn get_projection(code: u32) -> Option<&'static dyn Projection> {
 /// unknown.
 pub fn get_ellipsoid_code(projection_code: u32) -> Option<u32> {
     ELLIPSOIDS.get(&projection_code).copied()
+}
+
+/// Returns the Name of the Coordinate Reference System
+pub fn get_reference_system_name(code: u32) -> Option<&'static str> {
+    NAMES.get(&code).copied()
 }
 
 /// Create the Projection corresponding to the EPSG code passed as the argument, using the passed ellipsoid.

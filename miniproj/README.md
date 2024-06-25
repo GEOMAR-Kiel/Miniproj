@@ -54,6 +54,7 @@ use miniproj::{
     Projection,
     get_ellipsoid_code,
     get_ellipsoid,
+    get_reference_system_name,
     Ellipsoid
 };
 let projection = get_projection(32632)
@@ -85,6 +86,10 @@ let (x, y, z) = ellipsoid.deg_to_geocentric(lon, lat, 53.7);
 assert!((x - 3668985.10).abs() < 0.1);
 assert!((y - 659033.08).abs() < 0.1);
 assert!((z - 5158122.64).abs() < 0.1);
+
+let name = get_reference_system_name(32632)
+    .expect("Name is unknown");
+assert_eq!("WGS 84 / UTM zone 32N", name);
 
 ```
 
