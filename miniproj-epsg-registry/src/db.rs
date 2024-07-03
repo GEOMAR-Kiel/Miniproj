@@ -133,6 +133,11 @@ enum CrsEntry {
     Projected { conversion: u32, base: u32 },
 }
 
+#[derive(Debug)]
+struct Extent {
+
+}
+
 /// Generates rust source code for projected and geographic coordinate systems for all implemented projections.
 pub fn gen_parameter_constructors(
     db: &MemoryDb,
@@ -178,6 +183,31 @@ pub fn gen_parameter_constructors(
             }
         })
         .collect::<HashMap<u32, _>>();
+    let extents_table = db.get_table("epsg_extent")
+        .ok_or("No Extent Table")?
+        .get_rows(&["extent_code", "extent_name", "bbox_south_bound_lat", "bbox_west_bound_lon", "bbox_north_boun_lat", "bbox_east_bound_lon"])?
+        .filter_map(|row| {
+            match row {
+                [Some(Field::IntLike(code)), Some(Field::StringLike(name)), Some(Field::Double(lat_s)), Some(Field::Double(lon_w)), Some(Field::Double(lat_n)), Some(Field::Double(lon_e))] => {
+                    Some((u32::try_from(code).ok()?, (name, [lon_e, lat_n, lon_w, lat_s]))) //TODO
+                },
+                _ => None
+            }
+        })
+        .collect::<HashMap<u32, _>>();
+
+    let usages_table = db.get_table("epsg_usage")
+        .ok_or("No Usage Table")?
+        .get_rows(&["object_code", "extent_code"])?
+        .filter_map(|row| {
+            match row {
+                [Some(Field::IntLike(object_code)), Some(Field::IntLike(extent_code))] => {
+                    Some((object_code, extent_code))
+                },
+                _ => None
+            }
+        })
+        .collect::<Vec<_>>();
     let op_table = db
         .get_table("epsg_coordoperation")
         .ok_or("No Op table")?
