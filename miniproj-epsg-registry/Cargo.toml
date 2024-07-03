@@ -12,6 +12,6 @@ keywords = ["geography", "projection", "codegen", "epsg", "geodesy"]
 
 [dependencies]
 sqlparser = "0.43.1"
-phf = { version = "~0.11.2", default_features = false}
+phf = { version = "~0.11.2", default-features = false}
 phf_codegen = "~0.11.2"
 miniproj-ops= {version="0.10.1", path="../miniproj-ops"}

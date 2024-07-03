@@ -26,9 +26,16 @@ pub fn get_ellipsoid_code(projection_code: u32) -> Option<u32> {
     ELLIPSOIDS.get(&projection_code).copied()
 }
 
-/// Returns the Name of the Coordinate Reference System
+/// Returns the Name of the Coordinate Reference System. This is a temporary method that will be removed.
 pub fn get_reference_system_name(code: u32) -> Option<&'static str> {
     NAMES.get(&code).copied()
+}
+
+/// Returns one or multiple geographic areas that the reference system applies to.
+/// Values are in `[east, north, west, south]`` order. This is a temporary method that will be removed.
+#[deprecated]
+pub fn get_reference_system_areas(code: u32) -> Option<&'static [[f64; 4]]> {
+    AREAS.get(&code).filter(|a| !a.is_empty()).copied()
 }
 
 /// Create the Projection corresponding to the EPSG code passed as the argument, using the passed ellipsoid.

@@ -55,6 +55,7 @@ use miniproj::{
     get_ellipsoid_code,
     get_ellipsoid,
     get_reference_system_name,
+    get_reference_system_areas,
     Ellipsoid
 };
 let projection = get_projection(32632)
@@ -90,6 +91,9 @@ assert!((z - 5158122.64).abs() < 0.1);
 let name = get_reference_system_name(32632)
     .expect("Name is unknown");
 assert_eq!("WGS 84 / UTM zone 32N", name);
+let area = get_reference_system_areas(32632)
+    .expect("No usage area given")[0];
+assert_eq!(area, [12.0, 84.0, 6.0, 0.0]);
 
 ```
 
@@ -158,6 +162,8 @@ you are looking for a refined, proven library, check out
 * Implement transformations
 * Implement refined handling of nonstandard meridians
 * Add feature gating for operation methods
+* Provide reference system structs that can be used to create end-to-end transforms between reference systems
+* Provice traits and trait objects for end-to-end transforms as well as intermediate steps
 
 #### Long-Term
 
