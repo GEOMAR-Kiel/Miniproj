@@ -27,6 +27,7 @@ pub fn get_ellipsoid_code(projection_code: u32) -> Option<u32> {
 }
 
 /// Returns the Name of the Coordinate Reference System. This is a temporary method that will be removed.
+#[deprecated]
 pub fn get_reference_system_name(code: u32) -> Option<&'static str> {
     NAMES.get(&code).copied()
 }
@@ -36,6 +37,11 @@ pub fn get_reference_system_name(code: u32) -> Option<&'static str> {
 #[deprecated]
 pub fn get_reference_system_areas(code: u32) -> Option<&'static [[f64; 4]]> {
     AREAS.get(&code).filter(|a| !a.is_empty()).copied()
+}
+
+#[deprecated]
+pub fn all_names() -> impl Iterator<Item = (u32, &'static str)> {
+    NAMES.entries().map(|(c, n)| (*c, *n))
 }
 
 /// Create the Projection corresponding to the EPSG code passed as the argument, using the passed ellipsoid.
