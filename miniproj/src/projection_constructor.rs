@@ -38,6 +38,11 @@ pub fn get_reference_system_areas(code: u32) -> Option<&'static [[f64; 4]]> {
     AREAS.get(&code).filter(|a| !a.is_empty()).copied()
 }
 
+#[deprecated]
+pub fn all_names() -> impl Iterator<Item = (u32, &'static str)> {
+    NAMES.entries().map(|(c, n)| (*c, *n))
+}
+
 /// Create the Projection corresponding to the EPSG code passed as the argument, using the passed ellipsoid.
 /// The `&Ellipsoid` is not held by the returned projection, if you want the projection for a different
 /// ellipsoid you need to construct it again.
