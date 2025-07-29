@@ -6,7 +6,8 @@ use sqlparser::{
     parser::Parser,
 };
 
-static DB: &str = include_str!("../data/gen_reg.sql");
+static DB_TABLES: &str = include_str!("../data/PostgreSQL_Table_Script.sql");
+static DB_DATA: &str = include_str!("../data/PostgreSQL_Data_Script.sql");
 
 #[derive(Debug, Default)]
 pub struct MemoryDb {
@@ -237,7 +238,10 @@ impl MemoryDb {
     #[must_use]
     pub fn new() -> Self {
         let dialect = GenericDialect {};
-        let ast = Parser::parse_sql(&dialect, DB).expect("Parser error.");
+        println!("cargo:warn={}", DB_TABLES.chars().take(32).collect::<String>());
+        let mut ast = Parser::parse_sql(&dialect, DB_TABLES).expect("Parser error.");
+        ast.extend_from_slice(&Parser::parse_sql(&dialect, DB_DATA).expect("Parser error."));
+        let ast = ast;
         let mut tables = HashMap::new();
         for stmt in &ast {
             match stmt {
