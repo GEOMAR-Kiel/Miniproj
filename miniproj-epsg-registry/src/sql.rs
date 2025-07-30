@@ -1,7 +1,7 @@
 use std::{collections::HashMap, error::Error};
 
 use sqlparser::{
-    ast::{ColumnOption, DataType, Expr, SetExpr, UnaryOperator, Value, Ident},
+    ast::{ColumnOption, DataType, Expr, Ident, SetExpr, UnaryOperator, Value},
     dialect::GenericDialect,
     parser::Parser,
 };
@@ -238,7 +238,10 @@ impl MemoryDb {
     #[must_use]
     pub fn new() -> Self {
         let dialect = GenericDialect {};
-        println!("cargo:warn={}", DB_TABLES.chars().take(32).collect::<String>());
+        println!(
+            "cargo:warn={}",
+            DB_TABLES.chars().take(32).collect::<String>()
+        );
         let mut ast = Parser::parse_sql(&dialect, DB_TABLES).expect("Parser error.");
         ast.extend_from_slice(&Parser::parse_sql(&dialect, DB_DATA).expect("Parser error."));
         let ast = ast;
@@ -261,22 +264,30 @@ impl MemoryDb {
                     for row in &values.rows {
                         let mapping = if columns.is_empty() {
                             if row.len() == table.columns.len() {
-                                row.iter().zip(table.column_order.iter()).collect::<Vec<_>>()
+                                row.iter()
+                                    .zip(table.column_order.iter())
+                                    .collect::<Vec<_>>()
                             } else {
                                 panic!("table {table_name:#?} could not be set.")
                             }
                         } else {
-                            table.column_order.iter().map(|name| {
-                                if let Some((index, _)) = columns.iter().enumerate().find(|(_, Ident{value, ..})| {
-                                    value == name
-                                }) {
-                                    (&row[index], name)
-                                } else {
-                                    (&Expr::Value(Value::Null), name)
-                                }
-                            }).collect::<Vec<_>>()
+                            table
+                                .column_order
+                                .iter()
+                                .map(|name| {
+                                    if let Some((index, _)) = columns
+                                        .iter()
+                                        .enumerate()
+                                        .find(|(_, Ident { value, .. })| value == name)
+                                    {
+                                        (&row[index], name)
+                                    } else {
+                                        (&Expr::Value(Value::Null), name)
+                                    }
+                                })
+                                .collect::<Vec<_>>()
                         };
-                        
+
                         for (expr, col_name) in mapping {
                             let Column { data } =
                                 table.columns.get_mut(col_name).expect("Missing column.");

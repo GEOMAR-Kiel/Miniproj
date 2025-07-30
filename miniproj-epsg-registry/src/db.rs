@@ -1,6 +1,12 @@
 //This file is licensed under EUPL v1.2 as part of the Digital Earth Viewer
 
-use std::{collections::HashMap, error::Error, num::TryFromIntError};
+use std::{
+    collections::{HashMap, HashSet},
+    error::Error,
+    fs::OpenOptions,
+    io::Write,
+    num::TryFromIntError,
+};
 
 use crate::{
     helpers::*,
@@ -133,6 +139,73 @@ enum CrsEntry {
     Projected { conversion: u32, base: u32 },
 }
 
+struct CoordOp {
+    code: u32,
+    from: u32,
+    to: u32,
+    method: u32,
+}
+
+pub fn dump_crs_relations(db: &MemoryDb) {
+    let mut nodes = HashSet::new();
+    let mut edges = Vec::new();
+    let crss = db.get_table("epsg_coordinatereferencesystem").unwrap();
+    for row in db
+        .get_table("epsg_coordoperation")
+        .unwrap()
+        .get_rows(&[
+            "coord_op_code",
+            "source_crs_code",
+            "target_crs_code",
+            "coord_op_method_code",
+        ])
+        .unwrap()
+    {
+        let [Some(Field::IntLike(op_code)), Some(Field::IntLike(source_crs)), Some(Field::IntLike(target_crs)), Some(Field::IntLike(method))] =
+            row
+        else {
+            continue;
+        };
+        let Some([Some(Field::StringLike("geocentric"))]) =
+            crss.get_row_where_i64("coord_ref_sys_code", source_crs, &["coord_ref_sys_kind"])
+        else {
+            continue;
+        };
+        nodes.insert(source_crs as u32);
+        nodes.insert(target_crs as u32);
+        edges.push(CoordOp {
+            code: op_code as u32,
+            from: source_crs as u32,
+            to: target_crs as u32,
+            method: method as u32,
+        });
+    }
+    let mut f = OpenOptions::new()
+        .create(true)
+        .write(true)
+        .truncate(true)
+        .open("coord_ops.dot")
+        .unwrap();
+    f.write_all(b"digraph {").unwrap();
+    for n in nodes {
+        f.write_all(format!("crs{n} [label=\"{n}\"]\n").as_bytes())
+            .unwrap();
+    }
+    for CoordOp {
+        code,
+        from,
+        to,
+        method,
+    } in edges
+    {
+        f.write_all(
+            format!("crs{from} -> crs{to} [label=\"{code}\nusing {method}\"]\n").as_bytes(),
+        )
+        .unwrap();
+    }
+    f.write_all(b"} [overlap_scaling=-8").unwrap();
+}
+
 /// Generates rust source code for projected and geographic coordinate systems for all implemented projections.
 pub fn gen_parameter_constructors(
     db: &MemoryDb,
@@ -161,21 +234,24 @@ pub fn gen_parameter_constructors(
                 [Some(Field::IntLike(code)), Some(Field::IntLike(base_crs_code)), Some(Field::IntLike(conv_code)), _, Some(Field::StringLike("projected"))] => {
                     Some((u32::try_from(code).ok()?, CrsEntry::Projected { conversion: u32::try_from(conv_code).ok()?, base: u32::try_from(base_crs_code).ok()? }))
                 },
+                [Some(Field::IntLike(code)), _, _, _, Some(Field::StringLike(s))] => {
+                    println!("cargo:warning=CRS {code} has type \"{s}\"");
+                    None
+                },
                 _ => None
             }
         })
         .collect::<HashMap<u32, _>>();
     assert!(!crs_table.is_empty());
-    let names_table = db.get_table("epsg_coordinatereferencesystem")
+    let names_table = db
+        .get_table("epsg_coordinatereferencesystem")
         .ok_or("No CRS table")?
         .get_rows(&["coord_ref_sys_code", "coord_ref_sys_name"])?
-        .filter_map(|row| {
-            match row {
-                [Some(Field::IntLike(code)), Some(Field::StringLike(name))] => {
-                    Some((u32::try_from(code).ok()?, name))
-                },
-                _ => None
+        .filter_map(|row| match row {
+            [Some(Field::IntLike(code)), Some(Field::StringLike(name))] => {
+                Some((u32::try_from(code).ok()?, name))
             }
+            _ => None,
         })
         .collect::<HashMap<u32, _>>();
     let extents_table = db.get_table("epsg_extent")
@@ -194,17 +270,22 @@ pub fn gen_parameter_constructors(
     db.get_table("epsg_usage")
         .ok_or("No Usage Table")?
         .get_rows(&["object_code", "extent_code"])?
-        .for_each(|row| {
-            match row {
-                [Some(Field::IntLike(object_code)), Some(Field::IntLike(extent_code))] => {
-                    let Ok(object_code) = u32::try_from(object_code) else {return};
-                    let Ok(extent_code) = u32::try_from(extent_code) else {return};
-                    if let Some((name, area)) = extents_table.get(&extent_code) {
-                        usages_table.entry(object_code).or_default().push((name, area))
-                    }
-                },
-                _ => {}
+        .for_each(|row| match row {
+            [Some(Field::IntLike(object_code)), Some(Field::IntLike(extent_code))] => {
+                let Ok(object_code) = u32::try_from(object_code) else {
+                    return;
+                };
+                let Ok(extent_code) = u32::try_from(extent_code) else {
+                    return;
+                };
+                if let Some((name, area)) = extents_table.get(&extent_code) {
+                    usages_table
+                        .entry(object_code)
+                        .or_default()
+                        .push((name, area))
+                }
             }
+            _ => {}
         });
 
     let op_table = db
@@ -299,7 +380,9 @@ pub fn gen_parameter_constructors(
     let mut areas_map = phf_codegen::Map::new();
 
     for (code, crs) in &crs_table {
-        let name = names_table.get(code).unwrap_or(&"Unknown Coordinate Reference System");
+        let name = names_table
+            .get(code)
+            .unwrap_or(&"Unknown Coordinate Reference System");
         let areas = usages_table.get(code);
         match crs {
             CrsEntry::Geographic2D { datum: _ } => {
@@ -308,7 +391,8 @@ pub fn gen_parameter_constructors(
                 if let Some(areas) = areas {
                     let mut areas_string = String::new();
                     areas_string.push_str("&[");
-                    for (_, [e, n, w, s]) in areas { // TODO make a real type
+                    for (_, [e, n, w, s]) in areas {
+                        // TODO make a real type
 
                         areas_string.push_str(&format!("[{e:?}, {n:?}, {w:?}, {s:?}],"));
                     }
@@ -356,7 +440,8 @@ pub fn gen_parameter_constructors(
                 if let Some(areas) = areas {
                     let mut areas_string = String::new();
                     areas_string.push_str("&[");
-                    for (_, [e, n, w, s]) in areas { // TODO make a real type
+                    for (_, [e, n, w, s]) in areas {
+                        // TODO make a real type
 
                         areas_string.push_str(&format!("[{e:?}, {n:?}, {w:?}, {s:?}],"));
                     }

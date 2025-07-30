@@ -14,5 +14,5 @@ keywords = ["geoprocessing", "projection", "mapping", "epsg", "geodesy"]
 miniproj-epsg-registry = {version="0.10.2", path="../miniproj-epsg-registry"}
 
 [dependencies]
-phf = { version = "~0.11.2", default_features = false}
+phf = { version = "~0.11.2", default-features = false}
 miniproj-ops= {version="0.10.1", path="../miniproj-ops"}
