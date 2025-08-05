@@ -238,10 +238,6 @@ impl MemoryDb {
     #[must_use]
     pub fn new() -> Self {
         let dialect = GenericDialect {};
-        println!(
-            "cargo:warn={}",
-            DB_TABLES.chars().take(32).collect::<String>()
-        );
         let mut ast = Parser::parse_sql(&dialect, DB_TABLES).expect("Parser error.");
         ast.extend_from_slice(&Parser::parse_sql(&dialect, DB_DATA).expect("Parser error."));
         let ast = ast;
