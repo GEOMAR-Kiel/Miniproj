@@ -1,7 +1,7 @@
 //This file is licensed under EUPL v1.2 as part of the Digital Earth Viewer
 
 use crate::{
-    ellipsoid::Ellipsoid, traits::GetterContstruct, DbContstruct, Projection, PseudoSerialize,
+    ellipsoid::Ellipsoid, types::GetterContstruct, DbContstruct, Projection, PseudoSerialize,
 };
 
 #[derive(Copy, Clone, Debug)]
@@ -314,7 +314,7 @@ pub fn direct_projection(params: &[(u32, f64)], ell: Ellipsoid) -> String {
 mod tests {
 
     use crate::ellipsoid::Ellipsoid;
-    use crate::traits::*;
+    use crate::types::*;
     use crate::transverse_mercator::*;
 
     #[test]

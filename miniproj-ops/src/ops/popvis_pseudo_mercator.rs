@@ -3,7 +3,7 @@
 use std::f64::consts::{FRAC_PI_2, FRAC_PI_4};
 
 use crate::{
-    ellipsoid::Ellipsoid, traits::GetterContstruct, DbContstruct, Projection, PseudoSerialize,
+    ellipsoid::Ellipsoid, types::GetterContstruct, DbContstruct, Projection, PseudoSerialize,
 };
 
 #[derive(Copy, Clone, Debug)]
@@ -154,7 +154,7 @@ pub fn direct_projection(params: &[(u32, f64)], ell: Ellipsoid) -> String {
 mod tests {
 
     use crate::ellipsoid::Ellipsoid;
-    use crate::traits::*;
+    use crate::types::*;
 
     use super::PopVisPseudoMercatorParams;
     use super::PopVisPseudoMercatorProjection;

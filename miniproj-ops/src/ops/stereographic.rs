@@ -2,7 +2,7 @@
 
 use std::f64::consts::{FRAC_PI_2, FRAC_PI_4};
 
-use crate::{ellipsoid::Ellipsoid, traits::GetterContstruct, DbContstruct, PseudoSerialize};
+use crate::{ellipsoid::Ellipsoid, types::GetterContstruct, DbContstruct, PseudoSerialize};
 
 #[derive(Copy, Clone, Debug)]
 pub struct PolarStereographicAParams {
@@ -112,7 +112,7 @@ impl PolarStereographicAProjection {
     }
 }
 
-impl crate::traits::Projection for PolarStereographicAProjection {
+impl crate::types::Projection for PolarStereographicAProjection {
     fn rad_to_projected(&self, longitude: f64, latitude: f64) -> (f64, f64) {
         if self.lat_orig < 0.0 {
             // North Pole Case
@@ -346,7 +346,7 @@ impl ObliqueStereographicProjection {
     }
 }
 
-impl crate::traits::Projection for ObliqueStereographicProjection {
+impl crate::types::Projection for ObliqueStereographicProjection {
     #[allow(non_snake_case)]
     fn projected_to_rad(&self, x: f64, y: f64) -> (f64, f64) {
         let i = (x - self.false_e).atan2(self.h + (y - self.false_n));
@@ -473,7 +473,7 @@ mod tests {
 
     use crate::ellipsoid::Ellipsoid;
     use crate::stereographic::*;
-    use crate::traits::*;
+    use crate::types::*;
 
     #[test]
     fn polar_stereographic_a_consistency() {

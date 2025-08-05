@@ -1,6 +1,6 @@
 //This file is licensed under EUPL v1.2 as part of the Digital Earth Viewer
 
-use crate::{ellipsoid::Ellipsoid, traits::GetterContstruct, DbContstruct, PseudoSerialize};
+use crate::{ellipsoid::Ellipsoid, types::GetterContstruct, DbContstruct, PseudoSerialize};
 
 #[derive(Copy, Clone, Debug)]
 pub struct AlbersEqualAreaParams {
@@ -141,7 +141,7 @@ impl AlbersEqualAreaProjection {
     }
 }
 
-impl crate::traits::Projection for AlbersEqualAreaProjection {
+impl crate::types::Projection for AlbersEqualAreaProjection {
     /// as per IOGP Publication 373-7-2 – Geomatics Guidance Note number 7, part 2 – March 2020
     /// longitude & latitude in radians
     #[allow(non_snake_case)]
@@ -287,7 +287,7 @@ mod tests {
 
     use crate::albers_equal_area::*;
     use crate::ellipsoid::Ellipsoid;
-    use crate::traits::*;
+    use crate::types::*;
 
     // TODO: While passing the round-trip, this test does not match what is given in the EPSG Guidance Note 7-2, May 22.
     #[test]

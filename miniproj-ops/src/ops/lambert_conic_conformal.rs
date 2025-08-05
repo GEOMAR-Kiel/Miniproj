@@ -1,7 +1,7 @@
 //This file is licensed under EUPL v1.2 as part of the Digital Earth Viewer
 
 use crate::{
-    ellipsoid::Ellipsoid, traits::GetterContstruct, DbContstruct, Projection, PseudoSerialize,
+    ellipsoid::Ellipsoid, types::GetterContstruct, DbContstruct, Projection, PseudoSerialize,
 };
 use std::f64::consts::{FRAC_PI_2, FRAC_PI_4};
 
@@ -479,7 +479,7 @@ mod tests {
 
     use crate::ellipsoid::Ellipsoid;
     use crate::lambert_conic_conformal::*;
-    use crate::traits::*;
+    use crate::types::*;
 
     #[test]
     fn lambert_conic_2sp_consistency() {
