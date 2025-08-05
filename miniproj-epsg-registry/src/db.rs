@@ -5,7 +5,7 @@ use std::{
     error::Error,
     fs::OpenOptions,
     io::Write,
-    num::TryFromIntError,
+    num::TryFromIntError, u32,
 };
 
 use crate::{
@@ -139,6 +139,7 @@ enum CrsEntry {
     Projected { conversion: u32, base: u32 },
 }
 
+#[derive(PartialEq, Eq, Hash)]
 struct CoordOp {
     code: u32,
     from: u32,
@@ -147,46 +148,109 @@ struct CoordOp {
 }
 
 pub fn dump_crs_relations(db: &MemoryDb) {
-    let mut nodes = HashSet::new();
-    let mut edges = Vec::new();
-    let crss = db.get_table("epsg_coordinatereferencesystem").unwrap();
-    for row in db
-        .get_table("epsg_coordoperation")
-        .unwrap()
-        .get_rows(&[
+    const PERMITTED_METHODS: &'static [i64] = &[
+        // Conversions
+        9602, // Geographic3D->Geocentric
+        9659, // Geographic3D->Geographic2D
+        // Transformations
+        1061, // Molodensky-Badekas PV
+        1062, // Molodensky-Badekas PV Geographic3D Concatenated
+        1063, // Molodensky-Badekas PV Geographic2D Concatenated
+        1034, // Molodensky-Badekas CF
+        1039, // Molodensky-Badekas CF Geographic3D Concatenated
+        9636, // Molodensky-Badekas CF Geographic2D Concatenated
+        1033, // Position Vector TF
+        1037, // Position Vector TF Geographic3D Concatenated
+        9606, // Position Vector TF Geographic2D Concatenated
+        1032, // CF Rotation
+        1038, // CF Rotation Geographic3D Concatenated
+        9607, // CF Rotation Geographic2D Concatenated
+        1053, // Time-dependent PV
+        1055, // Time-dependent PV Geographic3D Concatenated
+        1054, // Time-dependent PV Geographic2D Concatenated
+        1056, // Time-dependent CF rotation
+        1058, // Time-dependent CF rotation Geographic3D Concatenated
+        1057, // Time-dependent CF rotation Geographic2D Concatenated
+        1031, // Translation
+        1035, // Translation Geographic3D Concatenated
+        9603, // Translation Geographic2D Concatenated
+        1064, // Point Motion
+        1067, // Point Motion Ellipsoidal
+        1065, // Time-specific PV
+        1066, // Time-specific CF
+        // Projections
+        1024, // PopVisPseudoMercator
+        9801, // LambertConic1SPA
+        9802, // LambertConic2SPP
+        9807, // TransverseMercator
+        9809, // ObliqueStereographic,
+        9810, // PolarStereographicA
+        9820, // LAEA
+        9822, // AlbersEqualArea
+    ];
+
+    fn recurse_graph(db: &MemoryDb, nodes: &mut HashSet<u32>, edges: &mut HashSet<CoordOp>, start: i64) {
+        let op_table = db.get_table("epsg_coordoperation").unwrap();
+        for row in op_table.get_rows_where_i64("source_crs_code", start, &[
             "coord_op_code",
             "source_crs_code",
             "target_crs_code",
             "coord_op_method_code",
-        ])
-        .unwrap()
-    {
-        let [Some(Field::IntLike(op_code)), Some(Field::IntLike(source_crs)), Some(Field::IntLike(target_crs)), Some(Field::IntLike(method))] =
-            row
-        else {
-            continue;
-        };
-        let Some([Some(Field::StringLike("geocentric"))]) =
-            crss.get_row_where_i64("coord_ref_sys_code", source_crs, &["coord_ref_sys_kind"])
-        else {
-            continue;
-        };
-        nodes.insert(source_crs as u32);
-        nodes.insert(target_crs as u32);
-        edges.push(CoordOp {
-            code: op_code as u32,
-            from: source_crs as u32,
-            to: target_crs as u32,
-            method: method as u32,
-        });
+        ]).into_iter().chain(op_table.get_rows_where_i64("target_crs_code", start, &[
+            "coord_op_code",
+            "source_crs_code",
+            "target_crs_code",
+            "coord_op_method_code",
+        ]).into_iter()) {
+            let [Some(Field::IntLike(op_code)), Some(Field::IntLike(from)), Some(Field::IntLike(to)), Some(Field::IntLike(method))] = row else {continue};
+            edges.insert(CoordOp { code: op_code as u32, from: from as u32, to: to as u32, method: method as u32 });
+            if !PERMITTED_METHODS.contains(&method) {
+                println!("cargo:warning=Method {method} is not permitted (expanding from {start})");
+                continue;
+            }
+            edges.insert(CoordOp { code: op_code as u32, from: from as u32, to: to as u32, method: method as u32 });
+            if nodes.insert(from as u32) {
+                recurse_graph(db, nodes, edges, from);
+            }
+            if nodes.insert(to as u32) {
+                recurse_graph(db, nodes, edges, to);
+            } 
+        }
+        let ref_sys_table = db.get_table("epsg_coordinatereferencesystem").unwrap();
+        for row in ref_sys_table.get_rows_where_i64("base_crs_code", start, &["coord_ref_sys_code", "coord_ref_sys_kind", "projection_conv_code"]) {
+            let [Some(Field::IntLike(from)), Some(Field::StringLike(kind)), conv] = row else {continue};
+            match (kind, conv) {
+                ("projected", Some(Field::IntLike(code))) => {
+                    edges.insert(CoordOp { code: code as u32, from: from as u32, to: start as u32, method: code as u32});
+                    continue;
+                }
+                ("geographic 2D", Some(Field::IntLike(code))) => {
+                    edges.insert(CoordOp { code: u32::MAX, from: from as u32, to: start as u32, method: code as u32 });
+                }
+                ("geographic 3D", Some(Field::IntLike(code))) => {
+                    edges.insert(CoordOp { code: u32::MAX, from: from as u32, to: start as u32, method: code as u32 });
+                },
+                _ => continue
+            }
+            if nodes.insert(from as u32) {
+                recurse_graph(db, nodes, edges, from);
+            } 
+        }
     }
+
+
+    let mut nodes = HashSet::new();
+    let mut edges = HashSet::new();
+
+    recurse_graph(db, &mut nodes, &mut edges, 4936);
+
     let mut f = OpenOptions::new()
         .create(true)
         .write(true)
         .truncate(true)
         .open("coord_ops.dot")
         .unwrap();
-    f.write_all(b"digraph {").unwrap();
+    f.write_all(b"digraph G { overlap_scaling=-8 beautify=true\n").unwrap();
     for n in nodes {
         f.write_all(format!("crs{n} [label=\"{n}\"]\n").as_bytes())
             .unwrap();
@@ -203,7 +267,7 @@ pub fn dump_crs_relations(db: &MemoryDb) {
         )
         .unwrap();
     }
-    f.write_all(b"} [overlap_scaling=-8").unwrap();
+    f.write_all(b"}").unwrap();
 }
 
 /// Generates rust source code for projected and geographic coordinate systems for all implemented projections.
@@ -235,7 +299,7 @@ pub fn gen_parameter_constructors(
                     Some((u32::try_from(code).ok()?, CrsEntry::Projected { conversion: u32::try_from(conv_code).ok()?, base: u32::try_from(base_crs_code).ok()? }))
                 },
                 [Some(Field::IntLike(code)), _, _, _, Some(Field::StringLike(s))] => {
-                    println!("cargo:warning=CRS {code} has type \"{s}\"");
+                    //println!("cargo:warning=CRS {code} has type \"{s}\"");
                     None
                 },
                 _ => None
