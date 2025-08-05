@@ -1,6 +1,6 @@
 //This file is licensed under EUPL v1.2 as part of the Digital Earth Viewer
 
-use crate::traits::Projection;
+use crate::types::Projection;
 
 /// Parameterless projection that is a no-op in degrees and otherwise converts between degrees and radians.
 pub struct IdentityProjection;

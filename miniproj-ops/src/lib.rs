@@ -1,7 +1,7 @@
 mod ops;
-mod traits;
+mod types;
 pub use ops::ellipsoid::Ellipsoid;
 pub use ops::*;
-pub use traits::DbContstruct;
-pub use traits::Projection;
-pub use traits::PseudoSerialize;
+pub use types::DbContstruct;
+pub use types::Projection;
+pub use types::PseudoSerialize;

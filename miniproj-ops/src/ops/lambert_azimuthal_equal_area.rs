@@ -1,6 +1,6 @@
 //This file is licensed under EUPL v1.2 as part of the Digital Earth Viewer
 
-use crate::{ellipsoid::Ellipsoid, traits::GetterContstruct, DbContstruct, PseudoSerialize};
+use crate::{ellipsoid::Ellipsoid, types::GetterContstruct, DbContstruct, PseudoSerialize};
 
 #[derive(Copy, Clone, Debug)]
 pub struct LambertAzimuthalEqualAreaParams {
@@ -103,7 +103,7 @@ impl LambertAzimuthalEqualAreaProjection {
     }
 }
 
-impl crate::traits::Projection for LambertAzimuthalEqualAreaProjection {
+impl crate::types::Projection for LambertAzimuthalEqualAreaProjection {
     /// as per IOGP Publication 373-7-2 – Geomatics Guidance Note number 7, part 2 – March 2020
     /// longitude & latitude in radians
     #[allow(non_snake_case)]
@@ -254,7 +254,7 @@ mod tests {
 
     use crate::ellipsoid::Ellipsoid;
     use crate::lambert_azimuthal_equal_area::*;
-    use crate::traits::*;
+    use crate::types::*;
 
     #[test]
     fn lambert_azimuthal_equal_area_consistency() {
