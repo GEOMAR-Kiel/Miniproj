@@ -4,6 +4,7 @@ use std::marker::PhantomData;
 
 use crate::ellipsoid::Ellipsoid;
 
+#[deprecated]
 /// Two-dimensional coordinate operation
 pub trait Projection: Send + Sync {
     ///Converts from a coordinate in the target coordinate system to lon/lat in EPSG 4326 in radians
@@ -24,10 +25,13 @@ pub trait Projection: Send + Sync {
     }
 }
 
+#[cfg(feature = "codegen")]
 pub trait PseudoSerialize {
     fn to_constructed(&self) -> String;
 }
 
+
+#[cfg(feature = "codegen")]
 pub trait DbContstruct {
     fn from_database_params(params: &[(u32, f64)], ellipsoid: &Ellipsoid) -> Self;
 }
@@ -38,7 +42,7 @@ pub trait GetterContstruct: Sized {
         G: FnMut(u32) -> Option<f64>;
 }
 
-/// A projected coordinate, in map units, e.g. meters. The axes are not necessarily geographically aligned.
+/// A projected coordinate, in map units, e.g. meters. The axes are not necessarily geographically aligned. Depending on the CRS, they might also be called Southing and Westing or X and Y.
 pub struct ProjectedCoordinate {
     easting: f64,
     northing: f64,
@@ -299,9 +303,9 @@ pub trait CoordOperation<F, T> {
 pub struct ConcatenatedCoordOp<A: CoordOperation<F, I>, B: CoordOperation<I, T>, F, I, T> {
     first: A,
     second: B,
-    _source: PhantomData<F>,
+    _from: PhantomData<F>,
     _intermediate: PhantomData<I>,
-    _dest: PhantomData<T>,
+    _to: PhantomData<T>,
 }
 impl<A, B, F, I, T> CoordOperation<F, T> for ConcatenatedCoordOp<A, B, F, I, T>
 where
@@ -322,9 +326,9 @@ where
         Self {
             first,
             second,
-            _source: PhantomData {},
+            _from: PhantomData {},
             _intermediate: PhantomData {},
-            _dest: PhantomData {},
+            _to: PhantomData {},
         }
     }
 }

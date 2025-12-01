@@ -3,3 +3,5 @@ Cargo.lock
 *.tmp
 *.dot
 *.svg
+*.db
+*.old

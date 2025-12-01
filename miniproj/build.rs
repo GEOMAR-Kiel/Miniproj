@@ -8,7 +8,6 @@ fn main() {
     let output_dir = PathBuf::from(env::var_os("OUT_DIR").unwrap());
     let mut projection_out = output_dir.clone();
     let memdb = MemoryDb::new();
-    dump_crs_relations(&memdb);
     let ellipsoids = get_ellipsoids(&memdb).unwrap();
     projection_out.push("projection_constructors.rs");
     std::fs::write(

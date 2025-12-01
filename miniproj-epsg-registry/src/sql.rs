@@ -33,11 +33,11 @@ impl Table {
 
     #[must_use]
     pub fn get_row_where_i64<const N: usize>(
-        &self,
+        &'_ self,
         col: &str,
         val: i64,
         select: &[&str; N],
-    ) -> Option<[Option<Field>; N]> {
+    ) -> Option<[Option<Field<'_>>; N]> {
         let Column { data } = self.columns.get(col)?;
         let index = match data {
             ColumnData::IntLike(v) => v.iter().enumerate().find(|(_n, v)| **v == val)?.0,
@@ -76,9 +76,9 @@ impl Table {
     }
 
     pub fn get_rows<const N: usize>(
-        &self,
+        &'_ self,
         select: &[&str; N],
-    ) -> Result<impl Iterator<Item = [Option<Field>; N]>, Box<dyn Error>> {
+    ) -> Result<impl Iterator<Item = [Option<Field<'_>>; N]>, Box<dyn Error>> {
         let Some(columns) = select
             .iter()
             .map(|n| self.columns.get(*n))
@@ -119,11 +119,11 @@ impl Table {
 
     #[must_use]
     pub fn get_rows_where_i64<const N: usize>(
-        &self,
+        &'_ self,
         col: &str,
         val: i64,
         select: &[&str; N],
-    ) -> Vec<[Option<Field>; N]> {
+    ) -> Vec<[Option<Field<'_>>; N]> {
         let Some(columns) = select
             .iter()
             .map(|n| self.columns.get(*n))

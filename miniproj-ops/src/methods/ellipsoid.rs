@@ -6,73 +6,69 @@ use crate::PseudoSerialize;
 #[derive(Copy, Clone, Debug)]
 pub struct Ellipsoid {
     /// semi-major axis
-    pub a: f64,
+    a: f64,
     // /// semi-minor axis
-    pub b: f64,
+    b: f64,
     /// flattening
-    pub f: f64,
-    /// eccentricity
-    pub e: f64,
+    f: f64,
     /// eccentricity squared
-    pub e_squared: f64,
+    e_squared: f64,
 }
 impl Ellipsoid {
     /// Construct an ellipsoid from major and minor half axis.
     #[must_use]
-    pub fn from_a_b(a: f64, b: f64) -> Self {
+    pub const fn from_a_b(a: f64, b: f64) -> Self {
         let f = (a - b) / a;
-        let e_squared = (2f64 * f) - f.powi(2);
+        let e_squared = (2f64 * f) - (f * f);
         Self {
             a,
             b,
             f,
             e_squared,
-            e: e_squared.sqrt(),
         }
     }
 
     /// Construct an ellipsoid from major half axis and inverse flattening.
     #[must_use]
-    pub fn from_a_f_inv(a: f64, f_inv: f64) -> Self {
+    pub const fn from_a_f_inv(a: f64, f_inv: f64) -> Self {
         let f = 1.0 / f_inv;
-        let e_squared = (2f64 / f_inv) - f_inv.powi(-2);
+        let e_squared = (2f64 / f_inv) - (1.0 / f_inv / f_inv);
         Self {
             a,
             b: a - a / f_inv,
             f,
             e_squared,
-            e: e_squared.sqrt(),
         }
     }
 
     /// Get major half axis.
-    pub fn a(&self) -> f64 {
+    pub const fn a(&self) -> f64 {
         self.a
     }
 
     /// Get minor half axis.
-    pub fn b(&self) -> f64 {
+    pub const fn b(&self) -> f64 {
         self.b
     }
 
     /// Get inverse flattening. This method is deprecated as the inverse flattening is not defined for spheroids (division by zero).
     #[deprecated(since = "0.8.0")]
-    pub fn f_inv(&self) -> f64 {
+    pub const fn f_inv(&self) -> f64 {
         1f64 / self.f
     }
 
     /// Get flattening.
-    pub fn f(&self) -> f64 {
+    pub const fn f(&self) -> f64 {
         self.f
     }
 
     /// Get eccentricity.
     pub fn e(&self) -> f64 {
-        self.e
+        self.e_squared.sqrt()
     }
 
     /// Get eccentricity squared.
-    pub fn e_squared(&self) -> f64 {
+    pub const fn e_squared(&self) -> f64 {
         self.e_squared
     }
 
@@ -107,17 +103,20 @@ impl Ellipsoid {
     }
 
     /// Convert from geocentric position in meters to `(longitude, latitude, height)`, geographic position in decimal degrees and *ellipsoid* height in meters.
+    #[deprecated]
     pub fn geocentric_to_deg(&self, x: f64, y: f64, z: f64) -> (f64, f64, f64) {
         let (lon, lat, h) = self.geocentric_to_rad(x, y, z);
         (lon.to_degrees(), lat.to_degrees(), h)
     }
 
     /// Convert from geographic position in decimal degrees and *ellipsoid* height in meters to `(x, y, z)`, geocentric position in meters.
+    #[deprecated]
     pub fn deg_to_geocentric(&self, lon: f64, lat: f64, height: f64) -> (f64, f64, f64) {
         self.rad_to_geocentric(lon.to_radians(), lat.to_radians(), height)
     }
 
     /// Convert from geocentric position in meters to `(longitude, latitude, height)`, geographic position in radians and *ellipsoid* height in meters.
+    #[deprecated]
     pub fn geocentric_to_rad(&self, x: f64, y: f64, z: f64) -> (f64, f64, f64) {
         let lon = y.atan2(x);
         let epsilon = self.e_squared() / (1f64 - self.e_squared());
@@ -130,6 +129,7 @@ impl Ellipsoid {
     }
 
     /// Convert from geographic position in radians and *ellipsoid* height in meters to `(x, y, z)`, geocentric position in meters.
+    #[deprecated]
     pub fn rad_to_geocentric(&self, lon: f64, lat: f64, height: f64) -> (f64, f64, f64) {
         let ny = self.ny(lat);
         let r = ny + height;
@@ -147,13 +147,11 @@ impl PseudoSerialize for Ellipsoid {
 r"Ellipsoid{{
     a: {}f64,
     b: {}f64,
-    e: {}f64,
     e_squared: {}f64,
     f: {}f64,
 }}",
             self.a,
             self.b,
-            self.e,
             self.e_squared,
             self.f,
         }
