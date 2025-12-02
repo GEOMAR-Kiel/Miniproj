@@ -131,7 +131,7 @@ fn main() {
                 Some(Field::StringLike("transformation")),
                 Some(Field::IntLike(source_crs_code)),
                 Some(Field::IntLike(target_crs_code)),
-                Some(Field::IntLike(1033 | 1032 | 1034 | 1061)), // geocentric to geocentric
+                Some(Field::IntLike(1033 | 1032 | 1034 | 1061 | 1053 | 1056)), // geocentric to geocentric
             ] if geocentric_crs.contains_key(&source_crs_code)
                 && geocentric_crs.contains_key(&target_crs_code) =>
             {
@@ -142,7 +142,7 @@ fn main() {
                 Some(Field::StringLike("transformation")),
                 Some(Field::IntLike(source_crs_code)),
                 Some(Field::IntLike(target_crs_code)),
-                Some(Field::IntLike(1037 | 1038 | 1062 | 1039)), // geo3d to geo3d
+                Some(Field::IntLike(1037 | 1038 | 1062 | 1039 | 1055 | 1058)), // geo3d to geo3d
             ] if geographic3d_crs.contains_key(&source_crs_code)
                 && geographic3d_crs.contains_key(&target_crs_code) =>
             {
@@ -153,7 +153,7 @@ fn main() {
                 Some(Field::StringLike("transformation")),
                 Some(Field::IntLike(source_crs_code)),
                 Some(Field::IntLike(target_crs_code)),
-                Some(Field::IntLike(1063 | 9636 | 9607 | 9606)), // geo2d to geo2d
+                Some(Field::IntLike(1063 | 9636 | 9607 | 9606 | 1054 | 1057)), // geo2d to geo2d
             ] if geographic2d_crs.contains_key(&source_crs_code)
                 && geographic2d_crs.contains_key(&target_crs_code) =>
             {
@@ -177,19 +177,33 @@ fn main() {
         )
         .unwrap();
     }
-    for (id, base) in geographic3d_crs {
+    for (id, base) in &geographic3d_crs {
         f.write_all(format!("crs{id} [shape=Mrecord label=\"{id}|Geographic3D\"]\n").as_bytes())
             .unwrap();
         f.write_all(format!("crs{id} -> crs{base}\n").as_bytes())
             .unwrap();
     }
-    for (id, base) in geographic2d_crs {
+    for (id, base) in &geographic2d_crs {
         f.write_all(format!("crs{id} [shape=Mrecord label=\"{id}|Geographic2D\"]\n").as_bytes())
             .unwrap();
         f.write_all(format!("crs{id} -> crs{base}\n").as_bytes())
             .unwrap();
     }
     for (id, (src, tgt)) in transformations {
+        let (src, tgt) = if let (Some(src), Some(tgt)) =
+            (geographic2d_crs.get(&src), geographic2d_crs.get(&tgt))
+        {
+            (*src, *tgt)
+        } else {
+            (src, tgt)
+        };
+        let (src, tgt) = if let (Some(src), Some(tgt)) =
+            (geographic3d_crs.get(&src), geographic3d_crs.get(&tgt))
+        {
+            (*src, *tgt)
+        } else {
+            (src, tgt)
+        };
         f.write_all(format!("crs{src} -> crs{tgt} [label=\"{id}\"]\n").as_bytes())
             .unwrap();
     }

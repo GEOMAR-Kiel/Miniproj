@@ -20,12 +20,7 @@ impl Ellipsoid {
     pub const fn from_a_b(a: f64, b: f64) -> Self {
         let f = (a - b) / a;
         let e_squared = (2f64 * f) - (f * f);
-        Self {
-            a,
-            b,
-            f,
-            e_squared,
-        }
+        Self { a, b, f, e_squared }
     }
 
     /// Construct an ellipsoid from major half axis and inverse flattening.

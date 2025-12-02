@@ -3,7 +3,7 @@
 use std::f64::consts::{FRAC_PI_2, FRAC_PI_4};
 
 use crate::{
-    ellipsoid::Ellipsoid, types::GetterContstruct, DbContstruct, Projection, PseudoSerialize,
+    DbContstruct, Projection, PseudoSerialize, ellipsoid::Ellipsoid, types::GetterContstruct,
 };
 
 #[derive(Copy, Clone, Debug)]

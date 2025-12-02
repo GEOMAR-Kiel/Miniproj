@@ -1,4 +1,4 @@
-use crate::{types::GetterContstruct, Ellipsoid, Projection};
+use crate::{Ellipsoid, Projection, types::GetterContstruct};
 
 use self::{
     albers_equal_area::AlbersEqualAreaProjection,

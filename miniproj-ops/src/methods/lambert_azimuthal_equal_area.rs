@@ -1,6 +1,6 @@
 //This file is licensed under EUPL v1.2 as part of the Digital Earth Viewer
 
-use crate::{ellipsoid::Ellipsoid, types::GetterContstruct, DbContstruct, PseudoSerialize};
+use crate::{DbContstruct, PseudoSerialize, ellipsoid::Ellipsoid, types::GetterContstruct};
 
 #[derive(Copy, Clone, Debug)]
 pub struct LambertAzimuthalEqualAreaParams {

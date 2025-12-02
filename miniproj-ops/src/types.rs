@@ -30,7 +30,6 @@ pub trait PseudoSerialize {
     fn to_constructed(&self) -> String;
 }
 
-
 #[cfg(feature = "codegen")]
 pub trait DbContstruct {
     fn from_database_params(params: &[(u32, f64)], ellipsoid: &Ellipsoid) -> Self;

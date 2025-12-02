@@ -1,10 +1,6 @@
 //This file is licensed under EUPL v1.2 as part of the Digital Earth Viewer
 
-use std::{
-    collections::HashMap,
-    error::Error,
-    num::TryFromIntError,
-};
+use std::{collections::HashMap, error::Error, num::TryFromIntError};
 
 use crate::{
     ImplementedProjection,
@@ -60,7 +56,11 @@ pub fn gen_ellipsoid_constructors(db: &MemoryDb) -> Result<String, Box<dyn Error
         };
         let ellipsoid = match a {
             [_, Some(Field::Double(a)), Some(Field::Double(b)), None, _] => {
-                format!("Ellipsoid::from_a_b({}f64, {}f64)", a * fac_b / fac_c, b * fac_b / fac_c)
+                format!(
+                    "Ellipsoid::from_a_b({}f64, {}f64)",
+                    a * fac_b / fac_c,
+                    b * fac_b / fac_c
+                )
             }
             [
                 _,
@@ -68,7 +68,11 @@ pub fn gen_ellipsoid_constructors(db: &MemoryDb) -> Result<String, Box<dyn Error
                 None,
                 Some(Field::Double(f_inv)),
                 _,
-            ] => format!("Ellipsoid::from_a_f_inv({}f64, {}f64)", a * fac_b / fac_c, *f_inv),
+            ] => format!(
+                "Ellipsoid::from_a_f_inv({}f64, {}f64)",
+                a * fac_b / fac_c,
+                *f_inv
+            ),
             _ => unreachable!("Malformed DB: Ellipsoids need either b or f_inv. (row: {a:?}"),
         };
         phf_map.entry(u32::try_from(*code)?, &ellipsoid);
@@ -276,21 +280,24 @@ pub fn gen_parameter_constructors(
     db.get_table("epsg_usage")
         .ok_or("No Usage Table")?
         .get_rows(&["object_code", "extent_code"])?
-        .for_each(|row| if let [
+        .for_each(|row| {
+            if let [
                 Some(Field::IntLike(object_code)),
                 Some(Field::IntLike(extent_code)),
-            ] = row {
-            let Ok(object_code) = u32::try_from(object_code) else {
-                return;
-            };
-            let Ok(extent_code) = u32::try_from(extent_code) else {
-                return;
-            };
-            if let Some((name, area)) = extents_table.get(&extent_code) {
-                usages_table
-                    .entry(object_code)
-                    .or_default()
-                    .push((name, area))
+            ] = row
+            {
+                let Ok(object_code) = u32::try_from(object_code) else {
+                    return;
+                };
+                let Ok(extent_code) = u32::try_from(extent_code) else {
+                    return;
+                };
+                if let Some((name, area)) = extents_table.get(&extent_code) {
+                    usages_table
+                        .entry(object_code)
+                        .or_default()
+                        .push((name, area))
+                }
             }
         });
 

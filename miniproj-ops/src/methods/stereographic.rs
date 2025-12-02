@@ -2,7 +2,7 @@
 
 use std::f64::consts::{FRAC_PI_2, FRAC_PI_4};
 
-use crate::{ellipsoid::Ellipsoid, types::GetterContstruct, DbContstruct, PseudoSerialize};
+use crate::{DbContstruct, PseudoSerialize, ellipsoid::Ellipsoid, types::GetterContstruct};
 
 #[derive(Copy, Clone, Debug)]
 pub struct PolarStereographicAParams {

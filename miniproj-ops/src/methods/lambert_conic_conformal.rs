@@ -1,7 +1,7 @@
 //This file is licensed under EUPL v1.2 as part of the Digital Earth Viewer
 
 use crate::{
-    ellipsoid::Ellipsoid, types::GetterContstruct, DbContstruct, Projection, PseudoSerialize,
+    DbContstruct, Projection, PseudoSerialize, ellipsoid::Ellipsoid, types::GetterContstruct,
 };
 use std::f64::consts::{FRAC_PI_2, FRAC_PI_4};
 
