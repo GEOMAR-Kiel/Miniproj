@@ -1,7 +1,8 @@
 //This file is licensed under EUPL v1.2 as part of the Digital Earth Viewer
 
 use crate::{
-    DbContstruct, Projection, PseudoSerialize, ellipsoid::Ellipsoid, types::GetterContstruct,
+    CoordOperation, DbContstruct, Geographic2DCoordinate, ProjectedCoordinate, Projection,
+    PseudoSerialize, ellipsoid::Ellipsoid, types::GetterContstruct,
 };
 use std::f64::consts::{FRAC_PI_2, FRAC_PI_4};
 
@@ -152,24 +153,23 @@ impl Projection for LambertConic2SPProjection {
     /// longitude & latitude in radians
     #[allow(non_snake_case)]
     fn rad_to_projected(&self, longitude: f64, latitude: f64) -> (f64, f64) {
-        let t = (FRAC_PI_4 - latitude / 2f64).tan()
-            / ((1f64 - self.ellipsoid_e * latitude.sin())
-                / (1f64 + self.ellipsoid_e * latitude.sin()))
-            .powf(self.ellipsoid_e / 2f64);
-
-        let theta = self.n * (longitude - self.lon_orig);
-
-        let r = self.ellipsoid_a * self.F * t.powf(self.n);
-        (
-            self.false_e + r * theta.sin(),
-            self.false_n + self.r_F - r * theta.cos(),
-        )
+        let c = self.op(Geographic2DCoordinate::new_rad(longitude, latitude));
+        (c.easting(), c.northing())
     }
 
     /// as per IOGP Publication 373-7-2 – Geomatics Guidance Note number 7, part 2 – May 2022
     /// longitude & latitude in radians
     #[allow(non_snake_case)]
     fn projected_to_rad(&self, easting: f64, northing: f64) -> (f64, f64) {
+        let c = self.op(ProjectedCoordinate::new(easting, northing));
+        (c.longitude_rad(), c.latitude_rad())
+    }
+}
+
+impl CoordOperation<ProjectedCoordinate, Geographic2DCoordinate> for LambertConic2SPProjection {
+    fn op(&self, from: ProjectedCoordinate) -> Geographic2DCoordinate {
+        let easting = from.easting();
+        let northing = from.northing();
         let theta_ = (self.n.signum() * (easting - self.false_e))
             .atan2(self.n.signum() * (self.r_F - (northing - self.false_n)));
         let r_ = self.n.signum()
@@ -186,7 +186,25 @@ impl Projection for LambertConic2SPProjection {
                         .powf(self.ellipsoid_e / 2f64))
                     .atan()
         }
-        (theta_ / self.n + self.lon_orig, phi)
+        Geographic2DCoordinate::new_rad(theta_ / self.n + self.lon_orig, phi)
+    }
+}
+impl CoordOperation<Geographic2DCoordinate, ProjectedCoordinate> for LambertConic2SPProjection {
+    fn op(&self, from: Geographic2DCoordinate) -> ProjectedCoordinate {
+        let longitude = from.longitude_rad();
+        let latitude = from.latitude_rad();
+        let t = (FRAC_PI_4 - latitude / 2f64).tan()
+            / ((1f64 - self.ellipsoid_e * latitude.sin())
+                / (1f64 + self.ellipsoid_e * latitude.sin()))
+            .powf(self.ellipsoid_e / 2f64);
+
+        let theta = self.n * (longitude - self.lon_orig);
+
+        let r = self.ellipsoid_a * self.F * t.powf(self.n);
+        ProjectedCoordinate::new(
+            self.false_e + r * theta.sin(),
+            self.false_n + self.r_F - r * theta.cos(),
+        )
     }
 }
 
@@ -367,6 +385,36 @@ impl LambertConic1SPAProjection {
 
 impl Projection for LambertConic1SPAProjection {
     fn projected_to_rad(&self, x: f64, y: f64) -> (f64, f64) {
+        let c = self.op(ProjectedCoordinate::new(x, y));
+        (c.longitude_rad(), c.latitude_rad())
+    }
+
+    fn rad_to_projected(&self, lon: f64, lat: f64) -> (f64, f64) {
+        let c = self.op(Geographic2DCoordinate::new_rad(lon, lat));
+        (c.easting(), c.northing())
+    }
+}
+
+impl CoordOperation<Geographic2DCoordinate, ProjectedCoordinate> for LambertConic1SPAProjection {
+    fn op(&self, from: Geographic2DCoordinate) -> ProjectedCoordinate {
+        let lat = from.latitude_rad();
+        let lon = from.longitude_rad();
+        let t = (FRAC_PI_4 - lat / 2f64).tan()
+            / ((1f64 - self.ellipsoid_e * lat.sin()) / (1f64 + self.ellipsoid_e * lat.sin()))
+                .powf(self.ellipsoid_e / 2f64);
+        let r = self.t_r_fac * t.powf(self.n);
+        let theta = self.n * (lon - self.lon_O);
+        ProjectedCoordinate::new(
+            self.false_e + r * theta.sin(),
+            self.false_n + self.r_O - r * theta.cos(),
+        )
+    }
+}
+
+impl CoordOperation<ProjectedCoordinate, Geographic2DCoordinate> for LambertConic1SPAProjection {
+    fn op(&self, from: ProjectedCoordinate) -> Geographic2DCoordinate {
+        let x = from.easting();
+        let y = from.northing();
         let theta_ = (self.n.signum() * (x - self.false_e))
             .atan2(self.n.signum() * (self.r_O - (y - self.false_n)));
         let r_ = self.n.signum()
@@ -382,19 +430,7 @@ impl Projection for LambertConic1SPAProjection {
                         .powf(self.ellipsoid_e / 2f64))
                     .atan();
         }
-        (theta_ / self.n + self.lon_O, phi)
-    }
-
-    fn rad_to_projected(&self, lon: f64, lat: f64) -> (f64, f64) {
-        let t = (FRAC_PI_4 - lat / 2f64).tan()
-            / ((1f64 - self.ellipsoid_e * lat.sin()) / (1f64 + self.ellipsoid_e * lat.sin()))
-                .powf(self.ellipsoid_e / 2f64);
-        let r = self.t_r_fac * t.powf(self.n);
-        let theta = self.n * (lon - self.lon_O);
-        (
-            self.false_e + r * theta.sin(),
-            self.false_n + self.r_O - r * theta.cos(),
-        )
+        Geographic2DCoordinate::new_rad(theta_ / self.n + self.lon_O, phi)
     }
 }
 

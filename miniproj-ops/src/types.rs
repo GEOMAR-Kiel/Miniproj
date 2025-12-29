@@ -2,7 +2,7 @@
 
 use std::marker::PhantomData;
 
-use crate::ellipsoid::Ellipsoid;
+use crate::ellipsoid::{self, Ellipsoid};
 
 #[deprecated]
 /// Two-dimensional coordinate operation
@@ -94,6 +94,7 @@ pub struct Geographic2DCoordinate {
     latitude: f64,
 }
 impl Geographic2DCoordinate {
+    /// Construct the geographic coordinate with angles in degrees.
     pub fn new(longitude: f64, latitude: f64) -> Self {
         Self {
             longitude: longitude.to_radians(),
@@ -101,6 +102,7 @@ impl Geographic2DCoordinate {
         }
     }
 
+    /// Construct the geographic coordinate with angles in radians.
     pub fn new_rad(longitude: f64, latitude: f64) -> Self {
         Self {
             longitude,
@@ -108,18 +110,22 @@ impl Geographic2DCoordinate {
         }
     }
 
+    /// Longitude in radians.
     pub fn longitude_rad(&self) -> f64 {
         self.longitude
     }
 
+    /// Longitude in degrees.
     pub fn longitude(&self) -> f64 {
         self.longitude.to_degrees()
     }
 
+    /// Latidude in radians.
     pub fn latitude_rad(&self) -> f64 {
         self.latitude
     }
 
+    /// Latitude in degrees.
     pub fn latitude(&self) -> f64 {
         self.latitude.to_degrees()
     }
@@ -132,6 +138,7 @@ pub struct Geographic2DCoordinateUserVertical {
     vertical: f64,
 }
 impl Geographic2DCoordinateUserVertical {
+    /// Construct the geographic coordinade with angles in degrees.
     pub fn new(longitude: f64, latitude: f64, vertical: f64) -> Self {
         Self {
             longitude: longitude.to_radians(),
@@ -140,6 +147,7 @@ impl Geographic2DCoordinateUserVertical {
         }
     }
 
+    /// Construct the geographic coordinate with angles in radians.
     pub fn new_rad(longitude: f64, latitude: f64, vertical: f64) -> Self {
         Self {
             longitude,
@@ -148,22 +156,27 @@ impl Geographic2DCoordinateUserVertical {
         }
     }
 
+    /// Longitude in radians.
     pub fn longitude_rad(&self) -> f64 {
         self.longitude
     }
 
+    /// Longitude in degrees.
     pub fn longitude(&self) -> f64 {
         self.longitude.to_degrees()
     }
 
+    /// Latidude in radians.
     pub fn latitude_rad(&self) -> f64 {
         self.latitude
     }
 
+    /// Latitude in degrees.
     pub fn latitude(&self) -> f64 {
         self.latitude.to_degrees()
     }
 
+    /// The user-defined vertical coordinate.
     pub fn vertical(&self) -> f64 {
         self.vertical
     }
@@ -224,6 +237,54 @@ impl<P: CoordOperation<Geographic2DCoordinate, ProjectedCoordinate>>
         }
     }
 }
+impl<P: CoordOperation<Geographic2DCoordinate, Geographic2DCoordinate>>
+    CoordOperation<Geographic2DCoordinateUserVertical, Geographic2DCoordinateUserVertical>
+    for ProjectionUserVertical<P>
+{
+    fn op(
+        &self,
+        Geographic2DCoordinateUserVertical {
+            longitude,
+            latitude,
+            vertical,
+        }: Geographic2DCoordinateUserVertical,
+    ) -> Geographic2DCoordinateUserVertical {
+        let Geographic2DCoordinate {
+            longitude,
+            latitude,
+        } = self.projection.op(Geographic2DCoordinate {
+            longitude,
+            latitude,
+        });
+        Geographic2DCoordinateUserVertical {
+            longitude,
+            latitude,
+            vertical,
+        }
+    }
+}
+impl<P: CoordOperation<ProjectedCoordinate, ProjectedCoordinate>>
+    CoordOperation<ProjectedCoordinateUserVertical, ProjectedCoordinateUserVertical>
+    for ProjectionUserVertical<P>
+{
+    fn op(
+        &self,
+        ProjectedCoordinateUserVertical {
+            easting,
+            northing,
+            vertical,
+        }: ProjectedCoordinateUserVertical,
+    ) -> ProjectedCoordinateUserVertical {
+        let ProjectedCoordinate { easting, northing } = self
+            .projection
+            .op(ProjectedCoordinate { easting, northing });
+        ProjectedCoordinateUserVertical {
+            easting,
+            northing,
+            vertical,
+        }
+    }
+}
 
 /// A geographic coordinate with a vertical component. The vertical component is relative to the reference ellipsoid and its units are given by the underlying reference system.
 pub struct Geographic3DCoordinate {
@@ -232,6 +293,7 @@ pub struct Geographic3DCoordinate {
     ell_height: f64,
 }
 impl Geographic3DCoordinate {
+    /// Construct the geographic coordinate with angles in degrees.
     pub fn new(longitude: f64, latitude: f64, ell_height: f64) -> Self {
         Self {
             longitude: longitude.to_radians(),
@@ -240,6 +302,7 @@ impl Geographic3DCoordinate {
         }
     }
 
+    /// Construct the geographic coordinate with angles in radians.
     pub fn new_rad(longitude: f64, latitude: f64, ell_height: f64) -> Self {
         Self {
             longitude,
@@ -248,22 +311,27 @@ impl Geographic3DCoordinate {
         }
     }
 
+    /// Longitude in degrees.
     pub fn longitude(&self) -> f64 {
         self.longitude.to_degrees()
     }
 
+    /// Longitude in radians.
     pub fn longitude_rad(&self) -> f64 {
         self.longitude
     }
 
+    /// Latitude in degrees.
     pub fn latitude(&self) -> f64 {
         self.latitude.to_degrees()
     }
 
+    /// Latidude in radians.
     pub fn latitude_rad(&self) -> f64 {
         self.latitude
     }
 
+    /// Ellipsoid height.
     pub fn ellipsoid_height(&self) -> f64 {
         self.ell_height
     }
@@ -290,6 +358,25 @@ impl GeocentricCoordinate {
 
     pub fn z(&self) -> f64 {
         self.z
+    }
+}
+
+pub struct GeocentricConversion {
+    ell: Ellipsoid,
+}
+impl GeocentricConversion {
+    pub fn new(ellipsoid: Ellipsoid) -> Self {
+        Self { ell: ellipsoid }
+    }
+}
+impl CoordOperation<Geographic3DCoordinate, GeocentricCoordinate> for GeocentricConversion {
+    fn op(&self, from: Geographic3DCoordinate) -> GeocentricCoordinate {
+        self.ell.radians_to_geocentric(from)
+    }
+}
+impl CoordOperation<GeocentricCoordinate, Geographic3DCoordinate> for GeocentricConversion {
+    fn op(&self, from: GeocentricCoordinate) -> Geographic3DCoordinate {
+        self.ell.geocentric_to_radians(from)
     }
 }
 

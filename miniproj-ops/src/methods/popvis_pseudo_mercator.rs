@@ -3,7 +3,8 @@
 use std::f64::consts::{FRAC_PI_2, FRAC_PI_4};
 
 use crate::{
-    DbContstruct, Projection, PseudoSerialize, ellipsoid::Ellipsoid, types::GetterContstruct,
+    CoordOperation, DbContstruct, Geographic2DCoordinate, ProjectedCoordinate, Projection,
+    PseudoSerialize, ellipsoid::Ellipsoid, types::GetterContstruct,
 };
 
 #[derive(Copy, Clone, Debug)]
@@ -76,18 +77,39 @@ impl Projection for PopVisPseudoMercatorProjection {
     /// longitude & latitude in radians
     #[allow(non_snake_case)]
     fn rad_to_projected(&self, longitude: f64, latitude: f64) -> (f64, f64) {
-        (
-            self.false_e + self.ellipsoid_a * (longitude - self.lon_orig),
-            self.false_n + self.ellipsoid_a * (FRAC_PI_4 + latitude / 2f64).tan().ln(),
-        )
+        let c = self.op(Geographic2DCoordinate::new_rad(longitude, latitude));
+        (c.easting(), c.northing())
     }
 
     /// as per IOGP Publication 373-7-2 – Geomatics Guidance Note number 7, part 2 – March 2020
     /// longitude & latitude in radians
     #[allow(non_snake_case)]
     fn projected_to_rad(&self, easting: f64, northing: f64) -> (f64, f64) {
-        let D = (self.false_n - northing) / self.ellipsoid_a;
+        let c = self.op(ProjectedCoordinate::new(easting, northing));
+        (c.longitude_rad(), c.latitude_rad())
+    }
+}
+
+impl CoordOperation<Geographic2DCoordinate, ProjectedCoordinate>
+    for PopVisPseudoMercatorProjection
+{
+    fn op(&self, from: Geographic2DCoordinate) -> ProjectedCoordinate {
+        let longitude = from.longitude_rad();
+        let latitude = from.latitude_rad();
         (
+            self.false_e + self.ellipsoid_a * (longitude - self.lon_orig),
+            self.false_n + self.ellipsoid_a * (FRAC_PI_4 + latitude / 2f64).tan().ln(),
+        )
+    }
+}
+impl CoordOperation<ProjectedCoordinate, Geographic2DCoordinate>
+    for PopVisPseudoMercatorProjection
+{
+    fn op(&self, from: ProjectedCoordinate) -> Geographic2DCoordinate {
+        let easting = from.easting();
+        let northing = from.northing();
+        let D = (self.false_n - northing) / self.ellipsoid_a;
+        Geographic2DCoordinate::new_rad(
             ((easting - self.false_e) / self.ellipsoid_a) + self.lon_orig,
             FRAC_PI_2 - 2.0 * D.exp().atan(),
         )

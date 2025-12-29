@@ -2,7 +2,7 @@
 
 use std::f64::consts::{FRAC_PI_2, FRAC_PI_4};
 
-use crate::{DbContstruct, PseudoSerialize, ellipsoid::Ellipsoid, types::GetterContstruct};
+use crate::{CoordOperation, DbContstruct, Geographic2DCoordinate, ProjectedCoordinate, PseudoSerialize, ellipsoid::Ellipsoid, types::GetterContstruct};
 
 #[derive(Copy, Clone, Debug)]
 pub struct PolarStereographicAParams {
@@ -114,30 +114,20 @@ impl PolarStereographicAProjection {
 
 impl crate::types::Projection for PolarStereographicAProjection {
     fn rad_to_projected(&self, longitude: f64, latitude: f64) -> (f64, f64) {
-        if self.lat_orig < 0.0 {
-            // North Pole Case
-            let t = f64::tan(std::f64::consts::FRAC_PI_4 - latitude / 2.0)
-                * ((1.0 + self.ell_e * latitude.sin()) / (1.0 - self.ell_e * latitude.sin()))
-                    .powf(self.ell_e / 2.0);
-            let rho = t / self.t_rho_factor;
-            (
-                self.false_e + rho * f64::sin(longitude - self.lon_orig),
-                self.false_n - rho * f64::cos(longitude - self.lon_orig),
-            )
-        } else {
-            // South Pole Case
-            let t = f64::tan(std::f64::consts::FRAC_PI_4 + latitude / 2.0)
-                / ((1.0 + self.ell_e * latitude.sin()) / (1.0 - self.ell_e * latitude.sin()))
-                    .powf(self.ell_e / 2.0);
-            let rho = t / self.t_rho_factor;
-            (
-                self.false_e + rho * f64::sin(longitude - self.lon_orig),
-                self.false_n + rho * f64::cos(longitude - self.lon_orig),
-            )
-        }
+        let c = self.op(Geographic2DCoordinate::new_rad(longitude, latitude));
+        (c.easting(), c.northing())
     }
 
     fn projected_to_rad(&self, easting: f64, northing: f64) -> (f64, f64) {
+        let c = self.op(ProjectedCoordinate::new(easting, northing));
+        (c.longitude_rad(), c.latitude_rad())
+    }
+}
+
+impl CoordOperation<ProjectedCoordinate, Geographic2DCoordinate> for PolarStereographicAProjection {
+    fn op(&self, from: ProjectedCoordinate) -> Geographic2DCoordinate {
+        let easting  =from.easting();
+        let northing  =from.northing();
         let rho_ = ((easting - self.false_e).powi(2) + (northing - self.false_n).powi(2)).sqrt();
         let t_ = rho_ * self.t_rho_factor;
         let chi = if self.lat_orig < 0.0 {
@@ -159,9 +149,36 @@ impl crate::types::Projection for PolarStereographicAProjection {
         } else { // South Pole Case
             self.lon_orig + (easting - self.false_e).atan2(northing - self.false_n)
         };
-        (lambda, phi)
+        Geographic2DCoordinate::new_rad(lambda, phi)    }
+}
+impl CoordOperation<Geographic2DCoordinate, ProjectedCoordinate> for PolarStereographicAProjection {
+    fn op(&self, from: Geographic2DCoordinate) -> ProjectedCoordinate {
+        let latitude = from.latitude_rad();
+        let longitude = from.longitude_rad();
+        if self.lat_orig < 0.0 {
+            // North Pole Case
+            let t = f64::tan(std::f64::consts::FRAC_PI_4 - latitude / 2.0)
+                * ((1.0 + self.ell_e * latitude.sin()) / (1.0 - self.ell_e * latitude.sin()))
+                    .powf(self.ell_e / 2.0);
+            let rho = t / self.t_rho_factor;
+            ProjectedCoordinate::new(
+                self.false_e + rho * f64::sin(longitude - self.lon_orig),
+                self.false_n - rho * f64::cos(longitude - self.lon_orig),
+            )
+        } else {
+            // South Pole Case
+            let t = f64::tan(std::f64::consts::FRAC_PI_4 + latitude / 2.0)
+                / ((1.0 + self.ell_e * latitude.sin()) / (1.0 - self.ell_e * latitude.sin()))
+                    .powf(self.ell_e / 2.0);
+            let rho = t / self.t_rho_factor;
+            ProjectedCoordinate::new(
+                self.false_e + rho * f64::sin(longitude - self.lon_orig),
+                self.false_n + rho * f64::cos(longitude - self.lon_orig),
+            )
+        }
     }
 }
+
 impl DbContstruct for PolarStereographicAProjection {
     fn from_database_params(params: &[(u32, f64)], ellipsoid: &Ellipsoid) -> Self {
         let params = PolarStereographicAParams::new(
@@ -349,6 +366,20 @@ impl ObliqueStereographicProjection {
 impl crate::types::Projection for ObliqueStereographicProjection {
     #[allow(non_snake_case)]
     fn projected_to_rad(&self, x: f64, y: f64) -> (f64, f64) {
+        let c = self.op(ProjectedCoordinate::new(x, y));
+        (c.longitude_rad(), c.latitude_rad())
+    }
+
+    #[allow(non_snake_case)]
+    fn rad_to_projected(&self, lon: f64, lat: f64) -> (f64, f64) {
+        let c = self.op(Geographic2DCoordinate::new_rad(lon, lat));
+        (c.easting(), c.northing())
+    }
+}
+impl CoordOperation<ProjectedCoordinate, Geographic2DCoordinate> for ObliqueStereographicProjection {
+    fn op(&self, from: ProjectedCoordinate) -> Geographic2DCoordinate {
+        let x = from.easting();
+        let y = from.northing();
         let i = (x - self.false_e).atan2(self.h + (y - self.false_n));
         let j = (x - self.false_e).atan2(self.g - (y - self.false_n)) - i;
         let chi = self.chi_O
@@ -367,11 +398,13 @@ impl crate::types::Projection for ObliqueStereographicProjection {
                     / (1f64 - self.ellipsoid_e_sq);
         }
         let DeltaLambda = j + 2f64 * i;
-        (DeltaLambda / self.n + self.lon_orig, phi)
-    }
+        Geographic2DCoordinate::new_rad(DeltaLambda / self.n + self.lon_orig, phi)    }
+}
 
-    #[allow(non_snake_case)]
-    fn rad_to_projected(&self, lon: f64, lat: f64) -> (f64, f64) {
+impl CoordOperation<Geographic2DCoordinate, ProjectedCoordinate> for ObliqueStereographicProjection {
+    fn op(&self, from: Geographic2DCoordinate) -> ProjectedCoordinate {
+        let lat = from.latitude_rad();
+        let lon = from.longitude_rad();
         let S_a = (1f64 + lat.sin()) / (1f64 - lat.sin());
         let S_b = (1f64 - self.ellipsoid_e * lat.sin()) / (1f64 + self.ellipsoid_e * lat.sin());
         let DeltaLambda = self.n * (lon - self.lon_orig);
@@ -379,15 +412,14 @@ impl crate::types::Projection for ObliqueStereographicProjection {
         let chi = ((w - 1f64) / (w + 1f64)).asin();
         let B =
             1f64 + chi.sin() * self.chi_O.sin() + chi.cos() * self.chi_O.cos() * DeltaLambda.cos();
-        (
+        ProjectedCoordinate::new(
             self.false_e + self.R_k_O_2 * chi.cos() * DeltaLambda.sin() / B,
             self.false_n
                 + self.R_k_O_2
                     * (chi.sin() * self.chi_O.cos()
                         - chi.cos() * self.chi_O.sin() * DeltaLambda.cos())
                     / B,
-        )
-    }
+        )    }
 }
 
 impl DbContstruct for ObliqueStereographicProjection {

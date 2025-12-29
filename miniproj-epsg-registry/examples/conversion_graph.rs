@@ -19,10 +19,10 @@ fn main() {
                 Some(Field::IntLike(datum_code)),
                 Some(Field::StringLike("geodetic" | "dynamic geodetic")),
                 Some(Field::IntLike(ellipsoid_code)),
-                Some(Field::IntLike(prime_meridian_code)),
+                Some(Field::IntLike(8901)),
             ] = fields
             {
-                Some((datum_code, (ellipsoid_code, prime_meridian_code)))
+                Some((datum_code, ellipsoid_code))
             } else {
                 None
             }
@@ -45,6 +45,32 @@ fn main() {
             }
         })
         .collect::<HashMap<_, _>>();
+    let areas = db
+        .get_table("epsg_extent")
+        .unwrap()
+        .get_rows(&[
+            "extent_code",
+            "bbox_west_bound_lon",
+            "bbox_south_bound_lat",
+            "bbox_east_bound_lon",
+            "bbox_north_bound_lat",
+        ])
+        .unwrap()
+        .filter_map(|fields| {
+            if let [
+                Some(Field::IntLike(extent_code)),
+                Some(Field::Double(west)),
+                Some(Field::Double(south)),
+                Some(Field::Double(east)),
+                Some(Field::Double(north)),
+            ] = fields
+            {
+                Some((extent_code, ((west, south), (east, north))))
+            } else {
+                None
+            }
+        })
+        .collect::<HashMap<i64, ((f64, f64), (f64, f64))>>();
     let geocentric_crs = db
         .get_table("epsg_coordinatereferencesystem")
         .unwrap()
@@ -168,7 +194,7 @@ fn main() {
         .truncate(true)
         .open("coord_ops.dot")
         .unwrap();
-    f.write_all(b"digraph G { overlap_scaling=-8 beautify=true\n")
+    f.write_all(b"graph G { overlap_scaling=-8 beautify=true\n")
         .unwrap();
     for (id, datum) in geocentric_crs {
         f.write_all(
@@ -180,13 +206,13 @@ fn main() {
     for (id, base) in &geographic3d_crs {
         f.write_all(format!("crs{id} [shape=Mrecord label=\"{id}|Geographic3D\"]\n").as_bytes())
             .unwrap();
-        f.write_all(format!("crs{id} -> crs{base}\n").as_bytes())
+        f.write_all(format!("crs{id} -- crs{base}\n").as_bytes())
             .unwrap();
     }
     for (id, base) in &geographic2d_crs {
         f.write_all(format!("crs{id} [shape=Mrecord label=\"{id}|Geographic2D\"]\n").as_bytes())
             .unwrap();
-        f.write_all(format!("crs{id} -> crs{base}\n").as_bytes())
+        f.write_all(format!("crs{id} -- crs{base}\n").as_bytes())
             .unwrap();
     }
     for (id, (src, tgt)) in transformations {
@@ -204,7 +230,7 @@ fn main() {
         } else {
             (src, tgt)
         };
-        f.write_all(format!("crs{src} -> crs{tgt} [label=\"{id}\"]\n").as_bytes())
+        f.write_all(format!("crs{src} -- crs{tgt} [label=\"{id}\"]\n").as_bytes())
             .unwrap();
     }
     f.write_all(b"}").unwrap();

@@ -1,7 +1,8 @@
 //This file is licensed under EUPL v1.2 as part of the Digital Earth Viewer
 
 use crate::{
-    DbContstruct, Projection, PseudoSerialize, ellipsoid::Ellipsoid, types::GetterContstruct,
+    CoordOperation, DbContstruct, Geographic2DCoordinate, ProjectedCoordinate, Projection,
+    PseudoSerialize, ellipsoid::Ellipsoid, types::GetterContstruct,
 };
 
 #[derive(Copy, Clone, Debug)]
@@ -155,7 +156,21 @@ impl Projection for TransverseMercatorProjection {
     /// as per IOGP Publication 373-7-2 – Geomatics Guidance Note number 7, part 2 – March 2020
     /// longitude & latitude in radians
     #[allow(non_snake_case)]
-    fn rad_to_projected(&self, longitude: f64, latitude: f64) -> (f64, f64) {
+    fn rad_to_projected(&self, longitude: f64, latitude: f64) -> (f64, f64) {}
+
+    /// as per IOGP Publication 373-7-2 – Geomatics Guidance Note number 7, part 2 – March 2020
+    /// longitude & latitude in radians
+    #[allow(non_snake_case)]
+    fn projected_to_rad(&self, easting: f64, northing: f64) -> (f64, f64) {
+        let c = self.op(ProjectedCoordinate::new(easting, northing));
+        (c.longitude_rad(), c.latitude_rad())
+    }
+}
+
+impl CoordOperation<Geographic2DCoordinate, ProjectedCoordinate> for TransverseMercatorProjection {
+    fn op(&self, from: Geographic2DCoordinate) -> ProjectedCoordinate {
+        let latitude = from.latitude_rad();
+        let longitude = from.longitude_rad();
         let Q = latitude.tan().asinh()
             - (self.ellipsoid_e * f64::atanh(self.ellipsoid_e * latitude.sin()));
         let beta = Q.sinh().atan();
@@ -174,16 +189,16 @@ impl Projection for TransverseMercatorProjection {
         let eta_4 = self.h_4 * f64::cos(8.0 * xi_0) * f64::sinh(8.0 * eta_0);
         let eta = eta_0 + eta_1 + eta_2 + eta_3 + eta_4;
 
-        (
+        ProjectedCoordinate::new(
             self.false_e + self.k_orig * self.B * eta,
             self.false_n + self.k_orig * (self.B * xi - self.M_orig),
         )
     }
-
-    /// as per IOGP Publication 373-7-2 – Geomatics Guidance Note number 7, part 2 – March 2020
-    /// longitude & latitude in radians
-    #[allow(non_snake_case)]
-    fn projected_to_rad(&self, easting: f64, northing: f64) -> (f64, f64) {
+}
+impl CoordOperation<ProjectedCoordinate, Geographic2DCoordinate> for TransverseMercatorProjection {
+    fn op(&self, from: ProjectedCoordinate) -> Geographic2DCoordinate {
+        let easting = from.easting();
+        let northing = from.northing();
         let eta_ = (easting - self.false_e) / (self.B * self.k_orig);
         let xi_ = ((northing - self.false_n) + self.k_orig * self.M_orig) / (self.B * self.k_orig);
 
@@ -206,7 +221,7 @@ impl Projection for TransverseMercatorProjection {
             Q__ = Q_ + (self.ellipsoid_e * f64::atanh(self.ellipsoid_e * Q__.tanh()));
         }
 
-        (
+        Geographic2DCoordinate::new_rad(
             self.lon_orig + f64::asin(eta_0_.tanh() / beta_.cos()),
             Q__.sinh().atan(),
         )

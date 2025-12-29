@@ -1,6 +1,5 @@
 //This file is licensed under EUPL v1.2
 
-use miniproj_ops::Projection;
 use miniproj_ops::albers_equal_area::AlbersEqualAreaProjection;
 use miniproj_ops::identity_projection::IdentityProjection;
 use miniproj_ops::lambert_azimuthal_equal_area::LambertAzimuthalEqualAreaProjection;
@@ -10,6 +9,7 @@ use miniproj_ops::lambert_conic_conformal::{
 use miniproj_ops::popvis_pseudo_mercator::PopVisPseudoMercatorProjection;
 use miniproj_ops::stereographic::{ObliqueStereographicProjection, PolarStereographicAProjection};
 use miniproj_ops::transverse_mercator::TransverseMercatorProjection;
+use miniproj_ops::{CoordOperation, Projection};
 
 include!(concat!(env!("OUT_DIR"), "/projection_constructors.rs"));
 
@@ -42,6 +42,19 @@ pub fn get_reference_system_areas(code: u32) -> Option<&'static [[f64; 4]]> {
 #[deprecated]
 pub fn all_names() -> impl Iterator<Item = (u32, &'static str)> {
     NAMES.entries().map(|(c, n)| (*c, *n))
+}
+
+pub fn get_transformation<F, T>(from: u32, to: u32) -> Option<Box<dyn CoordOperation<F, T>>> {
+    None
+}
+
+pub fn get_transformation_at<F, T>(
+    from: u32,
+    from_epoch: f32,
+    to: u32,
+    to_epoch: f32,
+) -> Option<Box<dyn CoordOperation<F, T>>> {
+    None
 }
 
 /// Create the Projection corresponding to the EPSG code passed as the argument, using the passed ellipsoid.

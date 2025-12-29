@@ -1,6 +1,9 @@
 //This file is licensed under EUPL v1.2 as part of the Digital Earth Viewer
 
-use crate::{DbContstruct, PseudoSerialize, ellipsoid::Ellipsoid, types::GetterContstruct};
+use crate::{
+    CoordOperation, DbContstruct, Geographic2DCoordinate, ProjectedCoordinate, PseudoSerialize,
+    ellipsoid::Ellipsoid, types::GetterContstruct,
+};
 
 #[derive(Copy, Clone, Debug)]
 pub struct AlbersEqualAreaParams {
@@ -146,16 +149,8 @@ impl crate::types::Projection for AlbersEqualAreaProjection {
     /// longitude & latitude in radians
     #[allow(non_snake_case)]
     fn rad_to_projected(&self, longitude: f64, latitude: f64) -> (f64, f64) {
-        let alpha = Self::alpha(self.ellipsoid_e_sq, latitude, self.ellipsoid_e);
-        dbg!(alpha);
-        let theta = self.n * (longitude - self.lon_orig);
-        dbg!(theta);
-        let rho = (self.ellipsoid_a * (self.C - self.n * alpha).sqrt()) / self.n;
-        dbg!(rho);
-        (
-            self.false_e + (rho * theta.sin()),
-            self.false_n + self.rho_O - (rho * theta.cos()),
-        )
+        let c = self.op(Geographic2DCoordinate::new_rad(longitude, latitude));
+        (c.easting(), c.northing())
     }
 
     /// as per IOGP Publication 373-7-2 – Geomatics Guidance Note number 7, part 2 – March 2020
@@ -164,27 +159,45 @@ impl crate::types::Projection for AlbersEqualAreaProjection {
     /// The approximation for latitude isn't very precise (6 decimal digits)
     #[allow(non_snake_case)]
     fn projected_to_rad(&self, easting: f64, northing: f64) -> (f64, f64) {
+        let c = self.op(ProjectedCoordinate::new(easting, northing));
+        (c.longitude_rad(), c.latitude_rad())
+    }
+}
+
+impl CoordOperation<Geographic2DCoordinate, ProjectedCoordinate> for AlbersEqualAreaProjection {
+    fn op(&self, from: Geographic2DCoordinate) -> ProjectedCoordinate {
+        let latitude = from.latitude_rad();
+        let longitude = from.longitude_rad();
+        let alpha = Self::alpha(self.ellipsoid_e_sq, latitude, self.ellipsoid_e);
+        let theta = self.n * (longitude - self.lon_orig);
+        let rho = (self.ellipsoid_a * (self.C - self.n * alpha).sqrt()) / self.n;
+        ProjectedCoordinate::new(
+            self.false_e + (rho * theta.sin()),
+            self.false_n + self.rho_O - (rho * theta.cos()),
+        )
+    }
+}
+impl CoordOperation<ProjectedCoordinate, Geographic2DCoordinate> for AlbersEqualAreaProjection {
+    fn op(&self, from: ProjectedCoordinate) -> Geographic2DCoordinate {
+        let easting = from.easting();
+        let northing = from.northing();
         let theta_: f64 = ((easting - self.false_e) * self.n.signum())
             .atan2((self.rho_O - (northing - self.false_n)) * self.n.signum());
-        dbg!(theta_);
         let rho_ = ((easting - self.false_e).powi(2)
             + (self.rho_O - (northing - self.false_n)).powi(2))
         .sqrt();
-        dbg!(rho_);
         let alpha_ = (self.C - (rho_.powi(2) * self.n.powi(2) / self.ellipsoid_a.powi(2))) / self.n;
-        dbg!(alpha_);
         let beta_ = (alpha_
             / (1f64
                 - ((1f64 - self.ellipsoid_e_sq) / (2f64 * self.ellipsoid_e))
                     * ((1f64 - self.ellipsoid_e) / (1f64 + self.ellipsoid_e)).ln()))
         .asin();
-        dbg!(beta_);
         let lat = beta_
             + (2f64 * beta_).sin() * self.beta_fac_sin2
             + (4f64 * beta_).sin() * self.beta_fac_sin4
             + (6f64 * beta_).sin() * self.beta_fac_sin6;
         let lon = self.lon_orig + theta_ / self.n;
-        (lon, lat)
+        Geographic2DCoordinate::new_rad(lon, lat)
     }
 }
 

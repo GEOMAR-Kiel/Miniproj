@@ -3,6 +3,7 @@
 use crate::types::Projection;
 
 /// Parameterless projection that is a no-op in degrees and otherwise converts between degrees and radians.
+#[deprecated]
 pub struct IdentityProjection;
 
 impl Projection for IdentityProjection {

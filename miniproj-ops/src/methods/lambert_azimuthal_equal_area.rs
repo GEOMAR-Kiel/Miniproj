@@ -1,6 +1,9 @@
 //This file is licensed under EUPL v1.2 as part of the Digital Earth Viewer
 
-use crate::{DbContstruct, PseudoSerialize, ellipsoid::Ellipsoid, types::GetterContstruct};
+use crate::{
+    CoordOperation, DbContstruct, Geographic2DCoordinate, ProjectedCoordinate, PseudoSerialize,
+    ellipsoid::Ellipsoid, types::GetterContstruct,
+};
 
 #[derive(Copy, Clone, Debug)]
 pub struct LambertAzimuthalEqualAreaParams {
@@ -108,6 +111,63 @@ impl crate::types::Projection for LambertAzimuthalEqualAreaProjection {
     /// longitude & latitude in radians
     #[allow(non_snake_case)]
     fn rad_to_projected(&self, longitude: f64, latitude: f64) -> (f64, f64) {
+        let c = self.op(Geographic2DCoordinate::new_rad(longitude, latitude));
+        (c.easting(), c.northing())
+    }
+
+    /// as per IOGP Publication 373-7-2 – Geomatics Guidance Note number 7, part 2 – March 2020
+    /// longitude & latitude in radians
+    ///
+    /// The approximation for latitude isn't very precise (6 decimal digits)
+    #[allow(non_snake_case)]
+    fn projected_to_rad(&self, easting: f64, northing: f64) -> (f64, f64) {
+        let c = self.op(ProjectedCoordinate::new(easting, northing));
+        (c.longitude_rad(), c.latitude_rad())
+    }
+}
+
+impl CoordOperation<ProjectedCoordinate, Geographic2DCoordinate>
+    for LambertAzimuthalEqualAreaProjection
+{
+    fn op(&self, from: ProjectedCoordinate) -> Geographic2DCoordinate {
+        let easting = from.easting();
+        let northing = from.northing();
+        let rho = (((easting - self.false_e) / self.D).powi(2)
+            + (self.D * (northing - self.false_n)).powi(2))
+        .sqrt();
+
+        let C = 2.0 * (rho / 2.0 / self.R_q).asin();
+
+        let beta_ = ((C.cos() * self.beta_O.sin())
+            + ((self.D * (northing - self.false_n) * C.sin() * self.beta_O.cos()) / rho))
+            .asin();
+
+        Geographic2DCoordinate::new_rad(
+            self.lon_orig
+                + f64::atan2(
+                    (easting - self.false_e) * C.sin(),
+                    self.D * rho * self.beta_O.cos() * C.cos()
+                        - self.D.powi(2) * (northing - self.false_n) * self.beta_O.sin() * C.sin(),
+                ),
+            beta_
+                + ((self.ellipsoid_e_squared / 3.0
+                    + (31.0 / 180.0) * self.ellipsoid_e_squared.powi(2)
+                    + (517.0 / 5040.0) * self.ellipsoid_e_squared.powi(3))
+                    * (beta_ * 2.0).sin()
+                    + ((23.0 / 360.0) * self.ellipsoid_e_squared.powi(2)
+                        + (251.0 / 3780.0) * self.ellipsoid_e_squared.powi(3))
+                        * (beta_ * 4.0).sin()
+                    + (761.0 / 45360.0) * self.ellipsoid_e_squared.powi(3) * (beta_ + 6.0).sin()),
+        )
+    }
+}
+
+impl CoordOperation<Geographic2DCoordinate, ProjectedCoordinate>
+    for LambertAzimuthalEqualAreaProjection
+{
+    fn op(&self, from: Geographic2DCoordinate) -> ProjectedCoordinate {
+        let latitude = from.latitude_rad();
+        let longitude = from.longitude_rad();
         let q = (1.0 - self.ellipsoid_e_squared)
             * ((latitude.sin() / (1.0 - self.ellipsoid_e_squared * latitude.sin().powi(2)))
                 - ((0.5 / self.ellipsoid_e)
@@ -125,47 +185,12 @@ impl crate::types::Projection for LambertAzimuthalEqualAreaProjection {
                     + (self.beta_O.cos() * beta.cos() * (longitude - self.lon_orig).cos())))
             .sqrt();
 
-        (
+        ProjectedCoordinate::new(
             self.false_e + ((B * self.D) * (beta.cos() * (longitude - self.lon_orig).sin())),
             self.false_n
                 + (B / self.D)
                     * ((self.beta_O.cos() * beta.sin())
                         - (self.beta_O.sin() * beta.cos() * (longitude - self.lon_orig).cos())),
-        )
-    }
-
-    /// as per IOGP Publication 373-7-2 – Geomatics Guidance Note number 7, part 2 – March 2020
-    /// longitude & latitude in radians
-    ///
-    /// The approximation for latitude isn't very precise (6 decimal digits)
-    #[allow(non_snake_case)]
-    fn projected_to_rad(&self, easting: f64, northing: f64) -> (f64, f64) {
-        let rho = (((easting - self.false_e) / self.D).powi(2)
-            + (self.D * (northing - self.false_n)).powi(2))
-        .sqrt();
-
-        let C = 2.0 * (rho / 2.0 / self.R_q).asin();
-
-        let beta_ = ((C.cos() * self.beta_O.sin())
-            + ((self.D * (northing - self.false_n) * C.sin() * self.beta_O.cos()) / rho))
-            .asin();
-
-        (
-            self.lon_orig
-                + f64::atan2(
-                    (easting - self.false_e) * C.sin(),
-                    self.D * rho * self.beta_O.cos() * C.cos()
-                        - self.D.powi(2) * (northing - self.false_n) * self.beta_O.sin() * C.sin(),
-                ),
-            beta_
-                + ((self.ellipsoid_e_squared / 3.0
-                    + (31.0 / 180.0) * self.ellipsoid_e_squared.powi(2)
-                    + (517.0 / 5040.0) * self.ellipsoid_e_squared.powi(3))
-                    * (beta_ * 2.0).sin()
-                    + ((23.0 / 360.0) * self.ellipsoid_e_squared.powi(2)
-                        + (251.0 / 3780.0) * self.ellipsoid_e_squared.powi(3))
-                        * (beta_ * 4.0).sin()
-                    + (761.0 / 45360.0) * self.ellipsoid_e_squared.powi(3) * (beta_ + 6.0).sin()),
         )
     }
 }

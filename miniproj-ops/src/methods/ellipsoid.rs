@@ -1,6 +1,6 @@
 //This file is licensed under EUPL v1.2
 
-use crate::PseudoSerialize;
+use crate::{GeocentricCoordinate, Geographic3DCoordinate};
 
 /// Ellipsoid, a simple approximation of the earth's shape used in most `Projection`s
 #[derive(Copy, Clone, Debug)]
@@ -113,6 +113,17 @@ impl Ellipsoid {
     /// Convert from geocentric position in meters to `(longitude, latitude, height)`, geographic position in radians and *ellipsoid* height in meters.
     #[deprecated]
     pub fn geocentric_to_rad(&self, x: f64, y: f64, z: f64) -> (f64, f64, f64) {
+        let c = self.geocentric_to_radians(GeocentricCoordinate::new(x, y, z));
+        (c.longitude_rad(), c.latitude_rad(), c.ellipsoid_height())
+    }
+
+    pub(crate) fn geocentric_to_radians(
+        &self,
+        coord: GeocentricCoordinate,
+    ) -> Geographic3DCoordinate {
+        let x = coord.x();
+        let y = coord.y();
+        let z = coord.z();
         let lon = y.atan2(x);
         let epsilon = self.e_squared() / (1f64 - self.e_squared());
         let p = (x.powi(2) + y.powi(2)).sqrt();
@@ -120,36 +131,30 @@ impl Ellipsoid {
         let lat = (z + epsilon * self.b * q.sin().powi(3))
             .atan2(p - self.e_squared() * self.a * q.cos().powi(3));
         let h = (p / lat.cos()) - self.ny(lat);
-        (lon, lat, h)
+        Geographic3DCoordinate::new_rad(lon, lat, h)
     }
 
     /// Convert from geographic position in radians and *ellipsoid* height in meters to `(x, y, z)`, geocentric position in meters.
     #[deprecated]
     pub fn rad_to_geocentric(&self, lon: f64, lat: f64, height: f64) -> (f64, f64, f64) {
+        let c = self.radians_to_geocentric(Geographic3DCoordinate::new_rad(lon, lat, height));
+        (c.x(), c.y(), c.z())
+    }
+
+    pub(crate) fn radians_to_geocentric(
+        &self,
+        coord: Geographic3DCoordinate,
+    ) -> GeocentricCoordinate {
+        let lon = coord.longitude_rad();
+        let lat = coord.latitude_rad();
+        let height = coord.ellipsoid_height();
         let ny = self.ny(lat);
         let r = ny + height;
-        (
-            r * lat.cos() * lon.cos(),
-            r * lat.cos() * lon.sin(),
-            ((1f64 - self.e_squared()) * ny + height) * lat.sin(),
-        )
-    }
-}
 
-impl PseudoSerialize for Ellipsoid {
-    fn to_constructed(&self) -> String {
-        format! {
-r"Ellipsoid{{
-    a: {}f64,
-    b: {}f64,
-    e_squared: {}f64,
-    f: {}f64,
-}}",
-            self.a,
-            self.b,
-            self.e_squared,
-            self.f,
-        }
+        let x = r * lat.cos() * lon.cos();
+        let y = r * lat.cos() * lon.sin();
+        let z = ((1f64 - self.e_squared()) * ny + height) * lat.sin();
+        GeocentricCoordinate::new(x, y, z)
     }
 }
 
