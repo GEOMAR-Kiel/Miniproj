@@ -9,7 +9,7 @@ use miniproj_ops::lambert_conic_conformal::{
 use miniproj_ops::popvis_pseudo_mercator::PopVisPseudoMercatorProjection;
 use miniproj_ops::stereographic::{ObliqueStereographicProjection, PolarStereographicAProjection};
 use miniproj_ops::transverse_mercator::TransverseMercatorProjection;
-use miniproj_ops::{CoordOperation, Projection, ProjectionParams, Ellipsoid};
+use miniproj_ops::{CoordOperation, Ellipsoid, GeocentricCoordinate, Geographic2DCoordinate, ProjectedCoordinate, Projection, ProjectionParams};
 
 include!(concat!(env!("OUT_DIR"), "/projection_constructors.rs"));
 
@@ -56,6 +56,34 @@ pub fn get_transformation_at<F, T>(
     to_epoch: f32,
 ) -> Option<Box<dyn CoordOperation<F, T>>> {
     None
+}
+
+pub fn projected_to_geo2d(from_code: u32, to_code: u32) -> Option<Box<dyn CoordOperation<ProjectedCoordinate, Geographic2DCoordinate>>> {
+    todo!()
+}
+
+pub fn projected_to_projected(from_code: u32, to_code: u32) -> Option<Box<dyn CoordOperation<ProjectedCoordinate, ProjectedCoordinate>>> {
+    todo!()
+}
+
+pub fn geo2d_to_projected(from_code: u32, to_code: u32) -> Option<Box<dyn CoordOperation<Geographic2DCoordinate, ProjectedCoordinate>>> {
+    todo!()
+}
+
+pub fn geo2d_to_geocentric(from_code: u32, to_code: u32) -> Option<Box<dyn CoordOperation<Geographic2DCoordinate, GeocentricCoordinate>>> {
+    todo!()
+}
+
+pub fn geo2d_to_geo2d(from_code: u32, to_code: u32) -> Option<Box<dyn CoordOperation<Geographic2DCoordinate, Geographic2DCoordinate>>> {
+    todo!()
+}
+
+pub fn geocentric_to_geo2d(from_code: u32, to_code: u32) -> Option<Box<dyn CoordOperation<GeocentricCoordinate, Geographic2DCoordinate>>> {
+    todo!()
+}
+
+pub fn geocentric_to_geocentric(from_code: u32, to_code: u32) -> Option<Box<dyn CoordOperation<GeocentricCoordinate, GeocentricCoordinate>>> {
+    todo!()
 }
 
 /// Create the Projection corresponding to the EPSG code passed as the argument, using the passed ellipsoid.
