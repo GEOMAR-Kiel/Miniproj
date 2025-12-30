@@ -1,8 +1,9 @@
 //This file is licensed under EUPL v1.2 as part of the Digital Earth Viewer
 
+#[cfg(feature = "codegen")]
+use crate::types::DbContstruct;
 use crate::{
-    CoordOperation, DbContstruct, Geographic2DCoordinate, ProjectedCoordinate, Projection,
-    PseudoSerialize, ellipsoid::Ellipsoid, types::GetterContstruct,
+    CoordOperation, Geographic2DCoordinate, ProjectedCoordinate, Projection, ellipsoid::Ellipsoid,
 };
 use std::f64::consts::{FRAC_PI_2, FRAC_PI_4};
 
@@ -39,6 +40,14 @@ impl LambertConic2SPParams {
             false_e,
             false_n,
         }
+    }
+
+    #[cfg(feature = "codegen")]
+    pub fn to_constructor(&self) -> String {
+        format!(
+            "LambertConic2SPParams::new({}f64, {}f64, {}f64, {}f64, {}f64, {}f64)",
+            self.lon_orig, self.lat_orig, self.lat_p1, self.lat_p2, self.false_e, self.false_n
+        )
     }
 
     /// Get longitude of false origin, radians.
@@ -208,79 +217,20 @@ impl CoordOperation<Geographic2DCoordinate, ProjectedCoordinate> for LambertConi
     }
 }
 
-impl PseudoSerialize for LambertConic2SPProjection {
-    fn to_constructed(&self) -> String {
-        format!(
-            r"LambertConic2SPProjection{{
-    ellipsoid_e: {}f64,
-    ellipsoid_a: {}f64,
-    lon_orig: {}f64,
-    lat_orig: {}f64,
-    false_e: {}f64,
-    false_n: {}f64,
-    n: {}f64,
-    r_F: {}f64,
-    F: {}f64,
-}}",
-            self.ellipsoid_e,
-            self.ellipsoid_a,
-            self.lon_orig,
-            self.lat_orig,
-            self.false_e,
-            self.false_n,
-            self.n,
-            self.r_F,
-            self.F
-        )
-    }
-}
-
-impl DbContstruct for LambertConic2SPProjection {
-    fn from_database_params(params: &[(u32, f64)], ellipsoid: &Ellipsoid) -> Self {
-        let params = LambertConic2SPParams::new(
-            params
-                .iter()
-                .find_map(|(c, v)| if *c == 8822 { Some(*v) } else { None })
-                .unwrap(),
-            params
-                .iter()
-                .find_map(|(c, v)| if *c == 8821 { Some(*v) } else { None })
-                .unwrap(),
-            params
-                .iter()
-                .find_map(|(c, v)| if *c == 8823 { Some(*v) } else { None })
-                .unwrap(),
-            params
-                .iter()
-                .find_map(|(c, v)| if *c == 8824 { Some(*v) } else { None })
-                .unwrap(),
-            params
-                .iter()
-                .find_map(|(c, v)| if *c == 8826 { Some(*v) } else { None })
-                .unwrap(),
-            params
-                .iter()
-                .find_map(|(c, v)| if *c == 8827 { Some(*v) } else { None })
-                .unwrap(),
-        );
-        Self::new(ellipsoid, &params)
-    }
-}
-
-impl GetterContstruct for LambertConic2SPProjection {
-    fn with_db_getter<G>(mut getter: G, ellipsoid: &Ellipsoid) -> Option<Self>
+#[cfg(feature = "codegen")]
+impl DbContstruct for LambertConic2SPParams {
+    fn from_db<G>(mut getter: G) -> Option<Self>
     where
         G: FnMut(u32) -> Option<f64>,
     {
-        let params = LambertConic2SPParams::new(
+        Some(LambertConic2SPParams::new(
             getter(8822)?,
             getter(8821)?,
             getter(8823)?,
             getter(8824)?,
             getter(8826)?,
             getter(8827)?,
-        );
-        Some(Self::new(ellipsoid, &params))
+        ))
     }
 }
 
@@ -315,6 +265,13 @@ impl LambertConic1SPAParams {
         }
     }
 
+    #[cfg(feature = "codegen")]
+    pub fn to_constructor(&self) -> String {
+        format!(
+            "LambertConic1SPAParams::new({}f64, {}f64, {}f64, {}f64, {}f64)",
+            self.lat_nat_orig, self.lat_nat_orig, self.k_nat_orig, self.false_e, self.false_n
+        )
+    }
     /// Get longitude of natural origin, radians.
     pub fn lon_nat_orig(&self) -> f64 {
         self.lon_nat_orig
@@ -433,81 +390,20 @@ impl CoordOperation<ProjectedCoordinate, Geographic2DCoordinate> for LambertConi
         Geographic2DCoordinate::new_rad(theta_ / self.n + self.lon_O, phi)
     }
 }
-
-impl PseudoSerialize for LambertConic1SPAProjection {
-    fn to_constructed(&self) -> String {
-        format!(
-            "LambertConic1SPAProjection {{
-    false_e: {}f64,
-    false_n: {}f64,
-    r_O: {}f64,
-    lon_O: {}f64,
-    n: {}f64,
-    t_r_fac: {}f64,
-    ellipsoid_e: {}f64
-}}
-",
-            self.false_e,
-            self.false_n,
-            self.r_O,
-            self.lon_O,
-            self.n,
-            self.t_r_fac,
-            self.ellipsoid_e
-        )
-    }
-}
-
-impl DbContstruct for LambertConic1SPAProjection {
-    fn from_database_params(params: &[(u32, f64)], ellipsoid: &Ellipsoid) -> Self {
-        let params = LambertConic1SPAParams::new(
-            params
-                .iter()
-                .find_map(|(c, v)| if *c == 8802 { Some(*v) } else { None })
-                .unwrap(),
-            params
-                .iter()
-                .find_map(|(c, v)| if *c == 8801 { Some(*v) } else { None })
-                .unwrap(),
-            params
-                .iter()
-                .find_map(|(c, v)| if *c == 8805 { Some(*v) } else { None })
-                .unwrap(),
-            params
-                .iter()
-                .find_map(|(c, v)| if *c == 8806 { Some(*v) } else { None })
-                .unwrap(),
-            params
-                .iter()
-                .find_map(|(c, v)| if *c == 8807 { Some(*v) } else { None })
-                .unwrap(),
-        );
-        Self::new(ellipsoid, &params)
-    }
-}
-
-impl GetterContstruct for LambertConic1SPAProjection {
-    fn with_db_getter<G>(mut getter: G, ellipsoid: &Ellipsoid) -> Option<Self>
+#[cfg(feature = "codegen")]
+impl DbContstruct for LambertConic1SPAParams {
+    fn from_db<G>(mut getter: G) -> Option<Self>
     where
         G: FnMut(u32) -> Option<f64>,
     {
-        let params = LambertConic1SPAParams::new(
+        Some(LambertConic1SPAParams::new(
             getter(8802)?,
             getter(8801)?,
             getter(8805)?,
             getter(8806)?,
             getter(8807)?,
-        );
-        Some(Self::new(ellipsoid, &params))
+        ))
     }
-}
-
-pub fn direct_projection_2sp(params: &[(u32, f64)], ell: Ellipsoid) -> String {
-    LambertConic2SPProjection::from_database_params(params, &ell).to_constructed()
-}
-
-pub fn direct_projection_1sp_a(params: &[(u32, f64)], ell: Ellipsoid) -> String {
-    LambertConic1SPAProjection::from_database_params(params, &ell).to_constructed()
 }
 
 #[cfg(test)]

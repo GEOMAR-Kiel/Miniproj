@@ -3,11 +3,10 @@
 use std::{collections::HashMap, error::Error, num::TryFromIntError};
 
 use crate::{
-    ImplementedProjection,
     helpers::*,
     sql::{Field, MemoryDb},
 };
-use miniproj_ops::ellipsoid::Ellipsoid;
+use miniproj_ops::{ellipsoid::Ellipsoid, param_builder};
 
 /// Generates rust source code mapping EPSG codes to `Ellipsoid`s.
 pub fn gen_ellipsoid_constructors(db: &MemoryDb) -> Result<String, Box<dyn Error>> {
@@ -166,7 +165,6 @@ enum CrsEntry {
 /// Generates rust source code for projected and geographic coordinate systems for all implemented projections.
 pub fn gen_parameter_constructors(
     db: &MemoryDb,
-    supporteds: &[ImplementedProjection],
     ellipsoids: &HashMap<u32, Ellipsoid>,
 ) -> Result<String, Box<dyn Error>> {
     let units = db
@@ -195,18 +193,6 @@ pub fn gen_parameter_constructors(
         ])?
         .filter_map(|row| {
             match row {
-                [
-                    Some(Field::IntLike(code)),
-                    _,
-                    _,
-                    Some(Field::IntLike(datum_code)),
-                    Some(Field::StringLike("geographic 2D")),
-                ] => Some((
-                    u32::try_from(code).ok()?,
-                    CrsEntry::Geographic2D {
-                        datum: u32::try_from(datum_code).ok()?,
-                    },
-                )),
                 [
                     Some(Field::IntLike(code)),
                     Some(Field::IntLike(base_crs_code)),
@@ -435,78 +421,62 @@ pub fn gen_parameter_constructors(
             .get(code)
             .unwrap_or(&"Unknown Coordinate Reference System");
         let areas = usages_table.get(code);
-        match crs {
-            CrsEntry::Geographic2D { datum: _ } => {
-                constructors_map.entry(code, "&IdentityProjection as &dyn Projection");
-                names_map.entry(code, &format!("{name:?}"));
-                if let Some(areas) = areas {
-                    let mut areas_string = String::new();
-                    areas_string.push_str("&[");
-                    for (_, [e, n, w, s]) in areas {
-                        // TODO make a real type
+        if let CrsEntry::Projected { conversion, base } = crs {
+            let Some(CrsEntry::Geographic2D { datum }) = crs_table.get(base) else {
+                //println!("cargo:warning=Skipping EPSG:{code} because base CRS EPSG:{base} does not resolve.");
+                continue;
+            };
+            let Some((ellipsoid, ellipsoid_code)) = std::iter::once(datum)
+                .chain(
+                    datum_ensemble_member_table
+                        .get(datum)
+                        .iter()
+                        .flat_map(|v| v.iter()),
+                )
+                .filter_map(|d| datum_table.get(d))
+                .filter_map(|(e, _)| ellipsoids.get(e).map(|ell| (ell, e))) //this is the spot to handle meridians as well
+                .next()
+            else {
+                //println!("cargo:warning=Skipping EPSG:{code} because datum EPSG:{datum} does not resolve.");
+                continue;
+            };
+            let Some(param_values) = paramvalues.get(conversion) else {
+                //println!("cargo:warning=Skipping EPSG:{code} because parameter values do not resolve.");
+                continue;
+            };
+            let Some(op_code) = op_table.get(conversion) else {
+                //println!("cargo:warning=Skipping EPSG:{code} because operation EPSG:{conversion} does not resolve.");
+                continue;
+            };
+            let Some(params) = param_builder(*op_code, |code| {
+                param_values.iter().find_map(|(k, v)| if *k == code {Some(*v)} else {None} )
+            }) else {
+                println!("cargo:warning=Skipping EPSG:{code} because operation EPSG:{conversion} does not resolve.");
+                continue;
+            };
+            constructors_map.entry(
+                code,
+                &format!("({}, {ellipsoid_code})", params.to_constructor()),
+            );
+            ellipsoids_map.entry(ellipsoid_code, &ellipsoid.to_constructor());
+            names_map.entry(code, &format!("{name:?}"));
+            if let Some(areas) = areas {
+                let mut areas_string = String::new();
+                areas_string.push_str("&[");
+                for (_, [e, n, w, s]) in areas {
+                    // TODO make a real type
 
-                        areas_string.push_str(&format!("[{e:?}, {n:?}, {w:?}, {s:?}],"));
-                    }
-                    areas_string.push_str("]");
-                    areas_map.entry(code, &areas_string);
+                    areas_string.push_str(&format!("[{e:?}, {n:?}, {w:?}, {s:?}],"));
                 }
-            }
-            CrsEntry::Projected { conversion, base } => {
-                let Some(CrsEntry::Geographic2D { datum }) = crs_table.get(base) else {
-                    //println!("cargo:warning=Skipping EPSG:{code} because base CRS EPSG:{base} does not resolve.");
-                    continue;
-                };
-                let Some((ellipsoid, ellipsoid_code)) = std::iter::once(datum)
-                    .chain(
-                        datum_ensemble_member_table
-                            .get(datum)
-                            .iter()
-                            .flat_map(|v| v.iter()),
-                    )
-                    .filter_map(|d| datum_table.get(d))
-                    .filter_map(|(e, _)| ellipsoids.get(e).map(|ell| (ell, e))) //this is the spot to handle meridians as well
-                    .next()
-                else {
-                    //println!("cargo:warning=Skipping EPSG:{code} because datum EPSG:{datum} does not resolve.");
-                    continue;
-                };
-                let Some(param_values) = paramvalues.get(conversion) else {
-                    //println!("cargo:warning=Skipping EPSG:{code} because parameter values do not resolve.");
-                    continue;
-                };
-                let Some(op_code) = op_table.get(conversion) else {
-                    //println!("cargo:warning=Skipping EPSG:{code} because operation EPSG:{conversion} does not resolve.");
-                    continue;
-                };
-                let Some((_, conv)) = supporteds.iter().find(|(v, _)| v == op_code) else {
-                    //println!("cargo:warning=Skipping EPSG:{code} because operation method EPSG:{op_code} is not implemented.");
-                    continue;
-                };
-                constructors_map.entry(
-                    code,
-                    &format!("&{} as &dyn Projection", conv(param_values, *ellipsoid)),
-                );
-                ellipsoids_map.entry(code, &format!("{ellipsoid_code}"));
-                names_map.entry(code, &format!("{name:?}"));
-                if let Some(areas) = areas {
-                    let mut areas_string = String::new();
-                    areas_string.push_str("&[");
-                    for (_, [e, n, w, s]) in areas {
-                        // TODO make a real type
-
-                        areas_string.push_str(&format!("[{e:?}, {n:?}, {w:?}, {s:?}],"));
-                    }
-                    areas_string.push_str("]");
-                    areas_map.entry(code, &areas_string);
-                }
+                areas_string.push_str("]");
+                areas_map.entry(code, &areas_string);
             }
         }
     }
-
     Ok(format!(
         r"#[allow(clippy::approx_constant)]
-static PROJECTIONS: phf::Map<u32, &dyn Projection> = {};
-static ELLIPSOIDS: phf::Map<u32, u32> = {};
+static PROJECTION_PARAMS: phf::Map<u32, (ProjectionParams, u32)> = {};
+static ELLIPSOIDS: phf::Map<u32, Ellipsoid> = {};
 static NAMES: phf::Map<u32, &str> = {};
 static AREAS: phf::Map<u32, &[[f64; 4]]> = {};
 ",

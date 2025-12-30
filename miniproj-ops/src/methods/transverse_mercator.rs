@@ -1,8 +1,9 @@
 //This file is licensed under EUPL v1.2 as part of the Digital Earth Viewer
 
+#[cfg(feature = "codegen")]
+use crate::types::DbContstruct;
 use crate::{
-    CoordOperation, DbContstruct, Geographic2DCoordinate, ProjectedCoordinate, Projection,
-    PseudoSerialize, ellipsoid::Ellipsoid, types::GetterContstruct,
+    CoordOperation, Geographic2DCoordinate, ProjectedCoordinate, Projection, ellipsoid::Ellipsoid,
 };
 
 #[derive(Copy, Clone, Debug)]
@@ -59,6 +60,16 @@ impl TransverseMercatorParams {
     /// Get false northing.
     pub fn false_n(&self) -> f64 {
         self.false_n
+    }
+}
+
+#[cfg(feature = "codegen")]
+impl TransverseMercatorParams {
+    pub fn to_constructor(&self) -> String {
+        format!(
+            "TransverseMercatorParams::new({}f64, {}f64, {}f64, {}f64, {}f64)",
+            self.lon_orig, self.lat_orig, self.k_orig, self.false_e, self.false_n
+        )
     }
 }
 
@@ -156,7 +167,10 @@ impl Projection for TransverseMercatorProjection {
     /// as per IOGP Publication 373-7-2 – Geomatics Guidance Note number 7, part 2 – March 2020
     /// longitude & latitude in radians
     #[allow(non_snake_case)]
-    fn rad_to_projected(&self, longitude: f64, latitude: f64) -> (f64, f64) {}
+    fn rad_to_projected(&self, longitude: f64, latitude: f64) -> (f64, f64) {
+        let c = self.op(Geographic2DCoordinate::new_rad(longitude, latitude));
+        (c.easting(), c.northing())
+    }
 
     /// as per IOGP Publication 373-7-2 – Geomatics Guidance Note number 7, part 2 – March 2020
     /// longitude & latitude in radians
@@ -228,103 +242,21 @@ impl CoordOperation<ProjectedCoordinate, Geographic2DCoordinate> for TransverseM
     }
 }
 
-impl PseudoSerialize for TransverseMercatorProjection {
-    fn to_constructed(&self) -> String {
-        format!(
-            r"TransverseMercatorProjection{{
-    ellipsoid_e: {}f64,
-    lon_orig: {}f64,
-    false_e: {}f64,
-    false_n: {}f64,
-    k_orig: {}f64,
-
-    B: {}f64,
-    h_1: {}f64,
-    h_2: {}f64,
-    h_3: {}f64,
-    h_4: {}f64,
-    M_orig: {}f64,
-
-    h_1_: {}f64,
-    h_2_: {}f64,
-    h_3_: {}f64,
-    h_4_: {}f64,
-}}",
-            self.ellipsoid_e,
-            self.lon_orig,
-            self.false_e,
-            self.false_n,
-            self.k_orig,
-            self.B,
-            self.h_1,
-            self.h_2,
-            self.h_3,
-            self.h_4,
-            self.M_orig,
-            self.h_1_,
-            self.h_2_,
-            self.h_3_,
-            self.h_4_
-        )
-    }
-}
-
-impl DbContstruct for TransverseMercatorProjection {
-    fn from_database_params(params: &[(u32, f64)], ellipsoid: &Ellipsoid) -> Self {
-        /*
-        ImplementedProjection::new(
-            9807,
-            // lon   lat     k     e     n
-            &[8802, 8801, 8805, 8806, 8807],
-            "TransverseMercatorParams",
-            "TransverseMercatorProjection"
-        ),
-        */
-        let params = TransverseMercatorParams::new(
-            params
-                .iter()
-                .find_map(|(c, v)| if *c == 8802 { Some(*v) } else { None })
-                .unwrap(),
-            params
-                .iter()
-                .find_map(|(c, v)| if *c == 8801 { Some(*v) } else { None })
-                .unwrap(),
-            params
-                .iter()
-                .find_map(|(c, v)| if *c == 8805 { Some(*v) } else { None })
-                .unwrap(),
-            params
-                .iter()
-                .find_map(|(c, v)| if *c == 8806 { Some(*v) } else { None })
-                .unwrap(),
-            params
-                .iter()
-                .find_map(|(c, v)| if *c == 8807 { Some(*v) } else { None })
-                .unwrap(),
-        );
-        Self::new(ellipsoid, &params)
-    }
-}
-
-impl GetterContstruct for TransverseMercatorProjection {
-    fn with_db_getter<G>(mut getter: G, ellipsoid: &Ellipsoid) -> Option<Self>
+impl DbContstruct for TransverseMercatorParams {
+    fn from_db<G>(mut getter: G) -> Option<Self>
     where
         G: FnMut(u32) -> Option<f64>,
     {
-        let params = TransverseMercatorParams::new(
+        Some(TransverseMercatorParams::new(
             getter(8802)?,
             getter(8801)?,
             getter(8805)?,
             getter(8806)?,
             getter(8807)?,
-        );
-        Some(Self::new(ellipsoid, &params))
+        ))
     }
 }
 
-pub fn direct_projection(params: &[(u32, f64)], ell: Ellipsoid) -> String {
-    TransverseMercatorProjection::from_database_params(params, &ell).to_constructed()
-}
 #[cfg(test)]
 mod tests {
 

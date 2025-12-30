@@ -25,18 +25,8 @@ pub trait Projection: Send + Sync {
     }
 }
 
-#[cfg(feature = "codegen")]
-pub trait PseudoSerialize {
-    fn to_constructed(&self) -> String;
-}
-
-#[cfg(feature = "codegen")]
-pub trait DbContstruct {
-    fn from_database_params(params: &[(u32, f64)], ellipsoid: &Ellipsoid) -> Self;
-}
-
-pub trait GetterContstruct: Sized {
-    fn with_db_getter<G>(getter: G, ellipsoid: &Ellipsoid) -> Option<Self>
+pub trait DbContstruct: Sized {
+    fn from_db<G>(getter: G) -> Option<Self>
     where
         G: FnMut(u32) -> Option<f64>;
 }

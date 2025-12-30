@@ -2,7 +2,9 @@
 
 use std::f64::consts::{FRAC_PI_2, FRAC_PI_4};
 
-use crate::{CoordOperation, DbContstruct, Geographic2DCoordinate, ProjectedCoordinate, PseudoSerialize, ellipsoid::Ellipsoid, types::GetterContstruct};
+#[cfg(feature = "codegen")]
+use crate::types::DbContstruct;
+use crate::{CoordOperation, Geographic2DCoordinate, ProjectedCoordinate, ellipsoid::Ellipsoid};
 
 #[derive(Copy, Clone, Debug)]
 pub struct PolarStereographicAParams {
@@ -58,6 +60,15 @@ impl PolarStereographicAParams {
     /// false northing
     pub fn false_n(&self) -> f64 {
         self.false_n
+    }
+}
+#[cfg(feature = "codegen")]
+impl PolarStereographicAParams {
+    pub fn to_constructor(&self) -> String {
+        format!(
+            "PolarStereographicAParams::new({}f64, {}f64, {}f64, {}f64, {}f64)",
+            self.lon_orig, self.lat_orig, self.k_orig, self.false_e, self.false_n
+        )
     }
 }
 
@@ -126,8 +137,8 @@ impl crate::types::Projection for PolarStereographicAProjection {
 
 impl CoordOperation<ProjectedCoordinate, Geographic2DCoordinate> for PolarStereographicAProjection {
     fn op(&self, from: ProjectedCoordinate) -> Geographic2DCoordinate {
-        let easting  =from.easting();
-        let northing  =from.northing();
+        let easting = from.easting();
+        let northing = from.northing();
         let rho_ = ((easting - self.false_e).powi(2) + (northing - self.false_n).powi(2)).sqrt();
         let t_ = rho_ * self.t_rho_factor;
         let chi = if self.lat_orig < 0.0 {
@@ -149,7 +160,8 @@ impl CoordOperation<ProjectedCoordinate, Geographic2DCoordinate> for PolarStereo
         } else { // South Pole Case
             self.lon_orig + (easting - self.false_e).atan2(northing - self.false_n)
         };
-        Geographic2DCoordinate::new_rad(lambda, phi)    }
+        Geographic2DCoordinate::new_rad(lambda, phi)
+    }
 }
 impl CoordOperation<Geographic2DCoordinate, ProjectedCoordinate> for PolarStereographicAProjection {
     fn op(&self, from: Geographic2DCoordinate) -> ProjectedCoordinate {
@@ -179,82 +191,20 @@ impl CoordOperation<Geographic2DCoordinate, ProjectedCoordinate> for PolarStereo
     }
 }
 
-impl DbContstruct for PolarStereographicAProjection {
-    fn from_database_params(params: &[(u32, f64)], ellipsoid: &Ellipsoid) -> Self {
-        let params = PolarStereographicAParams::new(
-            params
-                .iter()
-                .find_map(|(c, v)| if *c == 8802 { Some(*v) } else { None })
-                .unwrap(),
-            params
-                .iter()
-                .find_map(|(c, v)| if *c == 8801 { Some(*v) } else { None })
-                .unwrap(),
-            params
-                .iter()
-                .find_map(|(c, v)| if *c == 8805 { Some(*v) } else { None })
-                .unwrap(),
-            params
-                .iter()
-                .find_map(|(c, v)| if *c == 8806 { Some(*v) } else { None })
-                .unwrap(),
-            params
-                .iter()
-                .find_map(|(c, v)| if *c == 8807 { Some(*v) } else { None })
-                .unwrap(),
-        );
-        Self::new(ellipsoid, &params)
-    }
-}
-
-impl GetterContstruct for PolarStereographicAProjection {
-    fn with_db_getter<G>(mut getter: G, ellipsoid: &Ellipsoid) -> Option<Self>
+#[cfg(feature = "codegen")]
+impl DbContstruct for PolarStereographicAParams {
+    fn from_db<G>(mut getter: G) -> Option<Self>
     where
         G: FnMut(u32) -> Option<f64>,
     {
-        let params = PolarStereographicAParams::new(
+        Some(PolarStereographicAParams::new(
             getter(8802)?,
             getter(8801)?,
             getter(8805)?,
             getter(8806)?,
             getter(8807)?,
-        );
-        Some(Self::new(ellipsoid, &params))
+        ))
     }
-}
-
-impl PseudoSerialize for PolarStereographicAProjection {
-    fn to_constructed(&self) -> String {
-        format!(
-            r"PolarStereographicAProjection{{
-    t_rho_factor: {}f64,
-    phi_2_chi_sin_summand_factor: {}f64,
-    phi_4_chi_sin_summand_factor: {}f64,
-    phi_6_chi_sin_summand_factor: {}f64,
-    phi_8_chi_sin_summand_factor: {}f64,
-    
-    lat_orig: {}f64,
-    lon_orig: {}f64,
-    false_e: {}f64,
-    false_n: {}f64,
-
-    ell_e: {}f64
-}}",
-            self.t_rho_factor,
-            self.phi_2_chi_sin_summand_factor,
-            self.phi_4_chi_sin_summand_factor,
-            self.phi_6_chi_sin_summand_factor,
-            self.phi_8_chi_sin_summand_factor,
-            self.lat_orig,
-            self.lon_orig,
-            self.false_e,
-            self.false_n,
-            self.ell_e
-        )
-    }
-}
-pub fn direct_projection_a(params: &[(u32, f64)], ell: Ellipsoid) -> String {
-    PolarStereographicAProjection::from_database_params(params, &ell).to_constructed()
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -281,6 +231,14 @@ impl ObliqueStereographicParams {
             false_e,
             false_n,
         }
+    }
+
+    #[cfg(feature = "codegen")]
+    pub fn to_constructor(&self) -> String {
+        format!(
+            "ObliqueStereographicParams::new({}f64, {}f64, {}f64, {}f64, {}f64)",
+            self.lon_orig, self.lat_orig, self.k_orig, self.false_e, self.false_n
+        )
     }
 
     /// longitude of natural origin, radians
@@ -376,7 +334,9 @@ impl crate::types::Projection for ObliqueStereographicProjection {
         (c.easting(), c.northing())
     }
 }
-impl CoordOperation<ProjectedCoordinate, Geographic2DCoordinate> for ObliqueStereographicProjection {
+impl CoordOperation<ProjectedCoordinate, Geographic2DCoordinate>
+    for ObliqueStereographicProjection
+{
     fn op(&self, from: ProjectedCoordinate) -> Geographic2DCoordinate {
         let x = from.easting();
         let y = from.northing();
@@ -398,10 +358,13 @@ impl CoordOperation<ProjectedCoordinate, Geographic2DCoordinate> for ObliqueSter
                     / (1f64 - self.ellipsoid_e_sq);
         }
         let DeltaLambda = j + 2f64 * i;
-        Geographic2DCoordinate::new_rad(DeltaLambda / self.n + self.lon_orig, phi)    }
+        Geographic2DCoordinate::new_rad(DeltaLambda / self.n + self.lon_orig, phi)
+    }
 }
 
-impl CoordOperation<Geographic2DCoordinate, ProjectedCoordinate> for ObliqueStereographicProjection {
+impl CoordOperation<Geographic2DCoordinate, ProjectedCoordinate>
+    for ObliqueStereographicProjection
+{
     fn op(&self, from: Geographic2DCoordinate) -> ProjectedCoordinate {
         let lat = from.latitude_rad();
         let lon = from.longitude_rad();
@@ -419,87 +382,25 @@ impl CoordOperation<Geographic2DCoordinate, ProjectedCoordinate> for ObliqueSter
                     * (chi.sin() * self.chi_O.cos()
                         - chi.cos() * self.chi_O.sin() * DeltaLambda.cos())
                     / B,
-        )    }
-}
-
-impl DbContstruct for ObliqueStereographicProjection {
-    fn from_database_params(params: &[(u32, f64)], ellipsoid: &Ellipsoid) -> Self {
-        let params = ObliqueStereographicParams::new(
-            params
-                .iter()
-                .find_map(|(c, v)| if *c == 8802 { Some(*v) } else { None })
-                .unwrap(),
-            params
-                .iter()
-                .find_map(|(c, v)| if *c == 8801 { Some(*v) } else { None })
-                .unwrap(),
-            params
-                .iter()
-                .find_map(|(c, v)| if *c == 8805 { Some(*v) } else { None })
-                .unwrap(),
-            params
-                .iter()
-                .find_map(|(c, v)| if *c == 8806 { Some(*v) } else { None })
-                .unwrap(),
-            params
-                .iter()
-                .find_map(|(c, v)| if *c == 8807 { Some(*v) } else { None })
-                .unwrap(),
-        );
-        Self::new(ellipsoid, &params)
+        )
     }
 }
 
-impl GetterContstruct for ObliqueStereographicProjection {
-    fn with_db_getter<G>(mut getter: G, ellipsoid: &Ellipsoid) -> Option<Self>
+impl DbContstruct for ObliqueStereographicParams {
+    fn from_db<G>(mut getter: G) -> Option<Self>
     where
         G: FnMut(u32) -> Option<f64>,
     {
-        let params = ObliqueStereographicParams::new(
+        Some(ObliqueStereographicParams::new(
             getter(8802)?,
             getter(8801)?,
             getter(8805)?,
             getter(8806)?,
             getter(8807)?,
-        );
-        Some(Self::new(ellipsoid, &params))
+        ))
     }
 }
 
-impl PseudoSerialize for ObliqueStereographicProjection {
-    fn to_constructed(&self) -> String {
-        format!(
-            r"ObliqueStereographicProjection{{
-    false_e: {}f64,
-    false_n: {}f64,
-    chi_O: {}f64,
-    R_k_O_2: {}f64,
-    c: {}f64,
-    ellipsoid_e: {}f64,
-    ellipsoid_e_sq: {}f64,
-    n: {}f64,
-    lon_orig: {}f64,
-    g: {}f64,
-    h: {}f64
-}}",
-            self.false_e,
-            self.false_n,
-            self.chi_O,
-            self.R_k_O_2,
-            self.c,
-            self.ellipsoid_e,
-            self.ellipsoid_e_sq,
-            self.n,
-            self.lon_orig,
-            self.g,
-            self.h
-        )
-    }
-}
-
-pub fn direct_projection_oblique(params: &[(u32, f64)], ell: Ellipsoid) -> String {
-    ObliqueStereographicProjection::from_database_params(params, &ell).to_constructed()
-}
 #[cfg(test)]
 mod tests {
 

@@ -1,9 +1,8 @@
 //This file is licensed under EUPL v1.2 as part of the Digital Earth Viewer
 
-use crate::{
-    CoordOperation, DbContstruct, Geographic2DCoordinate, ProjectedCoordinate, PseudoSerialize,
-    ellipsoid::Ellipsoid, types::GetterContstruct,
-};
+#[cfg(feature = "codegen")]
+use crate::types::DbContstruct;
+use crate::{CoordOperation, Geographic2DCoordinate, ProjectedCoordinate, ellipsoid::Ellipsoid};
 
 #[derive(Copy, Clone, Debug)]
 pub struct LambertAzimuthalEqualAreaParams {
@@ -25,6 +24,14 @@ impl LambertAzimuthalEqualAreaParams {
             false_e,
             false_n,
         }
+    }
+
+    #[cfg(feature = "codegen")]
+    pub fn to_constructor(&self) -> String {
+        format!(
+            "LambertAzimuthalEqualAreaParams::new({}f64, {}f64, {}f64, {}f64)",
+            self.lon_orig, self.lat_orig, self.false_e, self.false_n
+        )
     }
 
     /// Get longitude of natural origin in radians.
@@ -195,82 +202,17 @@ impl CoordOperation<Geographic2DCoordinate, ProjectedCoordinate>
     }
 }
 
-impl PseudoSerialize for LambertAzimuthalEqualAreaProjection {
-    fn to_constructed(&self) -> String {
-        format!(
-            r"LambertAzimuthalEqualAreaProjection{{
-    lon_orig: {}f64,
-    false_e: {}f64,
-    false_n: {}f64,
-    ellipsoid_e: {}f64,
-    ellipsoid_e_squared: {}f64,
-
-    q_P: {}f64,
-    beta_O: {}f64,
-    R_q: {}f64,
-    D: {}f64,
-}}",
-            self.lon_orig,
-            self.false_e,
-            self.false_n,
-            self.ellipsoid_e,
-            self.ellipsoid_e_squared,
-            self.q_P,
-            self.beta_O,
-            self.R_q,
-            self.D
-        )
-    }
-}
-
-impl DbContstruct for LambertAzimuthalEqualAreaProjection {
-    fn from_database_params(params: &[(u32, f64)], ellipsoid: &Ellipsoid) -> Self {
-        /*
-        ImplementedProjection::new(
-            9820,
-            &[8802, 8801, 8806, 8807],
-            "LambertAzimuthalEqualAreaParams",
-            "LambertAzimuthalEqualAreaProjection"
-        )
-        */
-        let params = LambertAzimuthalEqualAreaParams::new(
-            params
-                .iter()
-                .find_map(|(c, v)| if *c == 8802 { Some(*v) } else { None })
-                .unwrap(),
-            params
-                .iter()
-                .find_map(|(c, v)| if *c == 8801 { Some(*v) } else { None })
-                .unwrap(),
-            params
-                .iter()
-                .find_map(|(c, v)| if *c == 8806 { Some(*v) } else { None })
-                .unwrap(),
-            params
-                .iter()
-                .find_map(|(c, v)| if *c == 8807 { Some(*v) } else { None })
-                .unwrap(),
-        );
-        Self::new(ellipsoid, &params)
-    }
-}
-
-pub fn direct_projection(params: &[(u32, f64)], ell: Ellipsoid) -> String {
-    LambertAzimuthalEqualAreaProjection::from_database_params(params, &ell).to_constructed()
-}
-
-impl GetterContstruct for LambertAzimuthalEqualAreaProjection {
-    fn with_db_getter<G>(mut getter: G, ellipsoid: &Ellipsoid) -> Option<Self>
+impl DbContstruct for LambertAzimuthalEqualAreaParams {
+    fn from_db<G>(mut getter: G) -> Option<Self>
     where
         G: FnMut(u32) -> Option<f64>,
     {
-        let params = LambertAzimuthalEqualAreaParams::new(
+        Some(LambertAzimuthalEqualAreaParams::new(
             getter(8802)?,
             getter(8801)?,
             getter(8806)?,
             getter(8807)?,
-        );
-        Some(Self::new(ellipsoid, &params))
+        ))
     }
 }
 

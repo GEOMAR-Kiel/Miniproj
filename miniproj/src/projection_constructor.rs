@@ -9,21 +9,22 @@ use miniproj_ops::lambert_conic_conformal::{
 use miniproj_ops::popvis_pseudo_mercator::PopVisPseudoMercatorProjection;
 use miniproj_ops::stereographic::{ObliqueStereographicProjection, PolarStereographicAProjection};
 use miniproj_ops::transverse_mercator::TransverseMercatorProjection;
-use miniproj_ops::{CoordOperation, Projection};
+use miniproj_ops::{CoordOperation, Projection, ProjectionParams, Ellipsoid};
 
 include!(concat!(env!("OUT_DIR"), "/projection_constructors.rs"));
 
 /// Returns the Coordinate Reference System corresponding to the EPSG code passed as the argument.
 /// If the code refers to a projection that is not implemented, the method returns `None`
 pub fn get_projection(code: u32) -> Option<&'static dyn Projection> {
-    PROJECTIONS.get(&code).cloned()
+    let params = PROJECTION_PARAMS.get(&code)?;
+    todo!()
 }
 
 /// Returns the EPSG code of the ellipsoid that is associated with the projection
 /// corresponding to `projection_code`. Returns `None` if the projection is
 /// unknown.
 pub fn get_ellipsoid_code(projection_code: u32) -> Option<u32> {
-    ELLIPSOIDS.get(&projection_code).copied()
+    PROJECTION_PARAMS.get(&projection_code).map(|(_, e)| e).copied()
 }
 
 /// Returns the Name of the Coordinate Reference System. This is a temporary method that will be removed.

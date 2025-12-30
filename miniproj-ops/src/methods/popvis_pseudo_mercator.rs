@@ -2,9 +2,10 @@
 
 use std::f64::consts::{FRAC_PI_2, FRAC_PI_4};
 
+#[cfg(feature = "codegen")]
+use crate::types::DbContstruct;
 use crate::{
-    CoordOperation, DbContstruct, Geographic2DCoordinate, ProjectedCoordinate, Projection,
-    PseudoSerialize, ellipsoid::Ellipsoid, types::GetterContstruct,
+    CoordOperation, Geographic2DCoordinate, ProjectedCoordinate, Projection, ellipsoid::Ellipsoid,
 };
 
 #[derive(Copy, Clone, Debug)]
@@ -27,6 +28,14 @@ impl PopVisPseudoMercatorParams {
             false_e,
             false_n,
         }
+    }
+
+    #[cfg(feature = "codegen")]
+    pub fn to_constructor(&self) -> String {
+        format!(
+            "PopVisPseudoMercatorParams::new({}f64, {}f64, {}f64, {}f64)",
+            self.lon_orig, self.lat_orig, self.false_e, self.false_n
+        )
     }
 
     /// Get longitude of natural origin, radians.
@@ -96,7 +105,7 @@ impl CoordOperation<Geographic2DCoordinate, ProjectedCoordinate>
     fn op(&self, from: Geographic2DCoordinate) -> ProjectedCoordinate {
         let longitude = from.longitude_rad();
         let latitude = from.latitude_rad();
-        (
+        ProjectedCoordinate::new(
             self.false_e + self.ellipsoid_a * (longitude - self.lon_orig),
             self.false_n + self.ellipsoid_a * (FRAC_PI_4 + latitude / 2f64).tan().ln(),
         )
@@ -116,62 +125,21 @@ impl CoordOperation<ProjectedCoordinate, Geographic2DCoordinate>
     }
 }
 
-impl PseudoSerialize for PopVisPseudoMercatorProjection {
-    fn to_constructed(&self) -> String {
-        format!(
-            r"PopVisPseudoMercatorProjection{{
-    ellipsoid_a: {}f64,
-    lon_orig: {}f64,
-    false_e: {}f64,
-    false_n: {}f64,
-}}",
-            self.ellipsoid_a, self.lon_orig, self.false_e, self.false_n,
-        )
-    }
-}
-
-impl DbContstruct for PopVisPseudoMercatorProjection {
-    fn from_database_params(params: &[(u32, f64)], ellipsoid: &Ellipsoid) -> Self {
-        let params = PopVisPseudoMercatorParams::new(
-            params
-                .iter()
-                .find_map(|(c, v)| if *c == 8802 { Some(*v) } else { None })
-                .unwrap(),
-            params
-                .iter()
-                .find_map(|(c, v)| if *c == 8801 { Some(*v) } else { None })
-                .unwrap(),
-            params
-                .iter()
-                .find_map(|(c, v)| if *c == 8806 { Some(*v) } else { None })
-                .unwrap(),
-            params
-                .iter()
-                .find_map(|(c, v)| if *c == 8807 { Some(*v) } else { None })
-                .unwrap(),
-        );
-        Self::new(ellipsoid, &params)
-    }
-}
-
-impl GetterContstruct for PopVisPseudoMercatorProjection {
-    fn with_db_getter<G>(mut getter: G, ellipsoid: &Ellipsoid) -> Option<Self>
+#[cfg(feature = "codegen")]
+impl DbContstruct for PopVisPseudoMercatorParams {
+    fn from_db<G>(mut getter: G) -> Option<Self>
     where
         G: FnMut(u32) -> Option<f64>,
     {
-        let params = PopVisPseudoMercatorParams::new(
+        Some(PopVisPseudoMercatorParams::new(
             getter(8802)?,
             getter(8801)?,
             getter(8806)?,
             getter(8807)?,
-        );
-        Some(Self::new(ellipsoid, &params))
+        ))
     }
 }
 
-pub fn direct_projection(params: &[(u32, f64)], ell: Ellipsoid) -> String {
-    PopVisPseudoMercatorProjection::from_database_params(params, &ell).to_constructed()
-}
 #[cfg(test)]
 mod tests {
 

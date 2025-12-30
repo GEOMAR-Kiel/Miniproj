@@ -1,9 +1,8 @@
 //This file is licensed under EUPL v1.2 as part of the Digital Earth Viewer
 
-use crate::{
-    CoordOperation, DbContstruct, Geographic2DCoordinate, ProjectedCoordinate, PseudoSerialize,
-    ellipsoid::Ellipsoid, types::GetterContstruct,
-};
+#[cfg(feature = "codegen")]
+use crate::types::DbContstruct;
+use crate::{CoordOperation, Geographic2DCoordinate, ProjectedCoordinate, ellipsoid::Ellipsoid};
 
 #[derive(Copy, Clone, Debug)]
 pub struct AlbersEqualAreaParams {
@@ -38,6 +37,14 @@ impl AlbersEqualAreaParams {
             false_e,
             false_n,
         }
+    }
+
+    #[cfg(feature = "codegen")]
+    pub fn to_constructor(&self) -> String {
+        format!(
+            "AlbersEqualAreaParams::new({}f64, {}f64, {}f64, {}f64, {}f64, {}f64)",
+            self.lon_orig, self.lat_orig, self.lat_sp1, self.lat_sp2, self.false_e, self.false_n
+        )
     }
 
     /// Get longitude of false origin in radians.
@@ -201,98 +208,20 @@ impl CoordOperation<ProjectedCoordinate, Geographic2DCoordinate> for AlbersEqual
     }
 }
 
-impl PseudoSerialize for AlbersEqualAreaProjection {
-    fn to_constructed(&self) -> String {
-        format!(
-            r"AlbersEqualAreaProjection{{
-    false_e: {}f64,
-    false_n: {}f64,
-    lon_orig: {}f64,
-    ellipsoid_e: {}f64,
-    ellipsoid_e_sq: {}f64,
-    ellipsoid_a: {}f64,
-    C: {}f64,
-    n: {}f64,
-    rho_O: {}f64,
-    beta_fac_sin2: {}f64,
-    beta_fac_sin4: {}f64,
-    beta_fac_sin6: {}f64
-}}",
-            self.false_e,
-            self.false_n,
-            self.lon_orig,
-            self.ellipsoid_e,
-            self.ellipsoid_e_sq,
-            self.ellipsoid_a,
-            self.C,
-            self.n,
-            self.rho_O,
-            self.beta_fac_sin2,
-            self.beta_fac_sin4,
-            self.beta_fac_sin6
-        )
-    }
-}
-
-impl DbContstruct for AlbersEqualAreaProjection {
-    fn from_database_params(params: &[(u32, f64)], ellipsoid: &Ellipsoid) -> Self {
-        /*
-        ImplementedProjection::new(
-            9820,
-            &[8802, 8801, 8806, 8807],
-            "AlbersEqualAreaParams",
-            "AlbersEqualAreaProjection"
-        )
-        */
-        let params = AlbersEqualAreaParams::new(
-            params
-                .iter()
-                .find_map(|(c, v)| if *c == 8822 { Some(*v) } else { None })
-                .unwrap(),
-            params
-                .iter()
-                .find_map(|(c, v)| if *c == 8821 { Some(*v) } else { None })
-                .unwrap(),
-            params
-                .iter()
-                .find_map(|(c, v)| if *c == 8823 { Some(*v) } else { None })
-                .unwrap(),
-            params
-                .iter()
-                .find_map(|(c, v)| if *c == 8824 { Some(*v) } else { None })
-                .unwrap(),
-            params
-                .iter()
-                .find_map(|(c, v)| if *c == 8826 { Some(*v) } else { None })
-                .unwrap(),
-            params
-                .iter()
-                .find_map(|(c, v)| if *c == 8827 { Some(*v) } else { None })
-                .unwrap(),
-        );
-        Self::new(ellipsoid, &params)
-    }
-}
-
-impl GetterContstruct for AlbersEqualAreaProjection {
-    fn with_db_getter<G>(mut getter: G, ellipsoid: &Ellipsoid) -> Option<Self>
+impl DbContstruct for AlbersEqualAreaParams {
+    fn from_db<G>(mut getter: G) -> Option<Self>
     where
         G: FnMut(u32) -> Option<f64>,
     {
-        let params = AlbersEqualAreaParams::new(
+        Some(AlbersEqualAreaParams::new(
             getter(8822)?,
             getter(8821)?,
             getter(8823)?,
             getter(8824)?,
             getter(8826)?,
             getter(8827)?,
-        );
-        Some(Self::new(ellipsoid, &params))
+        ))
     }
-}
-
-pub fn direct_projection(params: &[(u32, f64)], ell: Ellipsoid) -> String {
-    AlbersEqualAreaProjection::from_database_params(params, &ell).to_constructed()
 }
 
 #[cfg(test)]

@@ -12,7 +12,7 @@ fn main() {
     projection_out.push("projection_constructors.rs");
     std::fs::write(
         projection_out,
-        gen_parameter_constructors(&memdb, IMPL_CONV, &ellipsoids).unwrap(),
+        gen_parameter_constructors(&memdb, &ellipsoids).unwrap(),
     )
     .unwrap();
     let mut ellipsoid_out = output_dir;

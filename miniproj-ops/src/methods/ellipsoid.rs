@@ -36,6 +36,11 @@ impl Ellipsoid {
         }
     }
 
+    #[cfg(feature = "codegen")]
+    pub fn to_constructor(&self) -> String {
+        format!("Self::from_a_b({}f64, {}f64)", self.a, self.b)
+    }
+
     /// Get major half axis.
     pub const fn a(&self) -> f64 {
         self.a
