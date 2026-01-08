@@ -1,0 +1,18 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+abstract: This crate implements geographic coordinate projections between projected coordinate systems and their underlying geographic reference systems as defined by the European Petroleum Survey Group Geodesy. Supported projections include Transverse Mercator, Lambert Conic Conformal, Albers Equal-Area, Oblique Stereographic, Lambert Azimuthal Equal-Area, Polar Stereographic, and Pseudo-Mercator. It was originally developed at the GEOMAR Helmholtz Centre for Ocean Research. The implementation follows the official guidance notes, with all dynamically uniform variables computed at compile time.
+authors:
+  - family-names: Stäbler
+    given-names: Flemming
+    email: fstaebler@geomar.de
+  - family-names: Buck
+    given-names: Valentin
+    email: vbuck@geomar.de
+    orcid: https://orcid.org/0000-0003-0436-8294
+title: "Miniproj"
+version: 0.10.4
+identifiers:
+  - type: doi
+    #value: 10.5281/zenodo.1234
+date-released: 2026-01-08
+license: European Union Public License v1.2
