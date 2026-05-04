@@ -13,6 +13,6 @@ title: "Miniproj"
 version: 0.10.4
 identifiers:
   - type: doi
-    #value: 10.5281/zenodo.1234
+    value: 10.3289/SW_1_2026
 date-released: 2026-01-08
 license: European Union Public License v1.2
